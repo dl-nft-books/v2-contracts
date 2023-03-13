@@ -17,7 +17,7 @@ TokenRegistry.numberFormat = "BigNumber";
 
 describe("PoolFactory", () => {
   let OWNER;
-  let SECOND;
+  let MARKETPLACE;
   let NOTHING;
 
   let tokenRegistry;
@@ -29,7 +29,7 @@ describe("PoolFactory", () => {
 
   before("setup", async () => {
     OWNER = await accounts(0);
-    SECOND = await accounts(1);
+    MARKETPLACE = await accounts(1);
     NOTHING = await accounts(3);
 
     testERC20 = await ERC20Mock.new("TestERC20", "TS", 18);
@@ -44,7 +44,7 @@ describe("PoolFactory", () => {
 
     await contractsRegistry.addProxyContract(await contractsRegistry.TOKEN_FACTORY_NAME(), _tokenFactory.address);
     await contractsRegistry.addProxyContract(await contractsRegistry.TOKEN_REGISTRY_NAME(), _tokenRegistry.address);
-    await contractsRegistry.addProxyContract(await contractsRegistry.MARKETPLACE_NAME(), _marketplace.address);
+    await contractsRegistry.addContract(await contractsRegistry.MARKETPLACE_NAME(), MARKETPLACE);
     await contractsRegistry.addProxyContract(await contractsRegistry.ROLE_MANAGER_NAME(), _roleManager.address);
 
     tokenRegistry = await TokenRegistry.at(await contractsRegistry.getTokenRegistryContract());
@@ -52,7 +52,7 @@ describe("PoolFactory", () => {
 
     await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_FACTORY_NAME());
     await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_REGISTRY_NAME());
-    await contractsRegistry.injectDependencies(await contractsRegistry.MARKETPLACE_NAME());
+    // await contractsRegistry.injectDependencies(await contractsRegistry.MARKETPLACE_NAME());
     await contractsRegistry.injectDependencies(await contractsRegistry.ROLE_MANAGER_NAME());
 
     const tokenName = [await tokenRegistry.TOKEN_POOL()];
@@ -68,7 +68,7 @@ describe("PoolFactory", () => {
 
   describe("deployToken", () => {
     it("should deploy token", async () => {
-      let tx = await tokenFactory.deployToken("TestToken", "TT");
+      let tx = await tokenFactory.deployToken("TestToken", "TT", { from: MARKETPLACE });
       let event = tx.receipt.logs[0];
 
       assert.isTrue(await tokenRegistry.isTokenPool(event.args.tokenProxy));

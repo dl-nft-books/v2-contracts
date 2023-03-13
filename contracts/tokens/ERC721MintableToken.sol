@@ -7,14 +7,11 @@ import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
 import "../ContractsRegistry.sol";
 
 contract ERC721MintableToken is AbstractDependant, ERC721EnumerableUpgradeable {
-    using Strings for uint256;
-
     mapping(uint256 => string) private _tokenURIs;
 
-    address public contractsRegistryAddress_;
-    address public _roleManager;
-    address public _tokenFactory;
-    address public _marketplace;
+    address private _roleManager;
+    address private _tokenFactory;
+    address private _marketplace;
 
     modifier onlyMarketplace() {
         _onlyMarketplace();

@@ -1,16 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
 
 import "./interfaces/IContractsRegistry.sol";
 
-contract RoleManager is AccessControl, AbstractDependant {
+contract RoleManager is AccessControlUpgradeable, AbstractDependant {
     bytes32 public constant ADMINISTATOR_ROLE = keccak256("ADMINISTATOR_ROLE");
 
     constructor() {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        grantRole(ADMINISTATOR_ROLE, msg.sender);
+    }
+
+    function __RoleManager_init() external initializer {
+        __AccessControl_init();
+        
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         grantRole(ADMINISTATOR_ROLE, msg.sender);
     }
