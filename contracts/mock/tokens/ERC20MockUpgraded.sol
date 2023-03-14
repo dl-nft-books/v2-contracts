@@ -6,7 +6,6 @@ import "./ERC20Mock.sol";
 contract ERC20MockUpgraded is ERC20PermitUpgradeable {
     uint256 public importantVariable;
 
-    
     function __ERC20Mock_init(
         string memory name_,
         string memory symbol_,

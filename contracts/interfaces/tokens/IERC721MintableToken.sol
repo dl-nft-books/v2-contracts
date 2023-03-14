@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-interface IERC721MintableToken{
+interface IERC721MintableToken {
     /**
      * @notice The structure that stores information about the minted token
      * @param tokenId the ID of the minted token
@@ -62,7 +62,7 @@ interface IERC721MintableToken{
         uint256 paymentTokenPrice,
         uint256 discount
     );
-    
+
     /**
      * @notice The function for initializing contract variables
      * @param initParams_ the ERC721MintableTokenInitParams structure with init params
@@ -78,7 +78,7 @@ interface IERC721MintableToken{
      * @param newTokenName_ the new token name
      * @param newTokenSymbol_ the new token symbol
      */
-     //  * @param newMinNFTFloorPrice_ the new minimal NFT floor price
+    //  * @param newMinNFTFloorPrice_ the new minimal NFT floor price
     function updateERC721MintableTokenParams(
         uint256 newPrice_,
         // uint256 newMinNFTFloorPrice_,
@@ -116,7 +116,7 @@ interface IERC721MintableToken{
         bytes32 s_,
         uint8 v_
     ) external payable;
-    
+
     /**
      * @notice The function that returns the price per one token
      * @return price per one token in USD

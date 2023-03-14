@@ -43,7 +43,10 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         _tokenBaseUri = tokenBaseUri_;
     }
 
-    function deployToken(string calldata name, string calldata symbol) external override onlyMarketplace {
+    function deployToken(
+        string calldata name,
+        string calldata symbol
+    ) external override onlyMarketplace {
         address tokenProxy = _deploy();
 
         emit TokenDeployed(name, symbol, tokenProxy);
@@ -72,9 +75,6 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
     }
 
     function _onlyMarketplace() internal view {
-        require(
-            address(_marketplace) == msg.sender,
-            "TokenFactory: Caller is not a marketplace"
-        );
+        require(address(_marketplace) == msg.sender, "TokenFactory: Caller is not a marketplace");
     }
 }

@@ -17,7 +17,7 @@ contract RoleManager is AccessControlUpgradeable, AbstractDependant {
 
     function __RoleManager_init() external initializer {
         __AccessControl_init();
-        
+
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         grantRole(ADMINISTATOR_ROLE, msg.sender);
     }

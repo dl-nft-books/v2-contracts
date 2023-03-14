@@ -27,7 +27,7 @@ contract ERC721MintableToken is
     PausableUpgradeable,
     ReentrancyGuardUpgradeable
 {
-    using DecimalsConverter for uint256;    
+    using DecimalsConverter for uint256;
     using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
 
     bytes32 internal constant _MINT_TYPEHASH =
@@ -164,7 +164,10 @@ contract ERC721MintableToken is
         // uint256 amountToPay_ = tokenPrice_ != 0
         //     ? _getAmountAfterDiscount((pricePerOneToken * DECIMAL) / tokenPrice_, discount_)
         //     : voucherTokensAmount;
-        uint256 amountToPay_ = _getAmountAfterDiscount((pricePerOneToken * DECIMAL) / tokenPrice_, discount_);
+        uint256 amountToPay_ = _getAmountAfterDiscount(
+            (pricePerOneToken * DECIMAL) / tokenPrice_,
+            discount_
+        );
 
         tokenAddr_.safeTransferFrom(
             msg.sender,
@@ -277,24 +280,28 @@ contract ERC721MintableToken is
 
         address signer_ = ECDSAUpgradeable.recover(_hashTypedDataV4(structHash_), v_, r_, s_);
 
-        require(IRoleManager(_roleManager).isAdmin(signer_), "ERC721MintableToken: Invalid signature.");
+        require(
+            IRoleManager(_roleManager).isAdmin(signer_),
+            "ERC721MintableToken: Invalid signature."
+        );
         require(block.timestamp <= endTimestamp_, "ERC721MintableToken: Signature expired.");
     }
-    
 
     function _onlyMarketplace() internal view {
         require(_tokenFactory == msg.sender, "ERC721MintableToken: Caller is not a Marketplace");
     }
 
     function _onlyAdministrator() internal view {
-        require(IRoleManager(_roleManager).isAdmin(msg.sender), "ERC721MintableToken: Caller is not an Administrator");
+        require(
+            IRoleManager(_roleManager).isAdmin(msg.sender),
+            "ERC721MintableToken: Caller is not an Administrator"
+        );
     }
 
-    function _getAmountAfterDiscount(uint256 amount_, uint256 discount_)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _getAmountAfterDiscount(
+        uint256 amount_,
+        uint256 discount_
+    ) internal pure returns (uint256) {
         return (amount_ * (PERCENTAGE_100 - discount_)) / PERCENTAGE_100;
     }
 }
