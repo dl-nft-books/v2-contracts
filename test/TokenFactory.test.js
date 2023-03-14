@@ -61,7 +61,6 @@ describe("PoolFactory", () => {
 
     const tokenAddr = [(await ERC721MintableToken.new()).address];
 
-    console.log(await (await RoleManager.at(await contractsRegistry.getRoleManagerContract())).isAdmin(OWNER));
     await tokenRegistry.setNewImplementations(tokenName, tokenAddr);
 
     await reverter.snapshot();

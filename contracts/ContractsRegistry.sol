@@ -7,12 +7,12 @@ import "./interfaces/IContractsRegistry.sol";
 import "./RoleManager.sol";
 
 contract ContractsRegistry is IContractsRegistry, OwnableContractsRegistry {
-    string public constant TOKEN_FACTORY_NAME = "TOKEN_FACTORY";
-    string public constant TOKEN_REGISTRY_NAME = "TOKEN_REGISTRY";
+    string public constant override TOKEN_FACTORY_NAME = "TOKEN_FACTORY";
+    string public constant override TOKEN_REGISTRY_NAME = "TOKEN_REGISTRY";
 
-    string public constant MARKETPLACE_NAME = "MARKETPLACE";
+    string public constant override MARKETPLACE_NAME = "MARKETPLACE";
 
-    string public constant ROLE_MANAGER_NAME = "ROLE_MANAGER";
+    string public constant override ROLE_MANAGER_NAME = "ROLE_MANAGER";
 
     function getTokenFactoryContract() external view override returns (address) {
         return getContract(TOKEN_FACTORY_NAME);
