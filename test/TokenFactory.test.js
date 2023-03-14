@@ -41,6 +41,7 @@ describe("PoolFactory", () => {
     const _roleManager = await RoleManager.new();
 
     await contractsRegistry.__OwnableContractsRegistry_init();
+    await _roleManager.__RoleManager_init();
 
     await contractsRegistry.addProxyContract(await contractsRegistry.TOKEN_FACTORY_NAME(), _tokenFactory.address);
     await contractsRegistry.addProxyContract(await contractsRegistry.TOKEN_REGISTRY_NAME(), _tokenRegistry.address);
@@ -49,6 +50,7 @@ describe("PoolFactory", () => {
 
     tokenRegistry = await TokenRegistry.at(await contractsRegistry.getTokenRegistryContract());
     tokenFactory = await TokenFactory.at(await contractsRegistry.getTokenFactoryContract());
+    await (await RoleManager.at(await contractsRegistry.getRoleManagerContract())).__RoleManager_init();
 
     await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_FACTORY_NAME());
     await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_REGISTRY_NAME());
@@ -59,6 +61,7 @@ describe("PoolFactory", () => {
 
     const tokenAddr = [(await ERC721MintableToken.new()).address];
 
+    console.log(await (await RoleManager.at(await contractsRegistry.getRoleManagerContract())).isAdmin(OWNER));
     await tokenRegistry.setNewImplementations(tokenName, tokenAddr);
 
     await reverter.snapshot();

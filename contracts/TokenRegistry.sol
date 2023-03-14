@@ -30,11 +30,10 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
         _;
     }
 
-    // TODO: add onlyAdministrator
     function setNewImplementations(
         string[] calldata names_,
         address[] calldata newImplementations_
-    ) external {
+    ) external onlyAdministrator {
         _setNewImplementations(names_, newImplementations_);
     }
 
