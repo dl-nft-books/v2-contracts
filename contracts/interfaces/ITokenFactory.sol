@@ -8,5 +8,9 @@ interface ITokenFactory {
 
     function setTokenBaseUri(string memory tokenBaseUri_) external;
 
-    function deployToken(string calldata name, string calldata symbol) external;
+    function deployToken(
+        string calldata name,
+        string calldata symbol,
+        uint256 pricePerOneToken
+    ) external;
 }

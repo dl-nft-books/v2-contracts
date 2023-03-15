@@ -8,6 +8,7 @@ import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/ITokenRegistry.sol";
 import "./interfaces/IRoleManager.sol";
 import "./interfaces/IMarketplace.sol";
+import "./interfaces/tokens/IERC721MintableToken.sol";
 
 contract TokenFactory is ITokenFactory, AbstractPoolFactory {
     string private _tokenBaseUri;
@@ -45,14 +46,28 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
 
     function deployToken(
         string calldata name,
-        string calldata symbol
+        string calldata symbol,
+        uint256 pricePerOneToken
     ) external override onlyMarketplace {
         address tokenProxy = _deploy();
 
         emit TokenDeployed(name, symbol, tokenProxy);
 
+        _initTokenPool(tokenProxy, name, symbol, pricePerOneToken);
+
         _register(tokenProxy);
         _injectDependencies(tokenProxy);
+    }
+
+    function _initTokenPool(
+        address tokenProxy,
+        string calldata name,
+        string calldata symbol,
+        uint256 pricePerOneToken
+    ) internal {
+        IERC721MintableToken(tokenProxy).__ERC721MintableToken_init(
+            IERC721MintableToken.ERC721MintableTokenInitParams(name, symbol, pricePerOneToken)
+        );
     }
 
     function _deploy() internal returns (address) {

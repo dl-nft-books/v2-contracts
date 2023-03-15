@@ -70,7 +70,7 @@ describe("PoolFactory", () => {
 
   describe("deployToken", () => {
     it("should deploy token", async () => {
-      let tx = await tokenFactory.deployToken("TestToken", "TT", { from: MARKETPLACE });
+      let tx = await tokenFactory.deployToken("TestToken", "TT", 1, { from: MARKETPLACE });
       let event = tx.receipt.logs[0];
 
       assert.isTrue(await tokenRegistry.isTokenPool(event.args.tokenProxy));
