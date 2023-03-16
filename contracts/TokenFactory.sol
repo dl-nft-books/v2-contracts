@@ -27,10 +27,10 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         _;
     }
 
-    function setDependencies(address contractsRegistry, bytes calldata data) public override {
-        super.setDependencies(contractsRegistry, data);
+    function setDependencies(address contractsRegistry_, bytes calldata data_) public override {
+        super.setDependencies(contractsRegistry_, data_);
 
-        IContractsRegistry registry = IContractsRegistry(contractsRegistry);
+        IContractsRegistry registry = IContractsRegistry(contractsRegistry_);
         _tokenRegistry = ITokenRegistry(registry.getTokenRegistryContract());
         _roleManager = IRoleManager(registry.getRoleManagerContract());
         _marketplace = IMarketplace(registry.getMarketplaceContract());
@@ -45,28 +45,28 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
     }
 
     function deployToken(
-        string calldata name,
-        string calldata symbol,
-        uint256 pricePerOneToken
+        string calldata name_,
+        string calldata symbol_,
+        uint256 pricePerOneToken_
     ) external override onlyMarketplace {
         address tokenProxy = _deploy();
 
-        emit TokenDeployed(name, symbol, tokenProxy);
-
-        _initTokenPool(tokenProxy, name, symbol, pricePerOneToken);
+        _initTokenPool(tokenProxy, name_, symbol_, pricePerOneToken_);
 
         _register(tokenProxy);
         _injectDependencies(tokenProxy);
+
+        emit TokenDeployed(name_, symbol_, tokenProxy);
     }
 
     function _initTokenPool(
-        address tokenProxy,
-        string calldata name,
-        string calldata symbol,
-        uint256 pricePerOneToken
+        address tokenProxy_,
+        string calldata name_,
+        string calldata symbol_,
+        uint256 pricePerOneToken_
     ) internal {
-        IERC721MintableToken(tokenProxy).__ERC721MintableToken_init(
-            IERC721MintableToken.ERC721MintableTokenInitParams(name, symbol, pricePerOneToken)
+        IERC721MintableToken(tokenProxy_).__ERC721MintableToken_init(
+            IERC721MintableToken.ERC721MintableTokenInitParams(name_, symbol_, pricePerOneToken_)
         );
     }
 
@@ -74,12 +74,12 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         return _deploy(address(_tokenRegistry), _tokenRegistry.TOKEN_POOL());
     }
 
-    function _register(address poolProxy) internal {
-        _register(address(_tokenRegistry), _tokenRegistry.TOKEN_POOL(), poolProxy);
+    function _register(address poolProxy_) internal {
+        _register(address(_tokenRegistry), _tokenRegistry.TOKEN_POOL(), poolProxy_);
     }
 
-    function _injectDependencies(address proxy) internal {
-        _injectDependencies(address(_tokenRegistry), proxy);
+    function _injectDependencies(address proxy_) internal {
+        _injectDependencies(address(_tokenRegistry), proxy_);
     }
 
     function _onlyAdministrator() internal view {

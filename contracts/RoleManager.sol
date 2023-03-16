@@ -22,13 +22,6 @@ contract RoleManager is AccessControlUpgradeable, AbstractDependant {
         grantRole(ADMINISTATOR_ROLE, msg.sender);
     }
 
-    function setDependencies(
-        address contractsRegistry,
-        bytes calldata
-    ) external override dependant {
-        // IContractsRegistry registry = IContractsRegistry(contractsRegistry);
-    }
-
     function addAdmin(address _admin) public {
         grantRole(ADMINISTATOR_ROLE, _admin);
     }
