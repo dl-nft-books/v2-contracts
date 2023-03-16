@@ -40,6 +40,7 @@ describe("TokenRegistry", () => {
     const _roleManager = await RoleManager.new();
 
     await contractsRegistry.__OwnableContractsRegistry_init();
+    await _roleManager.__RoleManager_init();
 
     await contractsRegistry.addContract(await contractsRegistry.TOKEN_FACTORY_NAME(), FACTORY);
     await contractsRegistry.addContract(await contractsRegistry.TOKEN_REGISTRY_NAME(), _tokenRegistry.address);

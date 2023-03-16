@@ -70,15 +70,15 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
         return _pools[TOKEN_POOL].contains(potentialPool);
     }
 
-    function _onlyPoolFactory() private view {
+    function _onlyPoolFactory() internal view {
         require(_tokenFactory == msg.sender, "TokenRegistry: Caller is not a factory");
     }
 
-    function _onlyMarketplace() private view {
+    function _onlyMarketplace() internal view {
         require(_tokenFactory == msg.sender, "TokenRegistry: Caller is not a marketplace");
     }
 
-    function _onlyAdministrator() private view {
+    function _onlyAdministrator() internal view {
         require(
             IRoleManager(_roleManager).isAdmin(msg.sender),
             "TokenRegistry: Caller is not an Administrator"

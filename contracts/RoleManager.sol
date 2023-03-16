@@ -10,11 +10,6 @@ import "./interfaces/IContractsRegistry.sol";
 contract RoleManager is AccessControlUpgradeable, AbstractDependant {
     bytes32 public constant ADMINISTATOR_ROLE = keccak256("ADMINISTATOR_ROLE");
 
-    constructor() {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        grantRole(ADMINISTATOR_ROLE, msg.sender);
-    }
-
     function __RoleManager_init() external initializer {
         __AccessControl_init();
 
@@ -22,15 +17,18 @@ contract RoleManager is AccessControlUpgradeable, AbstractDependant {
         grantRole(ADMINISTATOR_ROLE, msg.sender);
     }
 
-    function addAdmin(address _admin) public {
-        grantRole(ADMINISTATOR_ROLE, _admin);
+    function setDependencies(address contractsRegistry_, bytes calldata data_) public override {
     }
 
-    function removeAdmin(address _admin) public {
-        revokeRole(ADMINISTATOR_ROLE, _admin);
+    function addAdmin(address admin_) public {
+        grantRole(ADMINISTATOR_ROLE, admin_);
     }
 
-    function isAdmin(address _admin) public view returns (bool) {
-        return hasRole(ADMINISTATOR_ROLE, _admin);
+    function removeAdmin(address admin_) public {
+        revokeRole(ADMINISTATOR_ROLE, admin_);
+    }
+
+    function isAdmin(address admin_) public view returns (bool) {
+        return hasRole(ADMINISTATOR_ROLE, admin_);
     }
 }
