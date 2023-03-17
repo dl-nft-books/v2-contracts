@@ -34,7 +34,6 @@ describe("Marketplace", () => {
     const _marketplace = await Marketplace.new();
 
     await contractsRegistry.__OwnableContractsRegistry_init();
-    await _roleManager.__RoleManager_init();
 
     await contractsRegistry.addProxyContract(await contractsRegistry.TOKEN_FACTORY_NAME(), _tokenFactory.address);
     await contractsRegistry.addProxyContract(await contractsRegistry.TOKEN_REGISTRY_NAME(), _tokenRegistry.address);
@@ -53,7 +52,7 @@ describe("Marketplace", () => {
     const tokenName = [await _tokenRegistry.TOKEN_POOL()];
     const tokenAddr = [(await ERC721MintableToken.new()).address];
     await tokenRegistry.setNewImplementations(tokenName, tokenAddr);
-    
+
     await marketplace.__Marketplace_init();
 
     await reverter.snapshot();
@@ -62,15 +61,10 @@ describe("Marketplace", () => {
   afterEach(reverter.revert);
 
   describe("creation", () => {
-    it("should set correct data after deployment", async () => {
+    it("should set correct data after deployment", async () => {});
 
-    });
-    
     it("should get exception if contract already initialized", async () => {
-        await truffleAssert.reverts(
-          marketplace.__Marketplace_init(),
-          "Initializable: contract is already initialized"
-        );
+      await truffleAssert.reverts(marketplace.__Marketplace_init(), "Initializable: contract is already initialized");
     });
   });
 
@@ -83,13 +77,19 @@ describe("Marketplace", () => {
     let tokenContract;
 
     beforeEach(async () => {
-        const tx = await marketplace.deployToken("Test", "TST", 1);
-        // tokenContract = tx.logs[0].args.tokenProxy;
-        console.log(tx);
+      const tx = await marketplace.deployToken("Test", "TST", 1);
+      // tokenContract = tx.logs[0].args.tokenProxy;
+      console.log(tx);
     });
     it("should correctly update price per one token", async () => {
-      const tx = await marketplace.updateTokenContractParams(tokenContract, newPrice, newMinNFTFloorPrice, newName, newSymbol);
-    
+      const tx = await marketplace.updateTokenContractParams(
+        tokenContract,
+        newPrice,
+        newMinNFTFloorPrice,
+        newName,
+        newSymbol
+      );
+
       const tokenParams = await marketplace.tokenParams(tokenContract);
       assert.equal(tokenParams.pricePerOneToken.toFixed(), newPrice.toFixed());
       assert.equal(tokenParams.minNFTFloorPrice.toFixed(), newMinNFTFloorPrice.toFixed());

@@ -65,132 +65,132 @@ describe("RoleManager", () => {
 
   describe("creation", () => {
     it("should correctly setup roles", async () => {
-        assert.equal(await roleManager.getRoleMemberCount(ADMINISTRATOR_ROLE), 0);
-        assert.equal(await roleManager.getRoleMemberCount(TOKEN_FACTORY_MANAGER_ROLE), 0);
-        assert.equal(await roleManager.getRoleMemberCount(TOKEN_REGISTRY_MANAGER_ROLE), 0);
-        assert.equal(await roleManager.getRoleMemberCount(TOKEN_MANAGER_ROLE), 0);
-        assert.equal(await roleManager.getRoleMemberCount(ROLE_SUPERVISOR_ROLE), 0);
-        assert.equal(await roleManager.getRoleMemberCount(WITHDRAWAL_MANAGER_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(ADMINISTRATOR_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(TOKEN_FACTORY_MANAGER_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(TOKEN_REGISTRY_MANAGER_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(TOKEN_MANAGER_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(ROLE_SUPERVISOR_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(WITHDRAWAL_MANAGER_ROLE), 0);
 
-        assert.equal(await roleManager.getRoleAdmin(ADMINISTRATOR_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
-        assert.equal(await roleManager.getRoleAdmin(TOKEN_FACTORY_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
-        assert.equal(await roleManager.getRoleAdmin(TOKEN_REGISTRY_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
-        assert.equal(await roleManager.getRoleAdmin(TOKEN_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
-        assert.equal(await roleManager.getRoleAdmin(ROLE_SUPERVISOR_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
-        assert.equal(await roleManager.getRoleAdmin(WITHDRAWAL_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
+      assert.equal(await roleManager.getRoleAdmin(ADMINISTRATOR_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
+      assert.equal(await roleManager.getRoleAdmin(TOKEN_FACTORY_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
+      assert.equal(await roleManager.getRoleAdmin(TOKEN_REGISTRY_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
+      assert.equal(await roleManager.getRoleAdmin(TOKEN_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
+      assert.equal(await roleManager.getRoleAdmin(ROLE_SUPERVISOR_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
+      assert.equal(await roleManager.getRoleAdmin(WITHDRAWAL_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
 
-        await roleManager.__RoleManager_init();
+      await roleManager.__RoleManager_init();
 
-        assert.equal(await roleManager.getRoleMemberCount(ADMINISTRATOR_ROLE), 1);
-        assert.equal(await roleManager.getRoleMemberCount(TOKEN_FACTORY_MANAGER_ROLE), 0);
-        assert.equal(await roleManager.getRoleMemberCount(TOKEN_REGISTRY_MANAGER_ROLE), 0);
-        assert.equal(await roleManager.getRoleMemberCount(TOKEN_MANAGER_ROLE), 0);
-        assert.equal(await roleManager.getRoleMemberCount(ROLE_SUPERVISOR_ROLE), 0);
-        assert.equal(await roleManager.getRoleMemberCount(WITHDRAWAL_MANAGER_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(ADMINISTRATOR_ROLE), 1);
+      assert.equal(await roleManager.getRoleMemberCount(TOKEN_FACTORY_MANAGER_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(TOKEN_REGISTRY_MANAGER_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(TOKEN_MANAGER_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(ROLE_SUPERVISOR_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(WITHDRAWAL_MANAGER_ROLE), 0);
 
-        assert.equal(await roleManager.getRoleAdmin(ADMINISTRATOR_ROLE), ROLE_SUPERVISOR_ROLE);
-        assert.equal(await roleManager.getRoleAdmin(TOKEN_FACTORY_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
-        assert.equal(await roleManager.getRoleAdmin(TOKEN_REGISTRY_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
-        assert.equal(await roleManager.getRoleAdmin(TOKEN_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
-        assert.equal(await roleManager.getRoleAdmin(ROLE_SUPERVISOR_ROLE), ADMINISTRATOR_ROLE);
-        assert.equal(await roleManager.getRoleAdmin(WITHDRAWAL_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
+      assert.equal(await roleManager.getRoleAdmin(ADMINISTRATOR_ROLE), ROLE_SUPERVISOR_ROLE);
+      assert.equal(await roleManager.getRoleAdmin(TOKEN_FACTORY_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
+      assert.equal(await roleManager.getRoleAdmin(TOKEN_REGISTRY_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
+      assert.equal(await roleManager.getRoleAdmin(TOKEN_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
+      assert.equal(await roleManager.getRoleAdmin(ROLE_SUPERVISOR_ROLE), ADMINISTRATOR_ROLE);
+      assert.equal(await roleManager.getRoleAdmin(WITHDRAWAL_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
 
-        assert.equal(await roleManager.getRoleMember(ADMINISTRATOR_ROLE, 0), OWNER);
+      assert.equal(await roleManager.getRoleMember(ADMINISTRATOR_ROLE, 0), OWNER);
     });
 
     it("should get exception if contract already initialized", async () => {
-        await roleManager.__RoleManager_init();
+      await roleManager.__RoleManager_init();
 
-        await truffleAssert.reverts(
-          roleManager.__RoleManager_init(),
-          "Initializable: contract is already initialized"
-        );
-      });
+      await truffleAssert.reverts(roleManager.__RoleManager_init(), "Initializable: contract is already initialized");
+    });
   });
 
   describe("dependency injection", () => {
     it("should not allow random users to inject dependencies", async () => {
-      await truffleAssert.reverts(roleManager.setDependencies(contractsRegistry.address, "0x"), "Dependant: not an injector");
+      await truffleAssert.reverts(
+        roleManager.setDependencies(contractsRegistry.address, "0x"),
+        "Dependant: not an injector"
+      );
     });
   });
 
   describe("administrator should be able to be every role", () => {
     it("administrator should be able to be every role", async () => {
-        await roleManager.__RoleManager_init();
+      await roleManager.__RoleManager_init();
 
-        assert.equal(await roleManager.isAdmin(OWNER), true);
-        assert.equal(await roleManager.isTokenFactoryManager(OWNER), true);
-        assert.equal(await roleManager.isTokenRegistryManager(OWNER), true);
-        assert.equal(await roleManager.isTokenManager(OWNER), true);
-        assert.equal(await roleManager.isRoleSupervisor(OWNER), true);
-        assert.equal(await roleManager.isWithdrawalManager(OWNER), true);
+      assert.equal(await roleManager.isAdmin(OWNER), true);
+      assert.equal(await roleManager.isTokenFactoryManager(OWNER), true);
+      assert.equal(await roleManager.isTokenRegistryManager(OWNER), true);
+      assert.equal(await roleManager.isTokenManager(OWNER), true);
+      assert.equal(await roleManager.isRoleSupervisor(OWNER), true);
+      assert.equal(await roleManager.isWithdrawalManager(OWNER), true);
     });
   });
 
-    describe("should correctly add and remove roles", () => {
-        beforeEach(async () => {
-            await roleManager.__RoleManager_init();
-            await roleManager.grantRole(ROLE_SUPERVISOR_ROLE, OWNER);
-        });
-
-        it("isAdmin()", async () => {
-            assert.equal(await roleManager.isAdmin(NOTHING), false);
-
-            await roleManager.grantRole(ADMINISTRATOR_ROLE, NOTHING);
-            assert.equal(await roleManager.isAdmin(NOTHING), true);
-
-            await roleManager.revokeRole(ADMINISTRATOR_ROLE, NOTHING);
-            assert.equal(await roleManager.isAdmin(NOTHING), false);
-        });
-
-        it("isTokenFactoryManager()", async () => {
-            assert.equal(await roleManager.isTokenFactoryManager(NOTHING), false);
-
-            await roleManager.grantRole(TOKEN_FACTORY_MANAGER_ROLE, NOTHING);
-            assert.equal(await roleManager.isTokenFactoryManager(NOTHING), true);
-
-            await roleManager.revokeRole(TOKEN_FACTORY_MANAGER_ROLE, NOTHING);
-            assert.equal(await roleManager.isTokenFactoryManager(NOTHING), false);
-        });
-
-        it("isTokenRegistryManager()", async () => {
-            assert.equal(await roleManager.isTokenRegistryManager(NOTHING), false);
-
-            await roleManager.grantRole(TOKEN_REGISTRY_MANAGER_ROLE, NOTHING);
-            assert.equal(await roleManager.isTokenRegistryManager(NOTHING), true);
-
-            await roleManager.revokeRole(TOKEN_REGISTRY_MANAGER_ROLE, NOTHING);
-            assert.equal(await roleManager.isTokenRegistryManager(NOTHING), false);
-        });
-
-        it("isTokenManager()", async () => {
-            assert.equal(await roleManager.isTokenManager(NOTHING), false);
-
-            await roleManager.grantRole(TOKEN_MANAGER_ROLE, NOTHING);
-            assert.equal(await roleManager.isTokenManager(NOTHING), true);
-
-            await roleManager.revokeRole(TOKEN_MANAGER_ROLE, NOTHING);
-            assert.equal(await roleManager.isTokenManager(NOTHING), false);
-        });
-
-        it("isRoleSupervisor()", async () => {
-            assert.equal(await roleManager.isRoleSupervisor(NOTHING), false);
-
-            await roleManager.grantRole(ROLE_SUPERVISOR_ROLE, NOTHING);
-            assert.equal(await roleManager.isRoleSupervisor(NOTHING), true);
-
-            await roleManager.revokeRole(ROLE_SUPERVISOR_ROLE, NOTHING);
-            assert.equal(await roleManager.isRoleSupervisor(NOTHING), false);
-        });
-
-        it("isWithdrawalManager()", async () => {
-            assert.equal(await roleManager.isWithdrawalManager(NOTHING), false);
-
-            await roleManager.grantRole(WITHDRAWAL_MANAGER_ROLE, NOTHING);
-            assert.equal(await roleManager.isWithdrawalManager(NOTHING), true);
-
-            await roleManager.revokeRole(WITHDRAWAL_MANAGER_ROLE, NOTHING);
-            assert.equal(await roleManager.isWithdrawalManager(NOTHING), false);
-        });
+  describe("should correctly add and remove roles", () => {
+    beforeEach(async () => {
+      await roleManager.__RoleManager_init();
+      await roleManager.grantRole(ROLE_SUPERVISOR_ROLE, OWNER);
     });
+
+    it("isAdmin()", async () => {
+      assert.equal(await roleManager.isAdmin(NOTHING), false);
+
+      await roleManager.grantRole(ADMINISTRATOR_ROLE, NOTHING);
+      assert.equal(await roleManager.isAdmin(NOTHING), true);
+
+      await roleManager.revokeRole(ADMINISTRATOR_ROLE, NOTHING);
+      assert.equal(await roleManager.isAdmin(NOTHING), false);
+    });
+
+    it("isTokenFactoryManager()", async () => {
+      assert.equal(await roleManager.isTokenFactoryManager(NOTHING), false);
+
+      await roleManager.grantRole(TOKEN_FACTORY_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isTokenFactoryManager(NOTHING), true);
+
+      await roleManager.revokeRole(TOKEN_FACTORY_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isTokenFactoryManager(NOTHING), false);
+    });
+
+    it("isTokenRegistryManager()", async () => {
+      assert.equal(await roleManager.isTokenRegistryManager(NOTHING), false);
+
+      await roleManager.grantRole(TOKEN_REGISTRY_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isTokenRegistryManager(NOTHING), true);
+
+      await roleManager.revokeRole(TOKEN_REGISTRY_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isTokenRegistryManager(NOTHING), false);
+    });
+
+    it("isTokenManager()", async () => {
+      assert.equal(await roleManager.isTokenManager(NOTHING), false);
+
+      await roleManager.grantRole(TOKEN_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isTokenManager(NOTHING), true);
+
+      await roleManager.revokeRole(TOKEN_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isTokenManager(NOTHING), false);
+    });
+
+    it("isRoleSupervisor()", async () => {
+      assert.equal(await roleManager.isRoleSupervisor(NOTHING), false);
+
+      await roleManager.grantRole(ROLE_SUPERVISOR_ROLE, NOTHING);
+      assert.equal(await roleManager.isRoleSupervisor(NOTHING), true);
+
+      await roleManager.revokeRole(ROLE_SUPERVISOR_ROLE, NOTHING);
+      assert.equal(await roleManager.isRoleSupervisor(NOTHING), false);
+    });
+
+    it("isWithdrawalManager()", async () => {
+      assert.equal(await roleManager.isWithdrawalManager(NOTHING), false);
+
+      await roleManager.grantRole(WITHDRAWAL_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isWithdrawalManager(NOTHING), true);
+
+      await roleManager.revokeRole(WITHDRAWAL_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isWithdrawalManager(NOTHING), false);
+    });
+  });
 });

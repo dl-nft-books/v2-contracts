@@ -14,7 +14,7 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
     address internal _tokenRegistry;
     address internal _marketplace;
     IRoleManager internal _roleManager;
-    
+
     string private _tokenBaseUri;
 
     modifier onlyTokenFactoryManager() {

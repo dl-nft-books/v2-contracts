@@ -85,7 +85,7 @@ describe("TokenRegistry", () => {
       );
 
       await truffleAssert.reverts(
-        tokenRegistry.injectDependenciesToExistingPoolsWithData(0, 0, 0,{ from: FACTORY }),
+        tokenRegistry.injectDependenciesToExistingPoolsWithData(0, 0, 0, { from: FACTORY }),
         "TokenRegistry: Caller is not a token registry manager"
       );
     });

@@ -17,13 +17,13 @@ import "../interfaces/tokens/IERC721MintableToken.sol";
 import "../interfaces/IRoleManager.sol";
 import "../ContractsRegistry.sol";
 
+// PausableUpgradeable,
+// ReentrancyGuardUpgradeable
 contract ERC721MintableToken is
     IERC721MintableToken,
     AbstractDependant,
     ERC721EnumerableUpgradeable,
-    ERC721HolderUpgradeable,
-    PausableUpgradeable,
-    ReentrancyGuardUpgradeable
+    ERC721HolderUpgradeable
 {
     using DecimalsConverter for uint256;
     using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
@@ -36,7 +36,6 @@ contract ERC721MintableToken is
     string internal _tokenSymbol;
 
     address private _roleManager;
-    address private _tokenFactory;
     address private _marketplace;
 
     modifier onlyMarketplace() {
@@ -50,25 +49,26 @@ contract ERC721MintableToken is
     }
 
     function __ERC721MintableToken_init() external override initializer {
-        __Pausable_init();
-        __ReentrancyGuard_init();
+        // __Pausable_init();
+        // __ReentrancyGuard_init();
     }
 
-    function pause() external override onlyAdministrator {
-        _pause();
-    }
+    // function pause() external override onlyAdministrator {
+    //     _pause();
+    // }
 
-    function unpause() external override onlyAdministrator {
-        _unpause();
-    }
+    // function unpause() external override onlyAdministrator {
+    //     _unpause();
+    // }
 
     function setDependencies(
-        address contractsRegistry,
+        address contractsRegistry_,
         bytes calldata
     ) external override dependant {
-        _roleManager = ContractsRegistry(contractsRegistry).getRoleManagerContract();
-        _tokenFactory = ContractsRegistry(contractsRegistry).getTokenFactoryContract();
-        _marketplace = ContractsRegistry(contractsRegistry).getMarketplaceContract();
+        IContractsRegistry registry_ = IContractsRegistry(contractsRegistry_);
+
+        _roleManager = registry_.getRoleManagerContract();
+        _marketplace = registry_.getMarketplaceContract();
     }
 
     function mint(address to, uint256 tokenId, string memory uri) public onlyMarketplace {
@@ -111,7 +111,7 @@ contract ERC721MintableToken is
     }
 
     function _onlyMarketplace() internal view {
-        require(_tokenFactory == msg.sender, "ERC721MintableToken: Caller is not a Marketplace");
+        require(_marketplace == msg.sender, "ERC721MintableToken: Caller is not a Marketplace");
     }
 
     function _onlyAdministrator() internal view {

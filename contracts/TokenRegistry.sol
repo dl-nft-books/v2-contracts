@@ -29,7 +29,9 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
         super.setDependencies(contractsRegistry, data);
 
         _tokenFactory = IContractsRegistry(contractsRegistry).getTokenFactoryContract();
-        _roleManager = IRoleManager(IContractsRegistry(contractsRegistry).getRoleManagerContract());
+        _roleManager = IRoleManager(
+            IContractsRegistry(contractsRegistry).getRoleManagerContract()
+        );
     }
 
     function setNewImplementations(

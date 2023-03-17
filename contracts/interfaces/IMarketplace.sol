@@ -2,7 +2,7 @@
 pragma solidity ^0.8.9;
 
 interface IMarketplace {
-    struct TokenParams{
+    struct TokenParams {
         address tokenContract;
         uint256 pricePerOneToken;
         uint256 minNFTFloorPrice;
@@ -12,7 +12,6 @@ interface IMarketplace {
         string tokenName;
         string tokenSymbol;
         string baseTokenURI;
-
         mapping(string => bool) existingTokenURIs;
         mapping(uint256 => string) tokenURIs;
     }
@@ -70,7 +69,11 @@ interface IMarketplace {
      * @param newVoucherTokenContract the new voucher token contract address
      * @param newVoucherTokensAmount the new amount of voucher tokens
      */
-    event VoucherParamsUpdated(address indexed tokenContract, address newVoucherTokenContract, uint256 newVoucherTokensAmount);
+    event VoucherParamsUpdated(
+        address indexed tokenContract,
+        address newVoucherTokenContract,
+        uint256 newVoucherTokensAmount
+    );
 
     /**
      * @notice This event is emitted when the owner of the contract withdraws the tokens that users have paid for tokens
@@ -79,7 +82,12 @@ interface IMarketplace {
      * @param recipient the address of the recipient
      * @param amount the number of tokens withdrawn
      */
-    event PaidTokensWithdrawn(address indexed tokenContract, address indexed tokenAddr, address recipient, uint256 amount);
+    event PaidTokensWithdrawn(
+        address indexed tokenContract,
+        address indexed tokenAddr,
+        address recipient,
+        uint256 amount
+    );
 
     /**
      * @notice This event is emitted when the user has successfully minted a new token
@@ -136,15 +144,18 @@ interface IMarketplace {
         string memory newTokenName_,
         string memory newTokenSymbol_
     ) external;
-    
+
     /**
      * @notice The function for updating voucher parameters
      * @param tokenContract_ the address of the token contract
      * @param newVoucherTokenContract_ the address of the new voucher token contract
      * @param newVoucherTokensAmount_ the new voucher tokens amount
      */
-    function updateVoucherParams(address tokenContract_,address newVoucherTokenContract_, uint256 newVoucherTokensAmount_)
-        external;
+    function updateVoucherParams(
+        address tokenContract_,
+        address newVoucherTokenContract_,
+        uint256 newVoucherTokensAmount_
+    ) external;
 
     /**
      * @notice The function for updating all TokenContract parameters

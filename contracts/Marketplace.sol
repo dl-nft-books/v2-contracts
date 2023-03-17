@@ -69,11 +69,11 @@ contract Marketplace is IMarketplace, AbstractDependant, EIP712Upgradeable {
         );
     }
 
-    function updateVoucherParams(address tokenContract_, address newVoucherTokenContract_, uint256 newVoucherTokensAmount_)
-        external
-        override
-        onlyAdministrator
-    {
+    function updateVoucherParams(
+        address tokenContract_,
+        address newVoucherTokenContract_,
+        uint256 newVoucherTokensAmount_
+    ) external override onlyAdministrator {
         _updateVoucherParams(tokenContract_, newVoucherTokenContract_, newVoucherTokensAmount_);
     }
 
@@ -82,10 +82,7 @@ contract Marketplace is IMarketplace, AbstractDependant, EIP712Upgradeable {
         string calldata symbol_,
         uint256 pricePerOneToken_
     ) external onlyAdministrator returns (address tokenProxy) {
-        tokenProxy = _tokenFactory.deployToken(
-            name_,
-            symbol_
-        );
+        tokenProxy = _tokenFactory.deployToken(name_, symbol_);
         _tokenContracts.add(tokenProxy);
     }
 
@@ -174,7 +171,7 @@ contract Marketplace is IMarketplace, AbstractDependant, EIP712Upgradeable {
         bytes32 r_,
         bytes32 s_,
         uint8 v_
-    ) external override  {
+    ) external override {
         _verifySignature(
             tokenContract_,
             nftAddress_,
@@ -256,7 +253,11 @@ contract Marketplace is IMarketplace, AbstractDependant, EIP712Upgradeable {
         currentTokenParams.voucherTokenContract = newVoucherTokenContract_;
         currentTokenParams.voucherTokensAmount = newVoucherTokensAmount_;
 
-        emit VoucherParamsUpdated(tokenContract_, newVoucherTokenContract_, newVoucherTokensAmount_);
+        emit VoucherParamsUpdated(
+            tokenContract_,
+            newVoucherTokenContract_,
+            newVoucherTokensAmount_
+        );
     }
 
     function _payWithERC20(
@@ -271,7 +272,10 @@ contract Marketplace is IMarketplace, AbstractDependant, EIP712Upgradeable {
         TokenParams storage currentTokenParams = tokenParams[tokenContract_];
 
         uint256 amountToPay_ = tokenPrice_ != 0
-            ? _getAmountAfterDiscount((currentTokenParams.pricePerOneToken * DECIMAL) / tokenPrice_, discount_)
+            ? _getAmountAfterDiscount(
+                (currentTokenParams.pricePerOneToken * DECIMAL) / tokenPrice_,
+                discount_
+            )
             : currentTokenParams.voucherTokensAmount;
 
         tokenAddr_.safeTransferFrom(
@@ -283,7 +287,11 @@ contract Marketplace is IMarketplace, AbstractDependant, EIP712Upgradeable {
         return amountToPay_;
     }
 
-    function _payWithETH(address tokenContract_, uint256 ethPrice_, uint256 discount_) internal returns (uint256) {
+    function _payWithETH(
+        address tokenContract_,
+        uint256 ethPrice_,
+        uint256 discount_
+    ) internal returns (uint256) {
         uint256 amountToPay_ = _getAmountAfterDiscount(
             (tokenParams[tokenContract_].pricePerOneToken * DECIMAL) / ethPrice_,
             discount_
@@ -319,13 +327,14 @@ contract Marketplace is IMarketplace, AbstractDependant, EIP712Upgradeable {
         nft_.safeTransferFrom(msg.sender, address(this), tokenId_);
     }
 
-    function _mintToken(address tokenContract_, uint256 mintTokenId_, string memory tokenURI_) internal {
+    function _mintToken(
+        address tokenContract_,
+        uint256 mintTokenId_,
+        string memory tokenURI_
+    ) internal {
         // _mint(msg.sender, mintTokenId_);
-
         // _tokenURIs[mintTokenId_] = tokenURI_;
         // existingTokenURIs[tokenURI_] = true;
-        
-
         // IERC721MintableToken(tokenContract_).mint(msg.sender, currentTokenId_, tokenURI_);
     }
 
@@ -340,7 +349,10 @@ contract Marketplace is IMarketplace, AbstractDependant, EIP712Upgradeable {
         bytes32 s_,
         uint8 v_
     ) internal view {
-        require(!tokenParams[tokenContract_].existingTokenURIs[tokenURI_], "Marketplace: Token URI already exists.");
+        require(
+            !tokenParams[tokenContract_].existingTokenURIs[tokenURI_],
+            "Marketplace: Token URI already exists."
+        );
 
         bytes32 structHash_ = keccak256(
             abi.encode(
@@ -358,7 +370,6 @@ contract Marketplace is IMarketplace, AbstractDependant, EIP712Upgradeable {
         require(_roleManager.isAdmin(signer_), "Marketplace: Invalid signature.");
         require(block.timestamp <= endTimestamp_, "Marketplace: Signature expired.");
     }
-    
 
     function _baseURI(address tokenContract_) internal view returns (string memory) {
         return tokenParams[tokenContract_].baseTokenURI;
@@ -369,10 +380,7 @@ contract Marketplace is IMarketplace, AbstractDependant, EIP712Upgradeable {
     // }
 
     function _onlyAdministrator() internal view {
-        require(
-            _roleManager.isAdmin(msg.sender),
-            "Marketplace: Caller is not an Administrator"
-        );
+        require(_roleManager.isAdmin(msg.sender), "Marketplace: Caller is not an Administrator");
     }
 
     function _getAmountAfterDiscount(

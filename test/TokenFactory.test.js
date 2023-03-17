@@ -86,7 +86,7 @@ describe("TokenFactory", () => {
         (
           await tokenRegistry.listPools(await tokenRegistry.TOKEN_POOL(), 0, 1)
         )[0]
-      );  
+      );
 
       assert.equal(token.address, event.args.tokenProxy);
     });
