@@ -6,7 +6,7 @@ interface IERC721MintableToken {
     //  * @notice The function for initializing contract variables
     //  * @param initParams_ the ERC721MintableTokenInitParams structure with init params
     //  */
-    function __ERC721MintableToken_init(// ERC721MintableTokenInitParams calldata initParams_)
+    function __ERC721MintableToken_init()// ERC721MintableTokenInitParams calldata initParams_)
         external;
 
     /**
