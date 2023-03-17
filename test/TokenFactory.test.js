@@ -1,29 +1,23 @@
 const { assert } = require("chai");
-const { toBN, accounts, wei } = require("../scripts/utils/utils");
+const { accounts } = require("../scripts/utils/utils");
 const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
-const { ZERO_ADDR, PRECISION } = require("../scripts/utils/constants");
-const { getCurrentBlockTime } = require("./helpers/block-helper");
 
 const ContractsRegistry = artifacts.require("ContractsRegistry");
 const TokenFactory = artifacts.require("TokenFactory");
 const TokenRegistry = artifacts.require("TokenRegistry");
 const RoleManager = artifacts.require("RoleManager");
-const Marketplace = artifacts.require("Marketplace");
 const ERC721MintableToken = artifacts.require("ERC721MintableToken");
-const ERC20Mock = artifacts.require("ERC20Mock");
 
 TokenRegistry.numberFormat = "BigNumber";
 
-describe("PoolFactory", () => {
+describe("TokenFactory", () => {
   let OWNER;
   let MARKETPLACE;
   let NOTHING;
 
   let tokenRegistry;
   let tokenFactory;
-
-  let testERC20;
 
   const reverter = new Reverter();
 
@@ -32,12 +26,9 @@ describe("PoolFactory", () => {
     MARKETPLACE = await accounts(1);
     NOTHING = await accounts(3);
 
-    testERC20 = await ERC20Mock.new("TestERC20", "TS", 18);
-
     const contractsRegistry = await ContractsRegistry.new();
     const _tokenFactory = await TokenFactory.new();
     const _tokenRegistry = await TokenRegistry.new();
-    const _marketplace = await Marketplace.new();
     const _roleManager = await RoleManager.new();
 
     await contractsRegistry.__OwnableContractsRegistry_init();
@@ -68,9 +59,24 @@ describe("PoolFactory", () => {
 
   afterEach(reverter.revert);
 
-  describe("deployToken", () => {
+  describe("access", () => {
+    it("only marketplace should call these methods", async () => {
+      await truffleAssert.reverts(
+        tokenFactory.deployToken("TestToken", "TT"),
+        "TokenFactory: Caller is not a marketplace"
+      );
+    });
+    it("only token factory manager should call these methods", async () => {
+      await truffleAssert.reverts(
+        tokenFactory.setTokenBaseUri("test", { from: NOTHING }),
+        "TokenFactory: Caller is not a token factory manager"
+      );
+    });
+  });
+
+  describe("deployToken()", () => {
     it("should deploy token", async () => {
-      let tx = await tokenFactory.deployToken("TestToken", "TT", 1, { from: MARKETPLACE });
+      let tx = await tokenFactory.deployToken("TestToken", "TT", { from: MARKETPLACE });
       let event = tx.receipt.logs[0];
 
       assert.isTrue(await tokenRegistry.isTokenPool(event.args.tokenProxy));
@@ -80,9 +86,19 @@ describe("PoolFactory", () => {
         (
           await tokenRegistry.listPools(await tokenRegistry.TOKEN_POOL(), 0, 1)
         )[0]
-      );
+      );  
 
       assert.equal(token.address, event.args.tokenProxy);
+    });
+  });
+
+  describe("TokenBaseUri", () => {
+    it("should set and get token base uri correctly", async () => {
+      assert.equal(await tokenFactory.getTokenBaseUri(), "");
+
+      await tokenFactory.setTokenBaseUri("test");
+
+      assert.equal(await tokenFactory.getTokenBaseUri(), "test");
     });
   });
 });

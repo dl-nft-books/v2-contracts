@@ -11,14 +11,14 @@ import "./interfaces/IMarketplace.sol";
 import "./interfaces/tokens/IERC721MintableToken.sol";
 
 contract TokenFactory is ITokenFactory, AbstractPoolFactory {
+    address internal _tokenRegistry;
+    address internal _marketplace;
+    IRoleManager internal _roleManager;
+    
     string private _tokenBaseUri;
 
-    ITokenRegistry internal _tokenRegistry;
-    IRoleManager internal _roleManager;
-    IMarketplace internal _marketplace;
-
-    modifier onlyAdministrator() {
-        _onlyAdministrator();
+    modifier onlyTokenFactoryManager() {
+        _onlyTokenFactoryManager();
         _;
     }
 
@@ -31,27 +31,23 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         super.setDependencies(contractsRegistry_, data_);
 
         IContractsRegistry registry = IContractsRegistry(contractsRegistry_);
-        _tokenRegistry = ITokenRegistry(registry.getTokenRegistryContract());
+
+        _tokenRegistry = registry.getTokenRegistryContract();
+        _marketplace = registry.getMarketplaceContract();
         _roleManager = IRoleManager(registry.getRoleManagerContract());
-        _marketplace = IMarketplace(registry.getMarketplaceContract());
     }
 
-    function getTokenBaseUri() public view override returns (string memory) {
-        return _tokenBaseUri;
-    }
-
-    function setTokenBaseUri(string memory tokenBaseUri_) public override onlyAdministrator {
+    function setTokenBaseUri(string memory tokenBaseUri_) public override onlyTokenFactoryManager {
         _tokenBaseUri = tokenBaseUri_;
     }
 
     function deployToken(
         string calldata name_,
-        string calldata symbol_,
-        uint256 pricePerOneToken_
+        string calldata symbol_
     ) external override onlyMarketplace returns (address tokenProxy) {
         tokenProxy = _deploy();
 
-        _initTokenPool(tokenProxy, name_, symbol_, pricePerOneToken_);
+        _initTokenPool(tokenProxy, name_, symbol_);
 
         _register(tokenProxy);
         _injectDependencies(tokenProxy);
@@ -62,33 +58,36 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
     function _initTokenPool(
         address tokenProxy_,
         string calldata name_,
-        string calldata symbol_,
-        uint256 pricePerOneToken_
+        string calldata symbol_
     ) internal {
         IERC721MintableToken(tokenProxy_).__ERC721MintableToken_init();
         // IERC721MintableToken.ERC721MintableTokenInitParams(name_, symbol_, pricePerOneToken_)
     }
 
     function _deploy() internal returns (address) {
-        return _deploy(address(_tokenRegistry), _tokenRegistry.TOKEN_POOL());
+        return _deploy(_tokenRegistry, ITokenRegistry(_tokenRegistry).TOKEN_POOL());
     }
 
     function _register(address poolProxy_) internal {
-        _register(address(_tokenRegistry), _tokenRegistry.TOKEN_POOL(), poolProxy_);
+        _register(_tokenRegistry, ITokenRegistry(_tokenRegistry).TOKEN_POOL(), poolProxy_);
     }
 
     function _injectDependencies(address proxy_) internal {
-        _injectDependencies(address(_tokenRegistry), proxy_);
+        _injectDependencies(_tokenRegistry, proxy_);
     }
 
-    function _onlyAdministrator() internal view {
+    function getTokenBaseUri() public view override returns (string memory) {
+        return _tokenBaseUri;
+    }
+
+    function _onlyTokenFactoryManager() internal view {
         require(
-            IRoleManager(_roleManager).isAdmin(msg.sender),
-            "TokenFactory: Caller is not an administrator"
+            _roleManager.isTokenFactoryManager(msg.sender),
+            "TokenFactory: Caller is not a token factory manager"
         );
     }
 
     function _onlyMarketplace() internal view {
-        require(address(_marketplace) == msg.sender, "TokenFactory: Caller is not a marketplace");
+        require(_marketplace == msg.sender, "TokenFactory: Caller is not a marketplace");
     }
 }
