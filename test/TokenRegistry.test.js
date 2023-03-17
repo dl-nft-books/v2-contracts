@@ -1,15 +1,12 @@
 const { assert } = require("chai");
-const { toBN, accounts } = require("../scripts/utils/utils");
+const { accounts } = require("../scripts/utils/utils");
 const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
-const { PRECISION } = require("../scripts/utils/constants");
 
 const ContractsRegistry = artifacts.require("ContractsRegistry");
 const TokenRegistry = artifacts.require("TokenRegistry");
-const TokenFactory = artifacts.require("TokenFactory");
 const Marketplace = artifacts.require("Marketplace");
 const RoleManager = artifacts.require("RoleManager");
-const ERC20Mock = artifacts.require("ERC20Mock");
 const ERC721MintableToken = artifacts.require("ERC721MintableToken");
 const Pool = artifacts.require("Pool");
 
@@ -18,7 +15,6 @@ TokenRegistry.numberFormat = "BigNumber";
 describe("TokenRegistry", () => {
   let OWNER;
   let FACTORY;
-  let NOTHING;
 
   let TOKEN_POOL;
 
@@ -32,13 +28,11 @@ describe("TokenRegistry", () => {
   before("setup", async () => {
     OWNER = await accounts(0);
     FACTORY = await accounts(1);
-    NOTHING = await accounts(9);
 
     token = await ERC721MintableToken.new();
     pool = await Pool.new();
 
     contractsRegistry = await ContractsRegistry.new();
-    const _tokenFactory = await TokenFactory.new();
     const _tokenRegistry = await TokenRegistry.new();
     const _marketplace = await Marketplace.new();
     const _roleManager = await RoleManager.new();
