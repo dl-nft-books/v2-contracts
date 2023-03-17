@@ -7,7 +7,6 @@ pragma solidity ^0.8.9;
  * The owner of this contract is capable of upgrading pools' implementation via the ProxyBeacon pattern
  */
 interface ITokenRegistry {
-    function TOKEN_POOL() external view returns (string memory);
 
     function setNewImplementations(
         string[] calldata names_,
@@ -23,4 +22,8 @@ interface ITokenRegistry {
     ) external;
 
     function addProxyPool(string calldata poolName, address tokenAddress) external;
+
+    function TOKEN_POOL() external view returns (string memory);
+    
+    function isTokenPool(address potentialPool) external view returns (bool);
 }

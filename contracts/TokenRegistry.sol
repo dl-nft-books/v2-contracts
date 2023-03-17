@@ -13,7 +13,7 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
     string public constant TOKEN_POOL = "TOKEN_POOL";
 
     address internal _tokenFactory;
-    address internal _roleManager;
+    IRoleManager internal _roleManager;
 
     modifier onlyTokenFactory() {
         _onlyTokenFactory();
@@ -23,6 +23,13 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
     modifier onlyTokenRegistryManager() {
         _onlyTokenRegistryManager();
         _;
+    }
+
+    function setDependencies(address contractsRegistry, bytes calldata data) public override {
+        super.setDependencies(contractsRegistry, data);
+
+        _tokenFactory = IContractsRegistry(contractsRegistry).getTokenFactoryContract();
+        _roleManager = IRoleManager(IContractsRegistry(contractsRegistry).getRoleManagerContract());
     }
 
     function setNewImplementations(
@@ -47,13 +54,6 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
         _injectDependenciesToExistingPoolsWithData(TOKEN_POOL, data_, offset_, limit_);
     }
 
-    function setDependencies(address contractsRegistry, bytes calldata data) public override {
-        super.setDependencies(contractsRegistry, data);
-
-        _tokenFactory = IContractsRegistry(contractsRegistry).getTokenFactoryContract();
-        _roleManager = IContractsRegistry(contractsRegistry).getRoleManagerContract();
-    }
-
     function addProxyPool(
         string calldata poolName,
         address tokenAddress
@@ -71,7 +71,7 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
 
     function _onlyTokenRegistryManager() internal view {
         require(
-            IRoleManager(_roleManager).isTokenRegistryManager(msg.sender),
+            _roleManager.isTokenRegistryManager(msg.sender),
             "TokenRegistry: Caller is not a token registry manager"
         );
     }
