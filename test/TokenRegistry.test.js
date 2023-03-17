@@ -11,6 +11,7 @@ const Marketplace = artifacts.require("Marketplace");
 const RoleManager = artifacts.require("RoleManager");
 const ERC20Mock = artifacts.require("ERC20Mock");
 const ERC721MintableToken = artifacts.require("ERC721MintableToken");
+const Pool = artifacts.require("Pool");
 
 TokenRegistry.numberFormat = "BigNumber";
 
@@ -21,8 +22,10 @@ describe("TokenRegistry", () => {
 
   let TOKEN_POOL;
 
+  let pool;
   let token;
   let tokenRegistry;
+  let contractsRegistry;
 
   const reverter = new Reverter();
 
@@ -32,8 +35,9 @@ describe("TokenRegistry", () => {
     NOTHING = await accounts(9);
 
     token = await ERC721MintableToken.new();
+    pool = await Pool.new();
 
-    const contractsRegistry = await ContractsRegistry.new();
+    contractsRegistry = await ContractsRegistry.new();
     const _tokenFactory = await TokenFactory.new();
     const _tokenRegistry = await TokenRegistry.new();
     const _marketplace = await Marketplace.new();
@@ -75,6 +79,22 @@ describe("TokenRegistry", () => {
         "TokenRegistry: Caller is not a factory"
       );
     });
+    it("only token registry manager should call these methods", async () => {
+      await truffleAssert.reverts(
+        tokenRegistry.setNewImplementations([TOKEN_POOL], [token.address], { from: FACTORY }),
+        "TokenRegistry: Caller is not a token registry manager"
+      );
+
+      await truffleAssert.reverts(
+        tokenRegistry.injectDependenciesToExistingPools(0, 0, { from: FACTORY }),
+        "TokenRegistry: Caller is not a token registry manager"
+      );
+
+      await truffleAssert.reverts(
+        tokenRegistry.injectDependenciesToExistingPoolsWithData(0, 0, 0,{ from: FACTORY }),
+        "TokenRegistry: Caller is not a token registry manager"
+      );
+    });
   });
 
   describe("add and list pools", () => {
@@ -97,13 +117,16 @@ describe("TokenRegistry", () => {
     it("should successfully add new TOKEN POOL", async () => {
       assert.isFalse(await tokenRegistry.isTokenPool(POOL_1));
       assert.isFalse(await tokenRegistry.isTokenPool(POOL_2));
+      assert.isFalse(await tokenRegistry.isTokenPool(POOL_3));
 
       await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_1, { from: FACTORY });
       await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_2, { from: FACTORY });
 
       assert.equal((await tokenRegistry.countPools(TOKEN_POOL)).toFixed(), "2");
 
+      assert.isTrue(await tokenRegistry.isTokenPool(POOL_1));
       assert.isTrue(await tokenRegistry.isTokenPool(POOL_2));
+      assert.isFalse(await tokenRegistry.isTokenPool(POOL_3));
     });
 
     it("should list added pools", async () => {
@@ -115,5 +138,27 @@ describe("TokenRegistry", () => {
       assert.deepEqual(await tokenRegistry.listPools(TOKEN_POOL, 1, 1), [POOL_2]);
       assert.deepEqual(await tokenRegistry.listPools(TOKEN_POOL, 2, 0), []);
     });
+  });
+
+  describe("inject dependencies", () => {
+    it("should successfully inject dependencies", async () => {
+      await tokenRegistry.addProxyPool(TOKEN_POOL, pool.address, { from: FACTORY });
+
+      assert.equal(await pool.roleManager(), 0);
+
+      await tokenRegistry.injectDependenciesToExistingPools(0, 1);
+
+      assert.equal(await pool.roleManager(), await contractsRegistry.getRoleManagerContract());
+    });
+  });
+
+  it("should successfully inject dependencies with data", async () => {
+    await tokenRegistry.addProxyPool(TOKEN_POOL, pool.address, { from: FACTORY });
+
+    assert.equal(await pool.roleManager(), 0);
+
+    await tokenRegistry.injectDependenciesToExistingPoolsWithData("0x", 0, 1);
+
+    assert.equal(await pool.roleManager(), await contractsRegistry.getRoleManagerContract());
   });
 });

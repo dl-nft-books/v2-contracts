@@ -15,32 +15,27 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
     address internal _tokenFactory;
     address internal _roleManager;
 
-    modifier onlyPoolFactory() {
-        _onlyPoolFactory();
+    modifier onlyTokenFactory() {
+        _onlyTokenFactory();
         _;
     }
 
-    modifier onlyMarketplace() {
-        _onlyPoolFactory();
-        _;
-    }
-
-    modifier onlyAdministrator() {
-        _onlyAdministrator();
+    modifier onlyTokenRegistryManager() {
+        _onlyTokenRegistryManager();
         _;
     }
 
     function setNewImplementations(
         string[] calldata names_,
         address[] calldata newImplementations_
-    ) external onlyAdministrator {
+    ) external onlyTokenRegistryManager {
         _setNewImplementations(names_, newImplementations_);
     }
 
     function injectDependenciesToExistingPools(
         uint256 offset_,
         uint256 limit_
-    ) external onlyAdministrator {
+    ) external onlyTokenRegistryManager {
         _injectDependenciesToExistingPools(TOKEN_POOL, offset_, limit_);
     }
 
@@ -48,7 +43,7 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
         bytes calldata data_,
         uint256 offset_,
         uint256 limit_
-    ) external onlyAdministrator {
+    ) external onlyTokenRegistryManager {
         _injectDependenciesToExistingPoolsWithData(TOKEN_POOL, data_, offset_, limit_);
     }
 
@@ -62,26 +57,22 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
     function addProxyPool(
         string calldata poolName,
         address tokenAddress
-    ) external onlyPoolFactory {
+    ) external override onlyTokenFactory {
         _addProxyPool(poolName, tokenAddress);
     }
 
-    function isTokenPool(address potentialPool) public view returns (bool) {
+    function isTokenPool(address potentialPool) public view override returns (bool) {
         return _pools[TOKEN_POOL].contains(potentialPool);
     }
 
-    function _onlyPoolFactory() internal view {
+    function _onlyTokenFactory() internal view {
         require(_tokenFactory == msg.sender, "TokenRegistry: Caller is not a factory");
     }
 
-    function _onlyMarketplace() internal view {
-        require(_tokenFactory == msg.sender, "TokenRegistry: Caller is not a marketplace");
-    }
-
-    function _onlyAdministrator() internal view {
+    function _onlyTokenRegistryManager() internal view {
         require(
-            IRoleManager(_roleManager).isAdmin(msg.sender),
-            "TokenRegistry: Caller is not an Administrator"
+            IRoleManager(_roleManager).isTokenRegistryManager(msg.sender),
+            "TokenRegistry: Caller is not a token registry manager"
         );
     }
 }
