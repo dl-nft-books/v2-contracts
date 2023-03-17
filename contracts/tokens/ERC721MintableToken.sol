@@ -43,8 +43,8 @@ contract ERC721MintableToken is
         _;
     }
 
-    modifier onlyAdministrator() {
-        _onlyAdministrator();
+    modifier onlyTokenManager() {
+        _onlyTokenManager();
         _;
     }
 
@@ -53,11 +53,11 @@ contract ERC721MintableToken is
         // __ReentrancyGuard_init();
     }
 
-    // function pause() external override onlyAdministrator {
+    // function pause() external override onlyTokenManager {
     //     _pause();
     // }
 
-    // function unpause() external override onlyAdministrator {
+    // function unpause() external override onlyTokenManager {
     //     _unpause();
     // }
 
@@ -76,7 +76,12 @@ contract ERC721MintableToken is
         _setTokenURI(tokenId, uri);
     }
 
+    function burn(uint256 tokenId) public onlyTokenManager {
+        _burn(tokenId);
+    }
+
     function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal virtual {
+        //TODO: delete?
         require(_exists(tokenId), "ERC721MintableToken: URI set of nonexistent token");
         _tokenURIs[tokenId] = _tokenURI;
         _existingTokenURIs[_tokenURI] = true;
@@ -95,29 +100,17 @@ contract ERC721MintableToken is
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(_exists(tokenId), "ERC721MintableToken: URI query for nonexistent token");
 
-        string memory _tokenURI = _tokenURIs[tokenId];
-        string memory base = _baseURI();
-
-        // If there is no base URI, return the token URI.
-        if (bytes(base).length == 0) {
-            return _tokenURI;
-        }
-        // If both are set, concatenate the baseURI and tokenURI (via abi.encodePacked).
-        if (bytes(_tokenURI).length > 0) {
-            return string(abi.encodePacked(base, _tokenURI));
-        }
-
-        return super.tokenURI(tokenId);
+        return _tokenURIs[tokenId];
     }
 
     function _onlyMarketplace() internal view {
         require(_marketplace == msg.sender, "ERC721MintableToken: Caller is not a Marketplace");
     }
 
-    function _onlyAdministrator() internal view {
+    function _onlyTokenManager() internal view {
         require(
-            IRoleManager(_roleManager).isAdmin(msg.sender),
-            "ERC721MintableToken: Caller is not an Administrator"
+            IRoleManager(_roleManager).isTokenManager(msg.sender),
+            "ERC721MintableToken: Caller is not a token manager"
         );
     }
 }

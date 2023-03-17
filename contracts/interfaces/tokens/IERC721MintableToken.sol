@@ -10,4 +10,5 @@ interface IERC721MintableToken {
         external;
 
     function mint(address to, uint256 tokenId, string memory uri) external;
+    function burn(uint256 tokenId) external;
 }
