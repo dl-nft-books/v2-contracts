@@ -30,7 +30,10 @@ contract RoleManager is AccessControlEnumerableUpgradeable, AbstractDependant {
         grantRole(ADMINISTATOR_ROLE, msg.sender);
     }
 
-    function setDependencies(address contractsRegistry_, bytes calldata data_) public override dependant {}
+    function setDependencies(
+        address contractsRegistry_,
+        bytes calldata data_
+    ) public override dependant {}
 
     function isAdmin(address admin_) public view returns (bool) {
         return hasRole(ADMINISTATOR_ROLE, admin_);

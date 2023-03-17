@@ -12,5 +12,5 @@ interface ITokenFactory {
         string calldata name,
         string calldata symbol,
         uint256 pricePerOneToken
-    ) external;
+    ) external returns (address);
 }
