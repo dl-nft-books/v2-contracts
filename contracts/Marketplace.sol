@@ -15,7 +15,7 @@ import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/ITokenFactory.sol";
 import "./interfaces/tokens/IERC721MintableToken.sol";
 
-contract Marketplace is AbstractDependant, EIP712Upgradeable {    
+contract Marketplace is AbstractDependant, EIP712Upgradeable {
     using EnumerableSet for EnumerableSet.AddressSet;
     using DecimalsConverter for uint256;
     using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
@@ -27,7 +27,6 @@ contract Marketplace is AbstractDependant, EIP712Upgradeable {
 
     uint256 public pricePerOneToken;
 
-    
     address private _roleManager;
     address private _tokenFactory;
 
@@ -56,8 +55,12 @@ contract Marketplace is AbstractDependant, EIP712Upgradeable {
         string calldata name_,
         string calldata symbol_,
         uint256 pricePerOneToken_
-        ) external onlyAdministrator {
-        address tokenProxy = ITokenFactory(_tokenFactory).deployToken(name_, symbol_, pricePerOneToken_);
+    ) external onlyAdministrator {
+        address tokenProxy = ITokenFactory(_tokenFactory).deployToken(
+            name_,
+            symbol_,
+            pricePerOneToken_
+        );
         _tokenContracts.add(tokenProxy);
     }
 
@@ -98,7 +101,6 @@ contract Marketplace is AbstractDependant, EIP712Upgradeable {
                 );
             }
         }
-
 
         uint256 currentTokenId_ = _currentTokenIds[tokenAddress_]++;
         IERC721MintableToken(tokenAddress_).mint(msg.sender, currentTokenId_, tokenURI_);
@@ -211,10 +213,7 @@ contract Marketplace is AbstractDependant, EIP712Upgradeable {
 
         address signer_ = ECDSAUpgradeable.recover(_hashTypedDataV4(structHash_), v_, r_, s_);
 
-        require(
-            IRoleManager(_roleManager).isAdmin(signer_),
-            "Marketplace: Invalid signature."
-        );
+        require(IRoleManager(_roleManager).isAdmin(signer_), "Marketplace: Invalid signature.");
         require(block.timestamp <= endTimestamp_, "Marketplace: Signature expired.");
     }
 

@@ -49,8 +49,7 @@ contract ERC721MintableToken is
         _;
     }
 
-    function __ERC721MintableToken_init(
-    ) external override initializer {
+    function __ERC721MintableToken_init() external override initializer {
         __Pausable_init();
         __ReentrancyGuard_init();
     }

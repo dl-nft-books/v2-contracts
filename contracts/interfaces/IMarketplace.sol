@@ -33,7 +33,7 @@ interface IMarketplace {
         uint256 discount
     );
 
-        /**
+    /**
      * @notice The structure that stores information about the minted token
      * @param tokenId the ID of the minted token
      * @param tokenURI the token URI hash string

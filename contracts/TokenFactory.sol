@@ -48,7 +48,7 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         string calldata name_,
         string calldata symbol_,
         uint256 pricePerOneToken_
-    ) external onlyMarketplace override returns (address tokenProxy) {
+    ) external override onlyMarketplace returns (address tokenProxy) {
         tokenProxy = _deploy();
 
         _initTokenPool(tokenProxy, name_, symbol_, pricePerOneToken_);
@@ -65,9 +65,8 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         string calldata symbol_,
         uint256 pricePerOneToken_
     ) internal {
-        IERC721MintableToken(tokenProxy_).__ERC721MintableToken_init(
-            // IERC721MintableToken.ERC721MintableTokenInitParams(name_, symbol_, pricePerOneToken_)
-        );
+        IERC721MintableToken(tokenProxy_).__ERC721MintableToken_init();
+        // IERC721MintableToken.ERC721MintableTokenInitParams(name_, symbol_, pricePerOneToken_)
     }
 
     function _deploy() internal returns (address) {
