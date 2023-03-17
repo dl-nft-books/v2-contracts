@@ -6,8 +6,9 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgrad
 import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
 
 import "./interfaces/IContractsRegistry.sol";
+import "./interfaces/IRoleManager.sol";
 
-contract RoleManager is AccessControlEnumerableUpgradeable, AbstractDependant {
+contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, AbstractDependant {
     bytes32 public constant ADMINISTATOR_ROLE = keccak256("ADMINISTATOR_ROLE");
     bytes32 public constant TOKEN_FACTORY_MANAGER = keccak256("TOKEN_FACTORY_MANAGER");
     bytes32 public constant TOKEN_REGISTRY_MANAGER = keccak256("TOKEN_REGISTRY_MANAGER");
@@ -36,26 +37,26 @@ contract RoleManager is AccessControlEnumerableUpgradeable, AbstractDependant {
     ) public override dependant {}
 
     function isAdmin(address admin_) public view returns (bool) {
-        return hasRole(ADMINISTATOR_ROLE, admin_);
+        return hasRole(ADMINISTATOR_ROLE, admin_) || hasRole(ADMINISTATOR_ROLE, admin_);
     }
 
     function isTokenFactoryManager(address manager_) public view returns (bool) {
-        return hasRole(TOKEN_FACTORY_MANAGER, manager_);
+        return hasRole(TOKEN_FACTORY_MANAGER, manager_) || hasRole(ADMINISTATOR_ROLE, manager_);
     }
 
     function isTokenRegistryManager(address manager_) public view returns (bool) {
-        return hasRole(TOKEN_REGISTRY_MANAGER, manager_);
+        return hasRole(TOKEN_REGISTRY_MANAGER, manager_) || hasRole(ADMINISTATOR_ROLE, manager_);
     }
 
     function isTokenManager(address manager_) public view returns (bool) {
-        return hasRole(TOKEN_MANAGER, manager_);
+        return hasRole(TOKEN_MANAGER, manager_) || hasRole(ADMINISTATOR_ROLE, manager_);
     }
 
     function isRoleSupervisor(address supervisor_) public view returns (bool) {
-        return hasRole(ROLE_SUPERVISOR, supervisor_);
+        return hasRole(ROLE_SUPERVISOR, supervisor_) || hasRole(ADMINISTATOR_ROLE, supervisor_);
     }
 
     function isWithdrawalManager(address manager_) public view returns (bool) {
-        return hasRole(WITHDRAWAL_MANAGER, manager_);
+        return hasRole(WITHDRAWAL_MANAGER, manager_) || hasRole(ADMINISTATOR_ROLE, manager_);
     }
 }

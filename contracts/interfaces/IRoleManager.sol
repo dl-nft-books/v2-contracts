@@ -4,11 +4,17 @@ pragma solidity ^0.8.9;
 interface IRoleManager {
     function __RoleManager_init() external;
 
-    function addAdmin(address _admin) external;
-
-    function removeAdmin(address _admin) external;
+    function ADMINISTATOR_ROLE() external view returns (bytes32);
+    function TOKEN_FACTORY_MANAGER() external view returns (bytes32);
+    function TOKEN_REGISTRY_MANAGER() external view returns (bytes32);
+    function TOKEN_MANAGER() external view returns (bytes32);
+    function ROLE_SUPERVISOR() external view returns (bytes32);
+    function WITHDRAWAL_MANAGER() external view returns (bytes32);
 
     function isAdmin(address _admin) external view returns (bool);
-
-    function ADMINISTATOR_ROLE() external view returns (bytes32);
+    function isTokenFactoryManager(address _manager) external view returns (bool);
+    function isTokenRegistryManager(address _manager) external view returns (bool);
+    function isTokenManager(address _manager) external view returns (bool);
+    function isRoleSupervisor(address _supervisor) external view returns (bool);
+    function isWithdrawalManager(address _manager) external view returns (bool);
 }
