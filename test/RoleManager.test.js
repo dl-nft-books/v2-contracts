@@ -8,9 +8,6 @@ const TokenFactory = artifacts.require("TokenFactory");
 const TokenRegistry = artifacts.require("TokenRegistry");
 const RoleManager = artifacts.require("RoleManager");
 const Marketplace = artifacts.require("Marketplace");
-const ERC721MintableToken = artifacts.require("ERC721MintableToken");
-
-TokenRegistry.numberFormat = "BigNumber";
 
 describe("RoleManager", () => {
   let OWNER;
@@ -47,7 +44,6 @@ describe("RoleManager", () => {
     await contractsRegistry.addProxyContract(await contractsRegistry.MARKETPLACE_NAME(), _marketplace.address);
     await contractsRegistry.addProxyContract(await contractsRegistry.ROLE_MANAGER_NAME(), _roleManager.address);
 
-    // await (await RoleManager.at(await contractsRegistry.getRoleManagerContract())).__RoleManager_init();
     roleManager = await RoleManager.at(await contractsRegistry.getRoleManagerContract());
 
     await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_FACTORY_NAME());
