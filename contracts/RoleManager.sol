@@ -29,6 +29,8 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
 
         grantRole(ROLE_SUPERVISOR, msg.sender);
         grantRole(ADMINISTATOR_ROLE, msg.sender);
+        
+        _setRoleAdmin(ROLE_SUPERVISOR, ADMINISTATOR_ROLE);
     }
 
     function setDependencies(
