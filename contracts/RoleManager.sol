@@ -9,7 +9,7 @@ import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/IRoleManager.sol";
 
 contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, AbstractDependant {
-    bytes32 public constant ADMINISTATOR_ROLE = keccak256("ADMINISTATOR_ROLE");
+    bytes32 public constant ADMINISTRATOR_ROLE = keccak256("ADMINISTRATOR_ROLE");
     bytes32 public constant TOKEN_FACTORY_MANAGER = keccak256("TOKEN_FACTORY_MANAGER");
     bytes32 public constant TOKEN_REGISTRY_MANAGER = keccak256("TOKEN_REGISTRY_MANAGER");
     bytes32 public constant TOKEN_MANAGER = keccak256("TOKEN_MANAGER");
@@ -21,16 +21,14 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        _setRoleAdmin(ADMINISTATOR_ROLE, ROLE_SUPERVISOR);
+        grantRole(ADMINISTRATOR_ROLE, msg.sender);
+
+        _setRoleAdmin(ADMINISTRATOR_ROLE, ROLE_SUPERVISOR);
         _setRoleAdmin(TOKEN_FACTORY_MANAGER, ROLE_SUPERVISOR);
         _setRoleAdmin(TOKEN_REGISTRY_MANAGER, ROLE_SUPERVISOR);
         _setRoleAdmin(TOKEN_MANAGER, ROLE_SUPERVISOR);
+        _setRoleAdmin(ROLE_SUPERVISOR, ADMINISTRATOR_ROLE);
         _setRoleAdmin(WITHDRAWAL_MANAGER, ROLE_SUPERVISOR);
-
-        grantRole(ROLE_SUPERVISOR, msg.sender);
-        grantRole(ADMINISTATOR_ROLE, msg.sender);
-        
-        _setRoleAdmin(ROLE_SUPERVISOR, ADMINISTATOR_ROLE);
     }
 
     function setDependencies(
@@ -39,26 +37,26 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
     ) public override dependant {}
 
     function isAdmin(address admin_) public view returns (bool) {
-        return hasRole(ADMINISTATOR_ROLE, admin_) || hasRole(ADMINISTATOR_ROLE, admin_);
+        return hasRole(ADMINISTRATOR_ROLE, admin_);
     }
 
     function isTokenFactoryManager(address manager_) public view returns (bool) {
-        return hasRole(TOKEN_FACTORY_MANAGER, manager_) || hasRole(ADMINISTATOR_ROLE, manager_);
+        return hasRole(TOKEN_FACTORY_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
     }
 
     function isTokenRegistryManager(address manager_) public view returns (bool) {
-        return hasRole(TOKEN_REGISTRY_MANAGER, manager_) || hasRole(ADMINISTATOR_ROLE, manager_);
+        return hasRole(TOKEN_REGISTRY_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
     }
 
     function isTokenManager(address manager_) public view returns (bool) {
-        return hasRole(TOKEN_MANAGER, manager_) || hasRole(ADMINISTATOR_ROLE, manager_);
+        return hasRole(TOKEN_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
     }
 
     function isRoleSupervisor(address supervisor_) public view returns (bool) {
-        return hasRole(ROLE_SUPERVISOR, supervisor_) || hasRole(ADMINISTATOR_ROLE, supervisor_);
+        return hasRole(ROLE_SUPERVISOR, supervisor_) || hasRole(ADMINISTRATOR_ROLE, supervisor_);
     }
 
     function isWithdrawalManager(address manager_) public view returns (bool) {
-        return hasRole(WITHDRAWAL_MANAGER, manager_) || hasRole(ADMINISTATOR_ROLE, manager_);
+        return hasRole(WITHDRAWAL_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
     }
 }

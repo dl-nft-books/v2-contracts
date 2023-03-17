@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 interface IRoleManager {
     function __RoleManager_init() external;
 
-    function ADMINISTATOR_ROLE() external view returns (bytes32);
+    function ADMINISTRATOR_ROLE() external view returns (bytes32);
     function TOKEN_FACTORY_MANAGER() external view returns (bytes32);
     function TOKEN_REGISTRY_MANAGER() external view returns (bytes32);
     function TOKEN_MANAGER() external view returns (bytes32);
