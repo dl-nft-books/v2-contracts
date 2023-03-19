@@ -16,6 +16,8 @@ interface IRoleManager {
 
     function WITHDRAWAL_MANAGER() external view returns (bytes32);
 
+    function MARKETPLACE_MANAGER() external view returns (bytes32);
+
     function isAdmin(address _admin) external view returns (bool);
 
     function isTokenFactoryManager(address _manager) external view returns (bool);
@@ -27,4 +29,6 @@ interface IRoleManager {
     function isRoleSupervisor(address _supervisor) external view returns (bool);
 
     function isWithdrawalManager(address _manager) external view returns (bool);
+
+    function isMarketplaceManager(address _manager) external view returns (bool);
 }

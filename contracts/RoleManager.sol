@@ -15,8 +15,9 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
     bytes32 public constant TOKEN_MANAGER = keccak256("TOKEN_MANAGER");
     bytes32 public constant ROLE_SUPERVISOR = keccak256("ROLE_SUPERVISOR");
     bytes32 public constant WITHDRAWAL_MANAGER = keccak256("WITHDRAWAL_MANAGER");
+    bytes32 public constant MARKETPLACE_MANAGER = keccak256("MARKETPLACE_MANAGER");
 
-    function __RoleManager_init() external initializer {
+    function __RoleManager_init() external override initializer {
         __AccessControl_init();
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -29,6 +30,7 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
         _setRoleAdmin(TOKEN_MANAGER, ROLE_SUPERVISOR);
         _setRoleAdmin(ROLE_SUPERVISOR, ADMINISTRATOR_ROLE);
         _setRoleAdmin(WITHDRAWAL_MANAGER, ROLE_SUPERVISOR);
+        _setRoleAdmin(MARKETPLACE_MANAGER, ROLE_SUPERVISOR);
     }
 
     function setDependencies(
@@ -36,27 +38,31 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
         bytes calldata data_
     ) public override dependant {}
 
-    function isAdmin(address admin_) public view returns (bool) {
+    function isAdmin(address admin_) public view override returns (bool) {
         return hasRole(ADMINISTRATOR_ROLE, admin_);
     }
 
-    function isTokenFactoryManager(address manager_) public view returns (bool) {
+    function isTokenFactoryManager(address manager_) public view override returns (bool) {
         return hasRole(TOKEN_FACTORY_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
     }
 
-    function isTokenRegistryManager(address manager_) public view returns (bool) {
+    function isTokenRegistryManager(address manager_) public view override returns (bool) {
         return hasRole(TOKEN_REGISTRY_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
     }
 
-    function isTokenManager(address manager_) public view returns (bool) {
+    function isTokenManager(address manager_) public view override returns (bool) {
         return hasRole(TOKEN_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
     }
 
-    function isRoleSupervisor(address supervisor_) public view returns (bool) {
+    function isRoleSupervisor(address supervisor_) public view override returns (bool) {
         return hasRole(ROLE_SUPERVISOR, supervisor_) || hasRole(ADMINISTRATOR_ROLE, supervisor_);
     }
 
-    function isWithdrawalManager(address manager_) public view returns (bool) {
+    function isWithdrawalManager(address manager_) public view override returns (bool) {
         return hasRole(WITHDRAWAL_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
+    }
+
+    function isMarketplaceManager(address manager_) public view override returns (bool) {
+        return hasRole(MARKETPLACE_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
     }
 }
