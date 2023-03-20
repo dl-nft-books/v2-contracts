@@ -10,7 +10,7 @@ import "./interfaces/IRoleManager.sol";
 contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    string public constant TOKEN_POOL = "TOKEN_POOL";
+    string public constant override TOKEN_POOL = "TOKEN_POOL";
 
     address internal _tokenFactory;
     IRoleManager internal _roleManager;

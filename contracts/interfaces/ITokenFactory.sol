@@ -2,8 +2,6 @@
 pragma solidity ^0.8.9;
 
 interface ITokenFactory {
-    event TokenDeployed(string name, string symbol, address indexed tokenProxy);
-
     function setTokenBaseUri(string memory tokenBaseUri_) external;
 
     function deployToken(string calldata name, string calldata symbol) external returns (address);

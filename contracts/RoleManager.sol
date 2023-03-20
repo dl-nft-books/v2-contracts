@@ -9,13 +9,13 @@ import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/IRoleManager.sol";
 
 contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, AbstractDependant {
-    bytes32 public constant ADMINISTRATOR_ROLE = keccak256("ADMINISTRATOR_ROLE");
-    bytes32 public constant TOKEN_FACTORY_MANAGER = keccak256("TOKEN_FACTORY_MANAGER");
-    bytes32 public constant TOKEN_REGISTRY_MANAGER = keccak256("TOKEN_REGISTRY_MANAGER");
-    bytes32 public constant TOKEN_MANAGER = keccak256("TOKEN_MANAGER");
-    bytes32 public constant ROLE_SUPERVISOR = keccak256("ROLE_SUPERVISOR");
-    bytes32 public constant WITHDRAWAL_MANAGER = keccak256("WITHDRAWAL_MANAGER");
-    bytes32 public constant MARKETPLACE_MANAGER = keccak256("MARKETPLACE_MANAGER");
+    bytes32 public constant override ADMINISTRATOR_ROLE = keccak256("ADMINISTRATOR_ROLE");
+    bytes32 public constant override TOKEN_FACTORY_MANAGER = keccak256("TOKEN_FACTORY_MANAGER");
+    bytes32 public constant override TOKEN_REGISTRY_MANAGER = keccak256("TOKEN_REGISTRY_MANAGER");
+    bytes32 public constant override TOKEN_MANAGER = keccak256("TOKEN_MANAGER");
+    bytes32 public constant override ROLE_SUPERVISOR = keccak256("ROLE_SUPERVISOR");
+    bytes32 public constant override WITHDRAWAL_MANAGER = keccak256("WITHDRAWAL_MANAGER");
+    bytes32 public constant override MARKETPLACE_MANAGER = keccak256("MARKETPLACE_MANAGER");
 
     function __RoleManager_init() external override initializer {
         __AccessControl_init();

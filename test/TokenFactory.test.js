@@ -77,9 +77,7 @@ describe("TokenFactory", () => {
   describe("deployToken()", () => {
     it("should deploy token", async () => {
       let tx = await tokenFactory.deployToken("TestToken", "TT", { from: MARKETPLACE });
-      let event = tx.receipt.logs[0];
 
-      assert.isTrue(await tokenRegistry.isTokenPool(event.args.tokenProxy));
       assert.equal((await tokenRegistry.countPools(await tokenRegistry.TOKEN_POOL())).toFixed(), "1");
 
       let token = await ERC721MintableToken.at(
@@ -87,8 +85,6 @@ describe("TokenFactory", () => {
           await tokenRegistry.listPools(await tokenRegistry.TOKEN_POOL(), 0, 1)
         )[0]
       );
-
-      assert.equal(token.address, event.args.tokenProxy);
     });
   });
 

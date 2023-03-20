@@ -4,11 +4,11 @@ const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
 
 const ContractsRegistry = artifacts.require("ContractsRegistry");
-const ERC20Mock = artifacts.require("ERC20Mock");
-const ERC20MockUpgraded = artifacts.require("ERC20MockUpgraded");
+const ERC20MockUpgradeable = artifacts.require("ERC20MockUpgradeable");
+const ERC20MockUpgradeableUpgraded = artifacts.require("ERC20MockUpgradeableUpgraded");
 
 ContractsRegistry.numberFormat = "BigNumber";
-ERC20Mock.numberFormat = "BigNumber";
+ERC20MockUpgradeable.numberFormat = "BigNumber";
 
 describe("ContractsRegistry", () => {
   let OWNER;
@@ -31,7 +31,7 @@ describe("ContractsRegistry", () => {
 
   describe("contract management", () => {
     it("should add and remove the contract", async () => {
-      const Marketplace = await ERC20Mock.new("Marketplace", "MTP", 18);
+      const Marketplace = await ERC20MockUpgradeable.new("Marketplace", "MTP", 18);
 
       await contractsRegistry.addContract(await contractsRegistry.MARKETPLACE_NAME(), Marketplace.address);
 
@@ -48,7 +48,7 @@ describe("ContractsRegistry", () => {
     });
 
     it("should add and remove the proxy contract", async () => {
-      const Marketplace = await ERC20Mock.new("Marketplace", "MTP", 18);
+      const Marketplace = await ERC20MockUpgradeable.new("Marketplace", "MTP", 18);
 
       await contractsRegistry.addProxyContract(await contractsRegistry.MARKETPLACE_NAME(), Marketplace.address);
 
@@ -60,7 +60,7 @@ describe("ContractsRegistry", () => {
     });
 
     it("should just add and remove the proxy contract", async () => {
-      const _Marketplace = await ERC20Mock.new("Marketplace", "MTP", 18);
+      const _Marketplace = await ERC20MockUpgradeable.new("Marketplace", "MTP", 18);
 
       await contractsRegistry.addProxyContract(await contractsRegistry.MARKETPLACE_NAME(), _Marketplace.address);
 
@@ -85,12 +85,12 @@ describe("ContractsRegistry", () => {
     let Marketplace;
 
     beforeEach("setup", async () => {
-      _Marketplace = await ERC20Mock.new("USD", "USD", 18);
-      _Marketplace2 = await ERC20MockUpgraded.new("USD", "USD", 18);
+      _Marketplace = await ERC20MockUpgradeable.new("USD", "USD", 18);
+      _Marketplace2 = await ERC20MockUpgradeableUpgraded.new("USD", "USD", 18);
 
       await contractsRegistry.addProxyContract(await contractsRegistry.MARKETPLACE_NAME(), _Marketplace.address);
 
-      Marketplace = await ERC20MockUpgraded.at(await contractsRegistry.getMarketplaceContract());
+      Marketplace = await ERC20MockUpgradeableUpgraded.at(await contractsRegistry.getMarketplaceContract());
     });
 
     it("should upgrade the contract", async () => {

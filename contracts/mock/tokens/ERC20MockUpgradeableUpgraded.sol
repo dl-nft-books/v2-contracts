@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./ERC20Mock.sol";
+import "./ERC20MockUpgradeable.sol";
 
-contract ERC20MockUpgraded is ERC20PermitUpgradeable {
+contract ERC20MockUpgradeableUpgraded is ERC20Upgradeable {
     uint256 public importantVariable;
 
     function __ERC20Mock_init(

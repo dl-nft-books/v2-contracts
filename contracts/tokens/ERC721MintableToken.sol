@@ -28,15 +28,15 @@ contract ERC721MintableToken is
     using DecimalsConverter for uint256;
     using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
 
-    mapping(string => bool) private _existingTokenURIs;
-    mapping(uint256 => string) private _tokenURIs;
-
-    uint256 internal _tokenId;
+    uint256 internal _nextTokenId;
     string internal _tokenName;
     string internal _tokenSymbol;
 
-    address private _roleManager;
+    IRoleManager private _roleManager;
     address private _marketplace;
+
+    mapping(uint256 => string) private _tokenURIs;
+    mapping(string => bool) private _existingTokenURIs;
 
     modifier onlyMarketplace() {
         _onlyMarketplace();
@@ -48,7 +48,14 @@ contract ERC721MintableToken is
         _;
     }
 
-    function __ERC721MintableToken_init() external override initializer {
+    function __ERC721MintableToken_init(
+        string calldata name_,
+        string calldata symbol_
+    ) external override initializer {
+        __ERC721_init(name_, symbol_);
+
+        _tokenName = name_;
+        _tokenSymbol = symbol_;
         // __Pausable_init();
         // __ReentrancyGuard_init();
     }
@@ -67,12 +74,22 @@ contract ERC721MintableToken is
     ) external override dependant {
         IContractsRegistry registry_ = IContractsRegistry(contractsRegistry_);
 
-        _roleManager = registry_.getRoleManagerContract();
+        _roleManager = IRoleManager(registry_.getRoleManagerContract());
         _marketplace = registry_.getMarketplaceContract();
     }
 
     function mint(address to, uint256 tokenId, string memory uri) public onlyMarketplace {
+        require(!_exists(tokenId), "ERC721MintableToken: Token with such id already exists.");
+
+        require(tokenId == _nextTokenId++, "ERC721MintableToken: Token id is not valid.");
+
+        require(
+            !_existingTokenURIs[uri],
+            "ERC721MintableToken: Token with such URI already exists."
+        );
+
         _mint(to, tokenId);
+
         _setTokenURI(tokenId, uri);
     }
 
@@ -80,9 +97,15 @@ contract ERC721MintableToken is
         _burn(tokenId);
     }
 
+    function updateTokenParams(
+        string memory name_,
+        string memory symbol_
+    ) external onlyMarketplace {
+        _tokenName = name_;
+        _tokenSymbol = symbol_;
+    }
+
     function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal virtual {
-        //TODO: delete?
-        require(_exists(tokenId), "ERC721MintableToken: URI set of nonexistent token");
         _tokenURIs[tokenId] = _tokenURI;
         _existingTokenURIs[_tokenURI] = true;
     }
@@ -90,27 +113,32 @@ contract ERC721MintableToken is
     function _burn(uint256 tokenId) internal override {
         super._burn(tokenId);
 
-        // TODO: check if it is needed
-        if (bytes(_tokenURIs[tokenId]).length != 0) {
-            delete _tokenURIs[tokenId];
-            // delete _existingTokenURIs[_tokenURI];
-        }
+        delete _existingTokenURIs[_tokenURIs[tokenId]];
+        delete _tokenURIs[tokenId];
+    }
+
+    function name() public view override returns (string memory) {
+        return _tokenName;
+    }
+
+    function symbol() public view override returns (string memory) {
+        return _tokenSymbol;
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "ERC721MintableToken: URI query for nonexistent token");
+        require(_exists(tokenId), "ERC721MintableToken: URI query for nonexistent token.");
 
         return _tokenURIs[tokenId];
     }
 
     function _onlyMarketplace() internal view {
-        require(_marketplace == msg.sender, "ERC721MintableToken: Caller is not a Marketplace");
+        require(_marketplace == msg.sender, "ERC721MintableToken: Caller is not a marketplace.");
     }
 
     function _onlyTokenManager() internal view {
         require(
-            IRoleManager(_roleManager).isTokenManager(msg.sender),
-            "ERC721MintableToken: Caller is not a token manager"
+            _roleManager.isTokenManager(msg.sender),
+            "ERC721MintableToken: Caller is not a token manager."
         );
     }
 }

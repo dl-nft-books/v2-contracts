@@ -20,6 +20,7 @@ describe("RoleManager", () => {
   let TOKEN_MANAGER_ROLE;
   let ROLE_SUPERVISOR_ROLE;
   let WITHDRAWAL_MANAGER_ROLE;
+  let MARKETPLACE_MANAGER_ROLE;
 
   let contractsRegistry;
   let roleManager;
@@ -57,6 +58,7 @@ describe("RoleManager", () => {
     TOKEN_MANAGER_ROLE = await roleManager.TOKEN_MANAGER();
     ROLE_SUPERVISOR_ROLE = await roleManager.ROLE_SUPERVISOR();
     WITHDRAWAL_MANAGER_ROLE = await roleManager.WITHDRAWAL_MANAGER();
+    MARKETPLACE_MANAGER_ROLE = await roleManager.MARKETPLACE_MANAGER();
 
     await reverter.snapshot();
   });
@@ -71,6 +73,7 @@ describe("RoleManager", () => {
       assert.equal(await roleManager.getRoleMemberCount(TOKEN_MANAGER_ROLE), 0);
       assert.equal(await roleManager.getRoleMemberCount(ROLE_SUPERVISOR_ROLE), 0);
       assert.equal(await roleManager.getRoleMemberCount(WITHDRAWAL_MANAGER_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(MARKETPLACE_MANAGER_ROLE), 0);
 
       assert.equal(await roleManager.getRoleAdmin(ADMINISTRATOR_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
       assert.equal(await roleManager.getRoleAdmin(TOKEN_FACTORY_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
@@ -78,6 +81,7 @@ describe("RoleManager", () => {
       assert.equal(await roleManager.getRoleAdmin(TOKEN_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
       assert.equal(await roleManager.getRoleAdmin(ROLE_SUPERVISOR_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
       assert.equal(await roleManager.getRoleAdmin(WITHDRAWAL_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
+      assert.equal(await roleManager.getRoleAdmin(MARKETPLACE_MANAGER_ROLE), await roleManager.DEFAULT_ADMIN_ROLE());
 
       await roleManager.__RoleManager_init();
 
@@ -87,6 +91,7 @@ describe("RoleManager", () => {
       assert.equal(await roleManager.getRoleMemberCount(TOKEN_MANAGER_ROLE), 0);
       assert.equal(await roleManager.getRoleMemberCount(ROLE_SUPERVISOR_ROLE), 0);
       assert.equal(await roleManager.getRoleMemberCount(WITHDRAWAL_MANAGER_ROLE), 0);
+      assert.equal(await roleManager.getRoleMemberCount(MARKETPLACE_MANAGER_ROLE), 0);
 
       assert.equal(await roleManager.getRoleAdmin(ADMINISTRATOR_ROLE), ROLE_SUPERVISOR_ROLE);
       assert.equal(await roleManager.getRoleAdmin(TOKEN_FACTORY_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
@@ -94,6 +99,7 @@ describe("RoleManager", () => {
       assert.equal(await roleManager.getRoleAdmin(TOKEN_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
       assert.equal(await roleManager.getRoleAdmin(ROLE_SUPERVISOR_ROLE), ADMINISTRATOR_ROLE);
       assert.equal(await roleManager.getRoleAdmin(WITHDRAWAL_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
+      assert.equal(await roleManager.getRoleAdmin(MARKETPLACE_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
 
       assert.equal(await roleManager.getRoleMember(ADMINISTRATOR_ROLE, 0), OWNER);
     });
@@ -124,6 +130,7 @@ describe("RoleManager", () => {
       assert.equal(await roleManager.isTokenManager(OWNER), true);
       assert.equal(await roleManager.isRoleSupervisor(OWNER), true);
       assert.equal(await roleManager.isWithdrawalManager(OWNER), true);
+      assert.equal(await roleManager.isMarketplaceManager(OWNER), true);
     });
   });
 
@@ -191,6 +198,16 @@ describe("RoleManager", () => {
 
       await roleManager.revokeRole(WITHDRAWAL_MANAGER_ROLE, NOTHING);
       assert.equal(await roleManager.isWithdrawalManager(NOTHING), false);
+    });
+
+    it("isMarketplaceManager()", async () => {
+      assert.equal(await roleManager.isMarketplaceManager(NOTHING), false);
+
+      await roleManager.grantRole(MARKETPLACE_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isMarketplaceManager(NOTHING), true);
+
+      await roleManager.revokeRole(MARKETPLACE_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isMarketplaceManager(NOTHING), false);
     });
   });
 });

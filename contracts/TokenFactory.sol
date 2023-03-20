@@ -52,7 +52,7 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         _register(tokenProxy);
         _injectDependencies(tokenProxy);
 
-        emit TokenDeployed(name_, symbol_, tokenProxy);
+        // emit TokenDeployed(name_, symbol_, tokenProxy);
     }
 
     function _initTokenPool(
@@ -60,8 +60,7 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         string calldata name_,
         string calldata symbol_
     ) internal {
-        IERC721MintableToken(tokenProxy_).__ERC721MintableToken_init();
-        // IERC721MintableToken.ERC721MintableTokenInitParams(name_, symbol_, pricePerOneToken_)
+        IERC721MintableToken(tokenProxy_).__ERC721MintableToken_init(name_, symbol_);
     }
 
     function _deploy() internal returns (address) {

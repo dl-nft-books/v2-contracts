@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract ERC20Mock is ERC20PermitUpgradeable {
+contract ERC20Mock is ERC20 {
     uint8 internal _decimals;
 
-    function __ERC20Mock_init(
+    constructor(
         string memory name_,
         string memory symbol_,
         uint8 decimalPlaces_
-    ) internal initializer {
-        __ERC20_init(name_, symbol_);
-        __ERC20Permit_init(name_);
-
+    ) ERC20(name_, symbol_) {
         _decimals = decimalPlaces_;
+    }
+
+    function setDecimals(uint8 newDecimals_) external {
+        _decimals = newDecimals_;
     }
 
     function decimals() public view override returns (uint8) {
@@ -25,7 +26,15 @@ contract ERC20Mock is ERC20PermitUpgradeable {
         _mint(to_, amount_);
     }
 
-    function burn(address to_, uint256 amount_) public {
-        _burn(to_, amount_);
+    function mintBatch(address[] memory toArr_, uint256 amount_) public {
+        for (uint256 i = 0; i < toArr_.length; i++) {
+            mint(toArr_[i], amount_);
+        }
+    }
+
+    function approveBatch(address[] memory fromArr_, address spender_, uint256 amount_) public {
+        for (uint256 i = 0; i < fromArr_.length; i++) {
+            _approve(fromArr_[i], spender_, amount_);
+        }
     }
 }
