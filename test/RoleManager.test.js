@@ -11,7 +11,7 @@ const Marketplace = artifacts.require("Marketplace");
 
 describe("RoleManager", () => {
   let OWNER;
-
+  let SECOND;
   let NOTHING;
 
   let ADMINISTRATOR_ROLE;
@@ -29,6 +29,7 @@ describe("RoleManager", () => {
 
   before("setup", async () => {
     OWNER = await accounts(0);
+    SECOND = await accounts(1);
     NOTHING = await accounts(9);
 
     contractsRegistry = await ContractsRegistry.new();
@@ -93,7 +94,7 @@ describe("RoleManager", () => {
       assert.equal(await roleManager.getRoleMemberCount(WITHDRAWAL_MANAGER_ROLE), 0);
       assert.equal(await roleManager.getRoleMemberCount(MARKETPLACE_MANAGER_ROLE), 0);
 
-      assert.equal(await roleManager.getRoleAdmin(ADMINISTRATOR_ROLE), ROLE_SUPERVISOR_ROLE);
+      assert.equal(await roleManager.getRoleAdmin(ADMINISTRATOR_ROLE), ADMINISTRATOR_ROLE);
       assert.equal(await roleManager.getRoleAdmin(TOKEN_FACTORY_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
       assert.equal(await roleManager.getRoleAdmin(TOKEN_REGISTRY_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
       assert.equal(await roleManager.getRoleAdmin(TOKEN_MANAGER_ROLE), ROLE_SUPERVISOR_ROLE);
@@ -146,8 +147,18 @@ describe("RoleManager", () => {
       await roleManager.grantRole(ADMINISTRATOR_ROLE, NOTHING);
       assert.equal(await roleManager.isAdmin(NOTHING), true);
 
-      await roleManager.revokeRole(ADMINISTRATOR_ROLE, NOTHING);
-      assert.equal(await roleManager.isAdmin(NOTHING), false);
+      await roleManager.grantRole(ADMINISTRATOR_ROLE, SECOND);
+      assert.equal(await roleManager.isAdmin(SECOND), true);
+
+      await roleManager.revokeRole(ADMINISTRATOR_ROLE, SECOND);
+      assert.equal(await roleManager.isAdmin(SECOND), false);
+    });
+
+    it("should revert if tries to remove last admin", async () => {
+      await truffleAssert.reverts(
+        roleManager.revokeRole(ADMINISTRATOR_ROLE, OWNER),
+        "RoleManager: cannot revoke last administrator"
+      );
     });
 
     it("isTokenFactoryManager()", async () => {
@@ -208,6 +219,32 @@ describe("RoleManager", () => {
 
       await roleManager.revokeRole(MARKETPLACE_MANAGER_ROLE, NOTHING);
       assert.equal(await roleManager.isMarketplaceManager(NOTHING), false);
+    });
+  });
+
+  describe("grantRoleBatch()", async () => {
+    beforeEach(async () => {
+      await roleManager.__RoleManager_init();
+      await roleManager.grantRole(ROLE_SUPERVISOR_ROLE, OWNER);
+    });
+    it("should grant roles", async () => {
+      const users = [NOTHING, SECOND];
+      const roles = [TOKEN_FACTORY_MANAGER_ROLE, TOKEN_REGISTRY_MANAGER_ROLE];
+
+      await roleManager.grantRoleBatch(roles, users);
+
+      assert.equal(await roleManager.isTokenFactoryManager(NOTHING), true);
+      assert.equal(await roleManager.isTokenRegistryManager(SECOND), true);
+    });
+
+    it("should revert if roles and users length mismatch", async () => {
+      const users = [NOTHING, SECOND];
+      const roles = [TOKEN_FACTORY_MANAGER_ROLE];
+
+      await truffleAssert.reverts(
+        roleManager.grantRoleBatch(roles, users),
+        "RoleManager: roles and accounts arrays must be of equal length"
+      );
     });
   });
 });

@@ -15,6 +15,7 @@ import "@dlsl/dev-modules/libs/decimals/DecimalsConverter.sol";
 
 import "../interfaces/tokens/IERC721MintableToken.sol";
 import "../interfaces/IRoleManager.sol";
+import "../interfaces/IMarketplace.sol";
 import "../ContractsRegistry.sol";
 
 // PausableUpgradeable,
@@ -125,10 +126,24 @@ contract ERC721MintableToken is
         return _tokenSymbol;
     }
 
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "ERC721MintableToken: URI query for nonexistent token.");
+    function tokenURI(uint256 tokenId_) public view override returns (string memory) {
+        require(_exists(tokenId_), "ERC721MintableToken: URI query for nonexistent token.");
 
-        return _tokenURIs[tokenId];
+        string memory tokenURI_ = _tokenURIs[tokenId_];
+        string memory base_ = _baseURI();
+
+        if (bytes(base_).length == 0) {
+            return tokenURI_;
+        }
+        if (bytes(tokenURI_).length > 0) {
+            return string(abi.encodePacked(base_, tokenURI_));
+        }
+
+        return base_;
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return IMarketplace(_marketplace).baseTokenContractsURI();
     }
 
     function _onlyMarketplace() internal view {

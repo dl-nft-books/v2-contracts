@@ -51,8 +51,6 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
 
         _register(tokenProxy);
         _injectDependencies(tokenProxy);
-
-        // emit TokenDeployed(name_, symbol_, tokenProxy);
     }
 
     function _initTokenPool(

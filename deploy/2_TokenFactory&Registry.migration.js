@@ -1,4 +1,4 @@
-const Proxy = artifacts.require("TransparentUpgradeableProxy");
+const Proxy = artifacts.require("PublicERC1967Proxy");
 const ContractsRegistry = artifacts.require("ContractsRegistry");
 
 const TokenFactory = artifacts.require("TokenFactory");

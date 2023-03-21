@@ -1,0 +1,17 @@
+{
+    "ADMINISTRATOR_ROLE": [
+        "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    ], 
+    "TOKEN_FACTORY_MANAGER": [
+    ], 
+    "TOKEN_REGISTRY_MANAGER": [
+    ], 
+    "TOKEN_MANAGER": [
+    ], 
+    "ROLE_SUPERVISOR": [
+    ], 
+    "WITHDRAWAL_MANAGER": [
+    ], 
+    "MARKETPLACE_MANAGER": [
+    ]
+}

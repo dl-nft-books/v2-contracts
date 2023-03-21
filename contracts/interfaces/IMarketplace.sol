@@ -112,7 +112,13 @@ interface IMarketplace {
         uint256 nftFloorPrice
     );
 
-    function __Marketplace_init() external;
+    /**
+     * @notice This event is emitted when the URI of the base token contracts has been updated
+     * @param newBaseTokenContractsURI the new base token contracts URI string
+     */
+    event BaseTokenContractsURIUpdated(string newBaseTokenContractsURI);
+
+    function __Marketplace_init(string memory baseTokenContractsURI_) external;
 
     function addToken(
         string memory name_,
@@ -192,11 +198,38 @@ interface IMarketplace {
         uint8 v_
     ) external;
 
+    function setBaseTokenContractsURI(string memory baseTokenContractsURI_) external;
+
     /**
-    //  * @notice The function to get an array of tokenIDs owned by a particular user
-    //  * @param tokenContract_ the address of the token contract
-    //  * @param userAddr_ the address of the user for whom you want to get information
-    //  * @return tokenIDs_ the array of token IDs owned by the user
-    //  */
-    // function getUserTokenIDs(address tokenContract_, address userAddr_) external view returns (uint256[] memory tokenIDs_);
+     * @notice The function that returns the base token contracts URI string
+     * @return base token contracts URI string
+     */
+    function baseTokenContractsURI() external view returns (string memory);
+
+    function getTokenParams(address tokenContract_) external view returns (TokenParams memory);
+
+    /**
+     * @notice The function to get an array of tokenIDs owned by a particular user
+     * @param tokenContract_ the address of the token contract
+     * @param userAddr_ the address of the user for whom you want to get information
+     * @return tokenIDs_ the array of token IDs owned by the user
+     */
+    function getUserTokenIDs(address tokenContract_, address userAddr_) external view returns (uint256[] memory tokenIDs_);
+
+    /**
+     * @notice The function that returns the total TokenContracts count
+     * @return total TokenContracts count
+     */
+    function getTokenContractsCount() external view returns (uint256);
+
+    /**
+     * @notice The function for getting addresses of token contracts with pagination
+     * @param offset_ the offset for pagination
+     * @param limit_ the maximum number of elements for
+     * @return array with the addresses of the token contracts
+     */
+    function getTokenContractsPart(uint256 offset_, uint256 limit_)
+        external
+        view
+        returns (address[] memory);
 }

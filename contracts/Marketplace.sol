@@ -6,10 +6,12 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
 import "@dlsl/dev-modules/libs/decimals/DecimalsConverter.sol";
+import "@dlsl/dev-modules/libs/arrays/Paginator.sol";
 import "@dlsl/dev-modules/utils/Globals.sol";
 
 import "./interfaces/IMarketplace.sol";
@@ -20,6 +22,7 @@ import "./interfaces/tokens/IERC721MintableToken.sol";
 
 contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upgradeable {
     using EnumerableSet for EnumerableSet.AddressSet;
+    using Paginator for EnumerableSet.AddressSet;
     using DecimalsConverter for uint256;
     using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
 
@@ -32,15 +35,19 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
     ITokenFactory private _tokenFactory;
 
     EnumerableSet.AddressSet internal _tokenContracts;
-    mapping(address => TokenParams) public tokenParams;
+    mapping(address => TokenParams) internal _tokenParams;
+
+    string public baseTokenContractsURI;
 
     modifier onlyMarketplaceManager() {
         _onlyMarketplaceManager();
         _;
     }
 
-    function __Marketplace_init() external override initializer {
+    function __Marketplace_init(string memory baseTokenContractsURI_) external override initializer {
         __EIP712_init("Marketplace", "1");
+
+        baseTokenContractsURI = baseTokenContractsURI_;
         // __ReentrancyGuard_init();
     }
 
@@ -58,14 +65,19 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         string memory name_,
         string memory symbol_,
         TokenParams memory tokenParams_
-    ) external onlyMarketplaceManager returns (address tokenProxy) {
-        tokenProxy = _tokenFactory.deployToken(name_, symbol_);
+    ) external onlyMarketplaceManager returns (address tokenProxy_) {
+        require (
+            bytes(name_).length > 0 &&
+            bytes(symbol_).length > 0,
+            "Marketplace: Token name or symbol is empty."
+        );
+        tokenProxy_ = _tokenFactory.deployToken(name_, symbol_);
 
-        tokenParams[tokenProxy] = tokenParams_;
+        _tokenParams[tokenProxy_] = tokenParams_;
 
-        _tokenContracts.add(tokenProxy);
+        _tokenContracts.add(tokenProxy_);
 
-        emit TokenContractDeployed(tokenProxy, name_, symbol_, tokenParams_);
+        emit TokenContractDeployed(tokenProxy_, name_, symbol_, tokenParams_);
     }
 
     function updateAllParams(
@@ -74,7 +86,12 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         string memory symbol_,
         TokenParams memory newTokenParams_
     ) external override onlyMarketplaceManager {
-        tokenParams[tokenContract_] = newTokenParams_;
+        require(
+            _tokenContracts.contains(tokenContract_),
+            "Marketplace: Token contract not found."
+        );
+
+        _tokenParams[tokenContract_] = newTokenParams_;
 
         IERC721MintableToken(tokenContract_).updateTokenParams(name_, symbol_);
 
@@ -83,7 +100,7 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
 
     // TODO: when not paused?; nonReentrant?
     function buyToken(
-        address tokenContract_, // added
+        address tokenContract_,
         uint256 futureTokenId_,
         address paymentTokenAddress_,
         uint256 paymentTokenPrice_,
@@ -122,17 +139,15 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
             }
         }
 
-        // TODO: how to name it?
-        TokenParams storage currentTokenParams = tokenParams[tokenContract_];
+        TokenParams storage _currentTokenParams = _tokenParams[tokenContract_];
 
         _mintToken(tokenContract_, futureTokenId_, tokenURI_);
         MintedTokenInfo memory mintedTokenInfo = MintedTokenInfo(
             futureTokenId_,
-            currentTokenParams.pricePerOneToken,
+            _currentTokenParams.pricePerOneToken,
             tokenURI_
         );
 
-        //TODO: Stack too deep, try removing local variables.
         emit SuccessfullyMinted(
             tokenContract_,
             msg.sender,
@@ -145,7 +160,7 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
     }
 
     function buyTokenByNFT(
-        address tokenContract_, // added
+        address tokenContract_,
         uint256 futureTokenId_,
         address nftAddress_,
         uint256 nftFloorPrice_,
@@ -156,6 +171,13 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         bytes32 s_,
         uint8 v_
     ) external override {
+        TokenParams storage _currentTokenParams = _tokenParams[tokenContract_];
+
+        require(
+            _currentTokenParams.isNFTBuyable,
+            "Marketplace: This token cannot be purchased with NFT."
+        );
+
         _verifySignature(
             tokenContract_,
             futureTokenId_,
@@ -171,35 +193,27 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
 
         _payWithNFT(tokenContract_, IERC721Upgradeable(nftAddress_), nftFloorPrice_, tokenId_);
 
-        // TODO: how to name it?
-        TokenParams storage currentTokenParams = tokenParams[tokenContract_];
-
         _mintToken(tokenContract_, futureTokenId_, tokenURI_);
 
         emit SuccessfullyMintedByNFT(
             tokenContract_,
             msg.sender,
-            MintedTokenInfo(futureTokenId_, currentTokenParams.minNFTFloorPrice, tokenURI_),
+            MintedTokenInfo(futureTokenId_, _currentTokenParams.minNFTFloorPrice, tokenURI_),
             nftAddress_,
             tokenId_,
             nftFloorPrice_
         );
     }
 
-    // function getUserTokenIDs(address tokenContract_,address userAddr_)
-    //     external
-    //     view
-    //     override
-    //     returns (uint256[] memory tokenIDs_)
-    // {
-    //     uint256 _tokensCount = balanceOf(userAddr_);
+    function setBaseTokenContractsURI(string memory baseTokenContractsURI_)
+        external
+        override
+        onlyMarketplaceManager
+    {
+        baseTokenContractsURI = baseTokenContractsURI_;
 
-    //     tokenIDs_ = new uint256[](_tokensCount);
-
-    //     for (uint256 i; i < _tokensCount; i++) {
-    //         tokenIDs_[i] = tokenOfOwnerByIndex(userAddr_, i);
-    //     }
-    // }
+        emit BaseTokenContractsURIUpdated(baseTokenContractsURI_);
+    }
 
     function _payWithERC20(
         address tokenContract_,
@@ -209,19 +223,20 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
     ) internal returns (uint256) {
         require(msg.value == 0, "Marketplace: Currency amount must be a zero.");
 
-        // TODO: how to name it?
-        TokenParams storage currentTokenParams = tokenParams[tokenContract_];
+        TokenParams storage _currentTokenParams = _tokenParams[tokenContract_];
 
         uint256 amountToPay_ = tokenPrice_ != 0
             ? _getAmountAfterDiscount(
-                (currentTokenParams.pricePerOneToken * DECIMAL) / tokenPrice_,
+                (_currentTokenParams.pricePerOneToken * DECIMAL) / tokenPrice_,
                 discount_
             )
-            : currentTokenParams.voucherTokensAmount;
+            : _currentTokenParams.voucherTokensAmount;
 
         tokenAddr_.safeTransferFrom(
             msg.sender,
-            address(this),
+            _currentTokenParams.fundsRecipient == address(0)
+                ? address(this)
+                : _currentTokenParams.fundsRecipient,
             amountToPay_.from18(tokenAddr_.decimals())
         );
 
@@ -233,12 +248,22 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         uint256 ethPrice_,
         uint256 discount_
     ) internal returns (uint256) {
+        TokenParams storage _currentTokenParams = _tokenParams[tokenContract_];
+
         uint256 amountToPay_ = _getAmountAfterDiscount(
-            (tokenParams[tokenContract_].pricePerOneToken * DECIMAL) / ethPrice_,
+            (_currentTokenParams.pricePerOneToken * DECIMAL) / ethPrice_,
             discount_
         );
 
         require(msg.value >= amountToPay_, "Marketplace: Invalid currency amount.");
+
+        if (
+            _currentTokenParams.fundsRecipient != address(0) &&
+            _currentTokenParams.fundsRecipient != address(this)
+        ) {
+            (bool success_, ) = _currentTokenParams.fundsRecipient.call{value: amountToPay_}("");
+            require(success_, "Marketplace: Failed to send currency to recipient.");
+        }
 
         uint256 extraCurrencyAmount_ = msg.value - amountToPay_;
 
@@ -256,8 +281,10 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         uint256 nftFloorPrice_,
         uint256 tokenId_
     ) internal {
+        TokenParams storage _currentTokenParams = _tokenParams[tokenContract_];
+
         require(
-            nftFloorPrice_ >= tokenParams[tokenContract_].minNFTFloorPrice,
+            nftFloorPrice_ >= _currentTokenParams.minNFTFloorPrice,
             "Marketplace: NFT floor price is less than the minimal."
         );
         require(
@@ -265,7 +292,13 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
             "Marketplace: Sender is not the owner."
         );
 
-        nft_.safeTransferFrom(msg.sender, address(this), tokenId_);
+        nft_.safeTransferFrom(
+            msg.sender,
+            _currentTokenParams.fundsRecipient == address(0)
+                ? address(this)
+                : _currentTokenParams.fundsRecipient,
+            tokenId_
+        );
     }
 
     function _mintToken(
@@ -274,6 +307,38 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         string memory tokenURI_
     ) internal {
         IERC721MintableToken(tokenContract_).mint(msg.sender, mintTokenId_, tokenURI_);
+    }
+
+    function getUserTokenIDs(address tokenContract_, address userAddr_)
+        external
+        view
+        override
+        returns (uint256[] memory tokenIDs_)
+    {
+        uint256 _tokensCount = IERC721Upgradeable(tokenContract_).balanceOf(userAddr_);
+
+        tokenIDs_ = new uint256[](_tokensCount);
+
+        for (uint256 i; i < _tokensCount; i++) {
+            tokenIDs_[i] = IERC721EnumerableUpgradeable(tokenContract_).tokenOfOwnerByIndex(userAddr_, i);
+        }
+    }
+
+    function getTokenParams(address tokenContract_) external view override returns (TokenParams memory) {
+        return _tokenParams[tokenContract_];
+    }
+
+    function getTokenContractsCount() external view override returns (uint256) {
+        return _tokenContracts.length();
+    }
+
+    function getTokenContractsPart(uint256 offset_, uint256 limit_)
+        external
+        view
+        override
+        returns (address[] memory)
+    {
+        return _tokenContracts.part(offset_, limit_);
     }
 
     function _verifySignature(
@@ -288,12 +353,6 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         bytes32 s_,
         uint8 v_
     ) internal view {
-        //TODO: do we need to check if tokenURI_ here, or it's enough to check it in _mintToken?
-        // require(
-        //     !tokenParams[tokenContract_].existingTokenURIs[tokenURI_],
-        //     "Marketplace: Token URI already exists."
-        // );
-
         bytes32 structHash_ = keccak256(
             abi.encode(
                 _BUY_TYPEHASH,
@@ -309,15 +368,9 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
 
         address signer_ = ECDSAUpgradeable.recover(_hashTypedDataV4(structHash_), v_, r_, s_);
 
-        //TODO
-        // require(_roleManager.isAdmin(signer_), "Marketplace: Invalid signature.");
+        require(_roleManager.isAdmin(signer_), "Marketplace: Invalid signature.");
         require(block.timestamp <= endTimestamp_, "Marketplace: Signature expired.");
     }
-
-    // function _baseURI(address tokenContract_) internal view returns (string memory) {
-    //     // return tokenParams[tokenContract_].baseTokenURI;
-    //     return "";
-    // }
 
     function _onlyMarketplaceManager() internal view {
         require(

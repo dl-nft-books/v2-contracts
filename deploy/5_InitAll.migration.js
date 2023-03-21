@@ -1,4 +1,4 @@
-const Proxy = artifacts.require("TransparentUpgradeableProxy");
+const Proxy = artifacts.require("PublicERC1967Proxy");
 const ContractsRegistry = artifacts.require("ContractsRegistry");
 
 const TokenFactory = artifacts.require("TokenFactory");
@@ -6,7 +6,11 @@ const TokenRegistry = artifacts.require("TokenRegistry");
 const RoleManager = artifacts.require("RoleManager");
 const Marketplace = artifacts.require("Marketplace");
 
+const { parseMarketplaceParams } = require("./helpers/deployHelper");
+
 module.exports = async (deployer, logger) => {
+  const MarketplaceParams = parseMarketplaceParams("./deploy/data/marketplaceParams.json");
+  
   const contractsRegistry = await ContractsRegistry.at((await Proxy.deployed()).address);
 
   const tokenFactory = await TokenFactory.at(await contractsRegistry.getTokenFactoryContract());
@@ -22,7 +26,7 @@ module.exports = async (deployer, logger) => {
 
   logger.logTransaction(await roleManager.__RoleManager_init(), "Init RoleManager");
 
-  logger.logTransaction(await marketplace.__Marketplace_init(), "Init Marketplace");
+  logger.logTransaction(await marketplace.__Marketplace_init(MarketplaceParams.baseTokenContractsURI), "Init Marketplace");
 
   ////////////////////////////////////////////////////////////
 

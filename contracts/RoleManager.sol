@@ -24,7 +24,7 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
 
         grantRole(ADMINISTRATOR_ROLE, msg.sender);
 
-        _setRoleAdmin(ADMINISTRATOR_ROLE, ROLE_SUPERVISOR);
+        _setRoleAdmin(ADMINISTRATOR_ROLE, ADMINISTRATOR_ROLE);
         _setRoleAdmin(TOKEN_FACTORY_MANAGER, ROLE_SUPERVISOR);
         _setRoleAdmin(TOKEN_REGISTRY_MANAGER, ROLE_SUPERVISOR);
         _setRoleAdmin(TOKEN_MANAGER, ROLE_SUPERVISOR);
@@ -37,6 +37,18 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
         address contractsRegistry_,
         bytes calldata data_
     ) public override dependant {}
+
+    function revokeRole(bytes32 role_, address account_) public override {
+        require(role_ != ADMINISTRATOR_ROLE || getRoleMemberCount(ADMINISTRATOR_ROLE) > 2, "RoleManager: cannot revoke last administrator");
+        super.revokeRole(role_, account_);
+    }
+
+    function grantRoleBatch(bytes32[] calldata roles_, address[] calldata accounts_) public override {
+        require(roles_.length == accounts_.length, "RoleManager: roles and accounts arrays must be of equal length");
+        for (uint256 i = 0; i < roles_.length; i++) {
+            grantRole(roles_[i], accounts_[i]);
+        }
+    }
 
     function isAdmin(address admin_) public view override returns (bool) {
         return hasRole(ADMINISTRATOR_ROLE, admin_);

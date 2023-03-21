@@ -1,12 +1,13 @@
 const ContractsRegistry = artifacts.require("ContractsRegistry");
-const TransparentUpgradeableProxy = artifacts.require("TransparentUpgradeableProxy");
+const PublicERC1967Proxy = artifacts.require("PublicERC1967Proxy");
 
 module.exports = async (deployer, logger) => {
   const contractsRegistry = await deployer.deploy(ContractsRegistry);
-  const proxy = await deployer.deploy(TransparentUpgradeableProxy, contractsRegistry.address, contractsRegistry.address, []);
+  const proxy = await deployer.deploy(PublicERC1967Proxy, contractsRegistry.address, "0x");
+  const contractsRegistryProxy = await ContractsRegistry.at(proxy.address);
   
   logger.logTransaction(
-    await (await ContractsRegistry.at(proxy.address)).__OwnableContractsRegistry_init(),
+    await contractsRegistryProxy.__OwnableContractsRegistry_init(),
     "Init ContractsRegistry"
   );
 };
