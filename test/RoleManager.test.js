@@ -247,4 +247,54 @@ describe("RoleManager", () => {
       );
     });
   });
+
+  describe("hasAnyRole()", async () => {
+    beforeEach(async () => {
+      await roleManager.__RoleManager_init();
+      await roleManager.grantRole(ROLE_SUPERVISOR_ROLE, OWNER);
+    });
+
+    it("should return true if user has any role", async () => {
+      assert.equal(await roleManager.hasAnyRole(OWNER), true);
+
+      assert.equal(await roleManager.hasAnyRole(NOTHING), false);
+      await roleManager.grantRole(ADMINISTRATOR_ROLE, NOTHING);
+      assert.equal(await roleManager.hasAnyRole(NOTHING), true);
+      await roleManager.revokeRole(ADMINISTRATOR_ROLE, NOTHING);
+
+      assert.equal(await roleManager.hasAnyRole(NOTHING), false);
+      await roleManager.grantRole(TOKEN_FACTORY_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.hasAnyRole(NOTHING), true);
+      await roleManager.revokeRole(TOKEN_FACTORY_MANAGER_ROLE, NOTHING);
+
+      assert.equal(await roleManager.hasAnyRole(NOTHING), false);
+      await roleManager.grantRole(TOKEN_REGISTRY_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.hasAnyRole(NOTHING), true);
+      await roleManager.revokeRole(TOKEN_REGISTRY_MANAGER_ROLE, NOTHING);
+
+      assert.equal(await roleManager.hasAnyRole(NOTHING), false);
+      await roleManager.grantRole(TOKEN_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.hasAnyRole(NOTHING), true);
+      await roleManager.revokeRole(TOKEN_MANAGER_ROLE, NOTHING);
+
+      assert.equal(await roleManager.hasAnyRole(NOTHING), false);
+      await roleManager.grantRole(ROLE_SUPERVISOR_ROLE, NOTHING);
+      assert.equal(await roleManager.hasAnyRole(NOTHING), true);
+      await roleManager.revokeRole(ROLE_SUPERVISOR_ROLE, NOTHING);
+
+      assert.equal(await roleManager.hasAnyRole(NOTHING), false);
+      await roleManager.grantRole(WITHDRAWAL_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.hasAnyRole(NOTHING), true);
+      await roleManager.revokeRole(WITHDRAWAL_MANAGER_ROLE, NOTHING);
+
+      assert.equal(await roleManager.hasAnyRole(NOTHING), false);
+      await roleManager.grantRole(MARKETPLACE_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.hasAnyRole(NOTHING), true);
+      await roleManager.revokeRole(MARKETPLACE_MANAGER_ROLE, NOTHING);
+    });
+
+    it("should return false if user has no roles", async () => {
+      assert.equal(await roleManager.hasAnyRole(NOTHING), false);
+    });
+  });
 });

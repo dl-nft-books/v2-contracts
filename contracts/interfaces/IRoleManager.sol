@@ -33,4 +33,6 @@ interface IRoleManager {
     function isWithdrawalManager(address _manager) external view returns (bool);
 
     function isMarketplaceManager(address _manager) external view returns (bool);
+    
+    function hasAnyRole(address account_) external view returns (bool);
 }

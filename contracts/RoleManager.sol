@@ -39,12 +39,21 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
     ) public override dependant {}
 
     function revokeRole(bytes32 role_, address account_) public override {
-        require(role_ != ADMINISTRATOR_ROLE || getRoleMemberCount(ADMINISTRATOR_ROLE) > 2, "RoleManager: cannot revoke last administrator");
+        require(
+            role_ != ADMINISTRATOR_ROLE || getRoleMemberCount(ADMINISTRATOR_ROLE) > 1,
+            "RoleManager: cannot revoke last administrator"
+        );
         super.revokeRole(role_, account_);
     }
 
-    function grantRoleBatch(bytes32[] calldata roles_, address[] calldata accounts_) public override {
-        require(roles_.length == accounts_.length, "RoleManager: roles and accounts arrays must be of equal length");
+    function grantRoleBatch(
+        bytes32[] calldata roles_,
+        address[] calldata accounts_
+    ) public override {
+        require(
+            roles_.length == accounts_.length,
+            "RoleManager: roles and accounts arrays must be of equal length"
+        );
         for (uint256 i = 0; i < roles_.length; i++) {
             grantRole(roles_[i], accounts_[i]);
         }
@@ -76,5 +85,16 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
 
     function isMarketplaceManager(address manager_) public view override returns (bool) {
         return hasRole(MARKETPLACE_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
+    }
+
+    function hasAnyRole(address account_) public view override returns (bool) {
+        return
+            hasRole(ADMINISTRATOR_ROLE, account_) ||
+            hasRole(TOKEN_FACTORY_MANAGER, account_) ||
+            hasRole(TOKEN_REGISTRY_MANAGER, account_) ||
+            hasRole(TOKEN_MANAGER, account_) ||
+            hasRole(ROLE_SUPERVISOR, account_) ||
+            hasRole(WITHDRAWAL_MANAGER, account_) ||
+            hasRole(MARKETPLACE_MANAGER, account_);
     }
 }
