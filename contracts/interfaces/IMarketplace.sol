@@ -3,7 +3,21 @@ pragma solidity ^0.8.9;
 
 import "./tokens/IERC721MintableToken.sol";
 
+/**
+ * This is the marketplace contract that stores information about
+ * the token contracts and allows users to mint tokens.
+ */
+
 interface IMarketplace {
+    /**
+     * @notice The structure that stores information about the token contract
+     * @param pricePerOneToken the price of one token in USD
+     * @param minNFTFloorPrice the minimum floor price of the NFT contract
+     * @param voucherTokensAmount the amount of tokens that can be bought with one voucher
+     * @param isNFTBuyable the flag that indicates if the NFT can be bought for the token price
+     * @param voucherTokenContract the address of the voucher token contract
+     * @param fundsRecipient the address of the recipient of the funds
+     */
     struct TokenParams {
         uint256 pricePerOneToken;
         uint256 minNFTFloorPrice;
@@ -25,6 +39,13 @@ interface IMarketplace {
         string tokenURI;
     }
 
+    /**
+     * @notice This event is emitted during the creation of a new token
+     * @param tokenContract the address of the token contract
+     * @param tokenName the name of the collection
+     * @param tokenSymbol the symbol of the collection
+     * @param tokenParams struct with the token contract params
+     */
     event TokenContractDeployed(
         address indexed tokenContract,
         string tokenName,
@@ -35,8 +56,8 @@ interface IMarketplace {
     /**
      * @notice This event is emitted when the TokenContract parameters are updated
      * @param tokenContract the address of the token contract
-     * @param tokenName the name of the collection (Uses in ERC721 and ERC712)
-     * @param tokenSymbol the symbol of the collection (Uses in ERC721)
+     * @param tokenName the name of the collection 
+     * @param tokenSymbol the symbol of the collection
      * @param tokenParams the new TokenParams struct with new parameters
      */
     event TokenContractParamsUpdated(
@@ -104,8 +125,19 @@ interface IMarketplace {
      */
     event BaseTokenContractsURIUpdated(string newBaseTokenContractsURI);
 
+    /**
+     * @notice The init function for the Marketplace contract
+     * @param baseTokenContractsURI_ the base token contracts URI string
+     */
     function __Marketplace_init(string memory baseTokenContractsURI_) external;
 
+
+    /**
+     * @notice The function for creating a new token contract
+     * @param name_ the name of the collection 
+     * @param symbol_ the symbol of the collection
+     * @param tokenParams_ the TokenParams struct with the token contract params
+     */ 
     function addToken(
         string memory name_,
         string memory symbol_,
@@ -115,8 +147,8 @@ interface IMarketplace {
     /**
      * @notice The function for updating all TokenContract parameters
      * @param tokenContract_ the address of the token contract
-     * @param name_ the name of the collection (Uses in ERC721 and ERC712)
-     * @param symbol_ the symbol of the collection (Uses in ERC721)
+     * @param name_ the name of the collection 
+     * @param symbol_ the symbol of the collection
      * @param newTokenParams_ the new TokenParams struct
      */
     function updateAllParams(
@@ -184,6 +216,10 @@ interface IMarketplace {
         uint8 v_
     ) external;
 
+    /**
+     * @notice The function for updating the base token contracts URI string
+     * @param baseTokenContractsURI_ the new base token contracts URI string
+     */
     function setBaseTokenContractsURI(string memory baseTokenContractsURI_) external;
 
     /**
@@ -192,6 +228,11 @@ interface IMarketplace {
      */
     function baseTokenContractsURI() external view returns (string memory);
 
+    /**
+     * @notice The function that returns the token params of the token contract
+     * @param tokenContract_ the address of the token contract
+     * @return the TokenParams struct with the token contract params
+     */
     function getTokenParams(address tokenContract_) external view returns (TokenParams memory);
 
     /**

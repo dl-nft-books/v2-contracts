@@ -79,23 +79,23 @@ contract ERC721MintableToken is
         _marketplace = registry_.getMarketplaceContract();
     }
 
-    function mint(address to, uint256 tokenId, string memory uri) public onlyMarketplace {
-        require(!_exists(tokenId), "ERC721MintableToken: Token with such id already exists.");
+    function mint(address to_, uint256 tokenId_, string memory uri_) public onlyMarketplace {
+        require(!_exists(tokenId_), "ERC721MintableToken: Token with such id already exists.");
 
-        require(tokenId == _nextTokenId++, "ERC721MintableToken: Token id is not valid.");
+        require(tokenId_ == _nextTokenId++, "ERC721MintableToken: Token id is not valid.");
 
         require(
-            !_existingTokenURIs[uri],
+            !_existingTokenURIs[uri_],
             "ERC721MintableToken: Token with such URI already exists."
         );
 
-        _mint(to, tokenId);
+        _mint(to_, tokenId_);
 
-        _setTokenURI(tokenId, uri);
+        _setTokenURI(tokenId_, uri_);
     }
 
-    function burn(uint256 tokenId) public onlyTokenManager {
-        _burn(tokenId);
+    function burn(uint256 tokenId_) public onlyTokenManager {
+        _burn(tokenId_);
     }
 
     function updateTokenParams(
@@ -106,16 +106,16 @@ contract ERC721MintableToken is
         _tokenSymbol = symbol_;
     }
 
-    function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal virtual {
-        _tokenURIs[tokenId] = _tokenURI;
-        _existingTokenURIs[_tokenURI] = true;
+    function _setTokenURI(uint256 tokenId_, string memory tokenURI_) internal virtual {
+        _tokenURIs[tokenId_] = tokenURI_;
+        _existingTokenURIs[tokenURI_] = true;
     }
 
-    function _burn(uint256 tokenId) internal override {
-        super._burn(tokenId);
+    function _burn(uint256 tokenId_) internal override {
+        super._burn(tokenId_);
 
-        delete _existingTokenURIs[_tokenURIs[tokenId]];
-        delete _tokenURIs[tokenId];
+        delete _existingTokenURIs[_tokenURIs[tokenId_]];
+        delete _tokenURIs[tokenId_];
     }
 
     function name() public view override returns (string memory) {

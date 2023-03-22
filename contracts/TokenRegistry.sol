@@ -25,12 +25,12 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
         _;
     }
 
-    function setDependencies(address contractsRegistry, bytes calldata data) public override {
-        super.setDependencies(contractsRegistry, data);
+    function setDependencies(address contractsRegistry_, bytes calldata data_) public override {
+        super.setDependencies(contractsRegistry_, data_);
 
-        _tokenFactory = IContractsRegistry(contractsRegistry).getTokenFactoryContract();
+        _tokenFactory = IContractsRegistry(contractsRegistry_).getTokenFactoryContract();
         _roleManager = IRoleManager(
-            IContractsRegistry(contractsRegistry).getRoleManagerContract()
+            IContractsRegistry(contractsRegistry_).getRoleManagerContract()
         );
     }
 
@@ -57,14 +57,14 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
     }
 
     function addProxyPool(
-        string calldata poolName,
-        address tokenAddress
+        string calldata poolName_,
+        address tokenAddress_
     ) external override onlyTokenFactory {
-        _addProxyPool(poolName, tokenAddress);
+        _addProxyPool(poolName_, tokenAddress_);
     }
 
-    function isTokenPool(address potentialPool) public view override returns (bool) {
-        return _pools[TOKEN_POOL].contains(potentialPool);
+    function isTokenPool(address potentialPool_) public view override returns (bool) {
+        return _pools[TOKEN_POOL].contains(potentialPool_);
     }
 
     function _onlyTokenFactory() internal view {
