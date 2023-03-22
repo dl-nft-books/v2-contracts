@@ -134,7 +134,10 @@ describe("Marketplace", () => {
     it("should set correct data after deployment", async () => {});
 
     it("should get exception if contract already initialized", async () => {
-      await truffleAssert.reverts(marketplace.__Marketplace_init(defaultBaseURI), "Initializable: contract is already initialized");
+      await truffleAssert.reverts(
+        marketplace.__Marketplace_init(defaultBaseURI),
+        "Initializable: contract is already initialized"
+      );
     });
   });
 
@@ -308,20 +311,43 @@ describe("Marketplace", () => {
 
     it("should revert if contract not exists", async () => {
       await truffleAssert.reverts(
-        marketplace.updateAllParams(
-          ZERO_ADDR,
-          newName,
-          newSymbol,
-          [
-            newPricePerOneToken,
-            newMinNFTFloorPrice,
-            newVoucherTokensAmount,
-            newIsNFTBuyable,
-            newVoucherTokenContract,
-            newFundsRecipient,
-          ],
-        ),
+        marketplace.updateAllParams(ZERO_ADDR, newName, newSymbol, [
+          newPricePerOneToken,
+          newMinNFTFloorPrice,
+          newVoucherTokensAmount,
+          newIsNFTBuyable,
+          newVoucherTokenContract,
+          newFundsRecipient,
+        ]),
         "Marketplace: Token contract not found."
+      );
+    });
+
+    it("should return if name is empty", async () => {
+      await truffleAssert.reverts(
+        marketplace.updateAllParams(tokenContract, "", newSymbol, [
+          newPricePerOneToken,
+          newMinNFTFloorPrice,
+          newVoucherTokensAmount,
+          newIsNFTBuyable,
+          newVoucherTokenContract,
+          newFundsRecipient,
+        ]),
+        "Marketplace: Token name or symbol is empty."
+      );
+    });
+
+    it("should return if symbol is empty", async () => {
+      await truffleAssert.reverts(
+        marketplace.updateAllParams(tokenContract, newName, "", [
+          newPricePerOneToken,
+          newMinNFTFloorPrice,
+          newVoucherTokensAmount,
+          newIsNFTBuyable,
+          newVoucherTokenContract,
+          newFundsRecipient,
+        ]),
+        "Marketplace: Token name or symbol is empty."
       );
     });
   });
@@ -448,8 +474,6 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.paymentTokenPrice).toFixed(), tokenPrice.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.discount).toFixed(), 0);
     });
-
-    
 
     it("should correctly buy token with ETH and send currency to recipient address if recipient is marketplace", async () => {
       const tokenContract2 = await marketplace.addToken.call("Test2", "TST2", [
@@ -1006,7 +1030,8 @@ describe("Marketplace", () => {
             value: expectedCurrencyCount.times(1.5),
           }
         ),
-        "Marketplace: Failed to send currency to recipient.");
+        "Marketplace: Failed to send currency to recipient."
+      );
     });
 
     it("should get exception if signature is invalid", async () => {
@@ -1264,7 +1289,7 @@ describe("Marketplace", () => {
     });
 
     it("should return correct user token IDs arr", async () => {
-      let sig = signBuyTest({tokenContract: tokenContract, paymentTokenAddress: ZERO_ADDR, paymentTokenPrice: "0" });
+      let sig = signBuyTest({ tokenContract: tokenContract, paymentTokenAddress: ZERO_ADDR, paymentTokenPrice: "0" });
 
       await marketplace.buyToken(
         tokenContract,
@@ -1282,7 +1307,13 @@ describe("Marketplace", () => {
         }
       );
 
-      sig = signBuyTest({tokenContract: tokenContract, futureTokenId: 1, paymentTokenAddress: ZERO_ADDR, paymentTokenPrice: "0", tokenURI: defaultTokenURI + 1 });
+      sig = signBuyTest({
+        tokenContract: tokenContract,
+        futureTokenId: 1,
+        paymentTokenAddress: ZERO_ADDR,
+        paymentTokenPrice: "0",
+        tokenURI: defaultTokenURI + 1,
+      });
 
       await marketplace.buyToken(
         tokenContract,
@@ -1300,7 +1331,13 @@ describe("Marketplace", () => {
         }
       );
 
-      sig = signBuyTest({tokenContract: tokenContract, futureTokenId: 2, paymentTokenAddress: ZERO_ADDR, paymentTokenPrice: "0", tokenURI: defaultTokenURI + 2 });
+      sig = signBuyTest({
+        tokenContract: tokenContract,
+        futureTokenId: 2,
+        paymentTokenAddress: ZERO_ADDR,
+        paymentTokenPrice: "0",
+        tokenURI: defaultTokenURI + 2,
+      });
 
       await marketplace.buyToken(
         tokenContract,
@@ -1348,15 +1385,14 @@ describe("Marketplace", () => {
       const addressesArr = [];
 
       for (let i = 0; i < 5; i++) {
-        
-      let addr = await marketplace.addToken.call("Test" + i, "TST" + i, [
-        defaultPricePerOneToken,
-        defaultMinNFTFloorPrice,
-        defaultVoucherTokensAmount,
-        false,
-        defaultVoucherContract.address,
-        ZERO_ADDR,
-      ]);
+        let addr = await marketplace.addToken.call("Test" + i, "TST" + i, [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          false,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+        ]);
         await marketplace.addToken("Test" + i, "TST" + i, [
           defaultPricePerOneToken,
           defaultMinNFTFloorPrice,

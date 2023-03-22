@@ -25,20 +25,6 @@ interface IMarketplace {
         string tokenURI;
     }
 
-    /**
-     * @notice The structure that stores TokenContract init params
-     * @param tokenContract the address of the Token contract
-     * @param tokenName the name of the collection (Uses in ERC721 and ERC712)
-     * @param tokenSymbol the symbol of the collection (Uses in ERC721)
-     * @param tokenParams the TokenParams struct with parameters of the Token contract
-     */
-    struct TokenContractInitParams {
-        address tokenContract;
-        string tokenName;
-        string tokenSymbol;
-        TokenParams tokenParams;
-    }
-
     event TokenContractDeployed(
         address indexed tokenContract,
         string tokenName,
@@ -214,7 +200,10 @@ interface IMarketplace {
      * @param userAddr_ the address of the user for whom you want to get information
      * @return tokenIDs_ the array of token IDs owned by the user
      */
-    function getUserTokenIDs(address tokenContract_, address userAddr_) external view returns (uint256[] memory tokenIDs_);
+    function getUserTokenIDs(
+        address tokenContract_,
+        address userAddr_
+    ) external view returns (uint256[] memory tokenIDs_);
 
     /**
      * @notice The function that returns the total TokenContracts count
@@ -228,8 +217,8 @@ interface IMarketplace {
      * @param limit_ the maximum number of elements for
      * @return array with the addresses of the token contracts
      */
-    function getTokenContractsPart(uint256 offset_, uint256 limit_)
-        external
-        view
-        returns (address[] memory);
+    function getTokenContractsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (address[] memory);
 }

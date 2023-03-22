@@ -10,7 +10,7 @@ const { parseMarketplaceParams } = require("./helpers/deployHelper");
 
 module.exports = async (deployer, logger) => {
   const MarketplaceParams = parseMarketplaceParams("./deploy/data/marketplaceParams.json");
-  
+
   const contractsRegistry = await ContractsRegistry.at((await Proxy.deployed()).address);
 
   const tokenFactory = await TokenFactory.at(await contractsRegistry.getTokenFactoryContract());
@@ -19,14 +19,17 @@ module.exports = async (deployer, logger) => {
   const roleManager = await RoleManager.at(await contractsRegistry.getRoleManagerContract());
 
   const marketplace = await Marketplace.at(await contractsRegistry.getMarketplaceContract());
-  
+
   ////////////////////////////////////////////////////////////
 
   console.log();
 
   logger.logTransaction(await roleManager.__RoleManager_init(), "Init RoleManager");
 
-  logger.logTransaction(await marketplace.__Marketplace_init(MarketplaceParams.baseTokenContractsURI), "Init Marketplace");
+  logger.logTransaction(
+    await marketplace.__Marketplace_init(MarketplaceParams.baseTokenContractsURI),
+    "Init Marketplace"
+  );
 
   ////////////////////////////////////////////////////////////
 

@@ -44,7 +44,9 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         _;
     }
 
-    function __Marketplace_init(string memory baseTokenContractsURI_) external override initializer {
+    function __Marketplace_init(
+        string memory baseTokenContractsURI_
+    ) external override initializer {
         __EIP712_init("Marketplace", "1");
 
         baseTokenContractsURI = baseTokenContractsURI_;
@@ -66,9 +68,8 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         string memory symbol_,
         TokenParams memory tokenParams_
     ) external onlyMarketplaceManager returns (address tokenProxy_) {
-        require (
-            bytes(name_).length > 0 &&
-            bytes(symbol_).length > 0,
+        require(
+            bytes(name_).length > 0 && bytes(symbol_).length > 0,
             "Marketplace: Token name or symbol is empty."
         );
         tokenProxy_ = _tokenFactory.deployToken(name_, symbol_);
@@ -89,6 +90,11 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         require(
             _tokenContracts.contains(tokenContract_),
             "Marketplace: Token contract not found."
+        );
+
+        require(
+            bytes(name_).length > 0 && bytes(symbol_).length > 0,
+            "Marketplace: Token name or symbol is empty."
         );
 
         _tokenParams[tokenContract_] = newTokenParams_;
@@ -205,11 +211,9 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         );
     }
 
-    function setBaseTokenContractsURI(string memory baseTokenContractsURI_)
-        external
-        override
-        onlyMarketplaceManager
-    {
+    function setBaseTokenContractsURI(
+        string memory baseTokenContractsURI_
+    ) external override onlyMarketplaceManager {
         baseTokenContractsURI = baseTokenContractsURI_;
 
         emit BaseTokenContractsURIUpdated(baseTokenContractsURI_);
@@ -309,22 +313,25 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         IERC721MintableToken(tokenContract_).mint(msg.sender, mintTokenId_, tokenURI_);
     }
 
-    function getUserTokenIDs(address tokenContract_, address userAddr_)
-        external
-        view
-        override
-        returns (uint256[] memory tokenIDs_)
-    {
+    function getUserTokenIDs(
+        address tokenContract_,
+        address userAddr_
+    ) external view override returns (uint256[] memory tokenIDs_) {
         uint256 _tokensCount = IERC721Upgradeable(tokenContract_).balanceOf(userAddr_);
 
         tokenIDs_ = new uint256[](_tokensCount);
 
         for (uint256 i; i < _tokensCount; i++) {
-            tokenIDs_[i] = IERC721EnumerableUpgradeable(tokenContract_).tokenOfOwnerByIndex(userAddr_, i);
+            tokenIDs_[i] = IERC721EnumerableUpgradeable(tokenContract_).tokenOfOwnerByIndex(
+                userAddr_,
+                i
+            );
         }
     }
 
-    function getTokenParams(address tokenContract_) external view override returns (TokenParams memory) {
+    function getTokenParams(
+        address tokenContract_
+    ) external view override returns (TokenParams memory) {
         return _tokenParams[tokenContract_];
     }
 
@@ -332,12 +339,10 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         return _tokenContracts.length();
     }
 
-    function getTokenContractsPart(uint256 offset_, uint256 limit_)
-        external
-        view
-        override
-        returns (address[] memory)
-    {
+    function getTokenContractsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view override returns (address[] memory) {
         return _tokenContracts.part(offset_, limit_);
     }
 

@@ -119,10 +119,10 @@ describe("ERC721MintableToken", () => {
     it("should return correct tokenURI", async () => {
       await token.mint(SECOND, 0, "uri", { from: MARKETPLACE });
       await token.mint(SECOND, 1, "", { from: MARKETPLACE });
-      
+
       const marketplace1 = await Marketplace.new();
       marketplace1.__Marketplace_init("");
-      
+
       const marketplace2 = await Marketplace.new();
       marketplace2.__Marketplace_init("base/");
 

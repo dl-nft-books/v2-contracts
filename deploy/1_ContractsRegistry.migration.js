@@ -5,9 +5,6 @@ module.exports = async (deployer, logger) => {
   const contractsRegistry = await deployer.deploy(ContractsRegistry);
   const proxy = await deployer.deploy(PublicERC1967Proxy, contractsRegistry.address, "0x");
   const contractsRegistryProxy = await ContractsRegistry.at(proxy.address);
-  
-  logger.logTransaction(
-    await contractsRegistryProxy.__OwnableContractsRegistry_init(),
-    "Init ContractsRegistry"
-  );
+
+  logger.logTransaction(await contractsRegistryProxy.__OwnableContractsRegistry_init(), "Init ContractsRegistry");
 };

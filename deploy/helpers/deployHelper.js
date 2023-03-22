@@ -33,8 +33,8 @@ function validAddressesArr(arr, arrName, onlyUndefined = false) {
 }
 
 function validOrEmptyAddressesArr(arr, arrName, onlyUndefined = false) {
-  console.log(arr)
-  console.log(arrName)
+  console.log(arr);
+  console.log(arrName);
   for (let i = 0; i < arr.length; i++) {
     nonEmptyAddress(arr[i], arrName, onlyUndefined);
   }
@@ -66,39 +66,39 @@ function parseRolesParams(path) {
   const roles = [];
   const users = [];
 
-  for(let i = 0; i < rolesParams.ADMINISTRATOR_ROLE.length; i++) {
+  for (let i = 0; i < rolesParams.ADMINISTRATOR_ROLE.length; i++) {
     roles.push(keccak256(toUtf8Bytes("ADMINISTRATOR_ROLE")));
     users.push(rolesParams.ADMINISTRATOR_ROLE[i]);
   }
   console.log("!!!!!");
-  for(let i = 0; i < rolesParams.TOKEN_FACTORY_MANAGER.length; i++) {
+  for (let i = 0; i < rolesParams.TOKEN_FACTORY_MANAGER.length; i++) {
     roles.push(keccak256(toUtf8Bytes("TOKEN_FACTORY_MANAGER")));
     users.push(rolesParams.TOKEN_FACTORY_MANAGER[i]);
   }
-  for(let i = 0; i < rolesParams.TOKEN_REGISTRY_MANAGER.length; i++) {
+  for (let i = 0; i < rolesParams.TOKEN_REGISTRY_MANAGER.length; i++) {
     roles.push(keccak256(toUtf8Bytes("TOKEN_REGISTRY_MANAGER")));
     users.push(rolesParams.TOKEN_REGISTRY_MANAGER[i]);
   }
-  for(let i = 0; i < rolesParams.TOKEN_MANAGER.length; i++) {
+  for (let i = 0; i < rolesParams.TOKEN_MANAGER.length; i++) {
     roles.push(keccak256(toUtf8Bytes("TOKEN_MANAGER")));
     users.push(rolesParams.TOKEN_MANAGER[i]);
   }
-  for(let i = 0; i < rolesParams.ROLE_SUPERVISOR.length; i++) {
+  for (let i = 0; i < rolesParams.ROLE_SUPERVISOR.length; i++) {
     roles.push(keccak256(toUtf8Bytes("ROLE_SUPERVISOR")));
     users.push(rolesParams.ROLE_SUPERVISOR[i]);
   }
-  for(let i = 0; i < rolesParams.WITHDRAWAL_MANAGER.length; i++) {
+  for (let i = 0; i < rolesParams.WITHDRAWAL_MANAGER.length; i++) {
     roles.push(keccak256(toUtf8Bytes("WITHDRAWAL_MANAGER")));
     users.push(rolesParams.WITHDRAWAL_MANAGER[i]);
   }
-  for(let i = 0; i < rolesParams.MARKETPLACE_MANAGER.length; i++) {
+  for (let i = 0; i < rolesParams.MARKETPLACE_MANAGER.length; i++) {
     roles.push(keccak256(toUtf8Bytes("MARKETPLACE_MANAGER")));
     users.push(rolesParams.MARKETPLACE_MANAGER[i]);
   }
 
   return {
     roles: roles,
-    users: users
+    users: users,
   };
 }
 

@@ -6,7 +6,7 @@ const TokenRegistry = artifacts.require("TokenRegistry");
 
 module.exports = async (deployer, logger) => {
   const contractsRegistry = await ContractsRegistry.at((await Proxy.deployed()).address);
-  
+
   const tokenRegistry = await TokenRegistry.at(await contractsRegistry.getTokenRegistryContract());
 
   const token = await deployer.deploy(ERC721MintableToken);
@@ -14,10 +14,7 @@ module.exports = async (deployer, logger) => {
   const tokenPool = await tokenRegistry.TOKEN_POOL();
 
   logger.logTransaction(
-    await tokenRegistry.setNewImplementations(
-      [tokenPool],
-      [token.address]
-    ),
+    await tokenRegistry.setNewImplementations([tokenPool], [token.address]),
     "Set Token implementation"
   );
 };

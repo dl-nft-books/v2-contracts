@@ -4,7 +4,7 @@ const Marketplace = artifacts.require("Marketplace");
 
 module.exports = async (deployer, logger) => {
   const contractsRegistry = await ContractsRegistry.at((await Proxy.deployed()).address);
-  
+
   const marketplace = await deployer.deploy(Marketplace);
 
   logger.logTransaction(
