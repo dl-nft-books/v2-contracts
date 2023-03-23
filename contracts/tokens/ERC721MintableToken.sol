@@ -24,7 +24,8 @@ contract ERC721MintableToken is
     IERC721MintableToken,
     AbstractDependant,
     ERC721EnumerableUpgradeable,
-    ERC721HolderUpgradeable
+    ERC721HolderUpgradeable,
+    PausableUpgradeable
 {
     using DecimalsConverter for uint256;
     using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
@@ -57,17 +58,17 @@ contract ERC721MintableToken is
 
         _tokenName = name_;
         _tokenSymbol = symbol_;
-        // __Pausable_init();
+        __Pausable_init();
         // __ReentrancyGuard_init();
     }
 
-    // function pause() external override onlyTokenManager {
-    //     _pause();
-    // }
+    function pause() external override onlyTokenManager {
+        _pause();
+    }
 
-    // function unpause() external override onlyTokenManager {
-    //     _unpause();
-    // }
+    function unpause() external override onlyTokenManager {
+        _unpause();
+    }
 
     function setDependencies(
         address contractsRegistry_,
@@ -79,7 +80,7 @@ contract ERC721MintableToken is
         _marketplace = registry_.getMarketplaceContract();
     }
 
-    function mint(address to_, uint256 tokenId_, string memory uri_) public onlyMarketplace {
+    function mint(address to_, uint256 tokenId_, string memory uri_) public whenNotPaused onlyMarketplace {
         require(!_exists(tokenId_), "ERC721MintableToken: Token with such id already exists.");
 
         require(tokenId_ == _nextTokenId++, "ERC721MintableToken: Token id is not valid.");
@@ -94,7 +95,7 @@ contract ERC721MintableToken is
         _setTokenURI(tokenId_, uri_);
     }
 
-    function burn(uint256 tokenId_) public onlyTokenManager {
+    function burn(uint256 tokenId_) public whenNotPaused onlyTokenManager {
         _burn(tokenId_);
     }
 

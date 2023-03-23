@@ -81,6 +81,35 @@ describe("ERC721MintableToken", () => {
     });
   });
 
+  describe("pause/unpause", () => {
+    it("should pause and unpause token minting", async () => {
+      const reason = "Pausable: paused";
+
+      await token.pause();
+
+      await truffleAssert.reverts(token.mint(SECOND, 0, "uri"), reason);
+
+      await truffleAssert.reverts(token.burn(0), reason);
+
+      await token.unpause();
+
+      await token.mint(SECOND, 0, "uri", { from: MARKETPLACE });
+
+      assert.equal(await token.ownerOf(0), SECOND);
+
+      await token.burn(0);
+
+      await truffleAssert.reverts(token.ownerOf(0), "ERC721: owner query for nonexistent token");
+    });
+
+    it("should get exception if non TokenManager try to call this function", async () => {
+      const reason = "ERC721MintableToken: Caller is not a token manager.";
+
+      await truffleAssert.reverts(token.pause({ from: SECOND }), reason);
+      await truffleAssert.reverts(token.unpause({ from: SECOND }), reason);
+    });
+  });
+
   describe("mint()", () => {
     it("should mint correctly", async () => {
       await token.mint(SECOND, 0, "uri", { from: MARKETPLACE });
