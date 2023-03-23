@@ -406,6 +406,7 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.paidTokensAmount).toFixed(), 0);
       assert.equal(toBN(tx.receipt.logs[0].args.paymentTokenPrice).toFixed(), 0);
       assert.equal(toBN(tx.receipt.logs[0].args.discount).toFixed(), 0);
+      assert.equal(tx.receipt.logs[0].args.fundsRecipient, ZERO_ADDR);
 
       const token = await ERC721MintableToken.at(tokenContract);
       assert.equal(await token.tokenURI(0), defaultBaseURI + defaultTokenURI);
@@ -473,6 +474,7 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.paidTokensAmount).toFixed(), expectedCurrencyCount.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.paymentTokenPrice).toFixed(), tokenPrice.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.discount).toFixed(), 0);
+      assert.equal(tx.receipt.logs[0].args.fundsRecipient, NOTHING);
     });
 
     it("should correctly buy token with ETH and send currency to recipient address if recipient is marketplace", async () => {
@@ -536,6 +538,7 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.paidTokensAmount).toFixed(), expectedCurrencyCount.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.paymentTokenPrice).toFixed(), tokenPrice.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.discount).toFixed(), 0);
+      assert.equal(tx.receipt.logs[0].args.fundsRecipient, marketplace.address);
     });
 
     it("should correctly pay with ETH for new token with extra currency without discount", async () => {
@@ -575,6 +578,7 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.paidTokensAmount).toFixed(), expectedCurrencyCount.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.paymentTokenPrice).toFixed(), tokenPrice.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.discount).toFixed(), 0);
+      assert.equal(tx.receipt.logs[0].args.fundsRecipient, ZERO_ADDR);
     });
 
     it("should correctly pay with ETH for new token with extra currency with discount", async () => {
@@ -624,6 +628,7 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.paidTokensAmount).toFixed(), expectedCurrencyCount.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.paymentTokenPrice).toFixed(), tokenPrice.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.discount).toFixed(), wei(30, 25).toFixed());
+      assert.equal(tx.receipt.logs[0].args.fundsRecipient, ZERO_ADDR);
     });
 
     it("should correctly pay with ETH without extra currency without discount", async () => {
@@ -669,6 +674,7 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.paidTokensAmount).toFixed(), expectedCurrencyCount.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.paymentTokenPrice).toFixed(), tokenPrice.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.discount).toFixed(), 0);
+      assert.equal(tx.receipt.logs[0].args.fundsRecipient, ZERO_ADDR);
     });
 
     it("should correctly pay with ETH without extra currency with discount", async () => {
@@ -723,6 +729,7 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.paidTokensAmount).toFixed(), expectedCurrencyCount.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.paymentTokenPrice).toFixed(), tokenPrice.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.discount).toFixed(), wei(20, 25).toFixed());
+      assert.equal(tx.receipt.logs[0].args.fundsRecipient, ZERO_ADDR);
     });
 
     it("should correctly pay with ERC20 for new token without discount", async () => {
@@ -761,6 +768,7 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.paidTokensAmount).toFixed(), expectedTokensCount.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.paymentTokenPrice).toFixed(), tokenPrice.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.discount).toFixed(), 0);
+      assert.equal(tx.receipt.logs[0].args.fundsRecipient, ZERO_ADDR);
     });
 
     it("should correctly pay with ERC20 for new token with discount", async () => {
@@ -804,6 +812,7 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.paidTokensAmount).toFixed(), expectedTokensCount.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.paymentTokenPrice).toFixed(), tokenPrice.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.discount).toFixed(), wei(50, 25).toFixed());
+      assert.equal(tx.receipt.logs[0].args.fundsRecipient, ZERO_ADDR);
     });
 
     it("should correctly pay with voucher token for new token", async () => {
@@ -848,6 +857,7 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.paidTokensAmount).toFixed(), defaultVoucherTokensAmount.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.paymentTokenPrice).toFixed(), "0");
       assert.equal(toBN(tx.receipt.logs[0].args.discount).toFixed(), 0);
+      assert.equal(tx.receipt.logs[0].args.fundsRecipient, ZERO_ADDR);
     });
 
     it("should get exception if transfer currency failed", async () => {
@@ -1146,6 +1156,7 @@ describe("Marketplace", () => {
       assert.equal(tx.receipt.logs[0].args.nftAddress, nft.address);
       assert.equal(toBN(tx.receipt.logs[0].args.tokenId).toFixed(), tokenId.toFixed());
       assert.equal(toBN(tx.receipt.logs[0].args.nftFloorPrice).toFixed(), nftFloorPrice.toFixed());
+      assert.equal(tx.receipt.logs[0].args.fundsRecipient, ZERO_ADDR);
     });
 
     it("should get exception if the nft floor price is less than the minimum", async () => {

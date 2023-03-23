@@ -161,7 +161,8 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
             paymentTokenAddress_,
             amountToPay_,
             paymentTokenPrice_,
-            discount_
+            discount_,
+            _currentTokenParams.fundsRecipient
         );
     }
 
@@ -207,7 +208,8 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
             MintedTokenInfo(futureTokenId_, _currentTokenParams.minNFTFloorPrice, tokenURI_),
             nftAddress_,
             tokenId_,
-            nftFloorPrice_
+            nftFloorPrice_,
+            _currentTokenParams.fundsRecipient
         );
     }
 

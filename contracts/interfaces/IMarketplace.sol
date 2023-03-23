@@ -90,6 +90,7 @@ interface IMarketplace {
      * @param paidTokensAmount the amount of tokens paid
      * @param paymentTokenPrice the price in USD of the payment token
      * @param discount discount value applied
+     * @param fundsRecipient the address of the recipient of the funds
      */
     event SuccessfullyMinted(
         address indexed tokenContract,
@@ -98,7 +99,8 @@ interface IMarketplace {
         address indexed paymentTokenAddress,
         uint256 paidTokensAmount,
         uint256 paymentTokenPrice,
-        uint256 discount
+        uint256 discount,
+        address fundsRecipient
     );
 
     /**
@@ -109,6 +111,7 @@ interface IMarketplace {
      * @param nftAddress the address of the NFT contract paid for the token mint
      * @param tokenId the ID of the token that was paid for the mint
      * @param nftFloorPrice the floor price of the NFT contract
+     * @param fundsRecipient the address of the recipient of the funds
      */
     event SuccessfullyMintedByNFT(
         address indexed tokenContract,
@@ -116,7 +119,8 @@ interface IMarketplace {
         MintedTokenInfo mintedTokenInfo,
         address indexed nftAddress,
         uint256 tokenId,
-        uint256 nftFloorPrice
+        uint256 nftFloorPrice,
+        address fundsRecipient
     );
 
     /**
