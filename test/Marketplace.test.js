@@ -3,7 +3,7 @@ const { wei, accounts, toBN } = require("../scripts/utils/utils");
 const { ZERO_ADDR, PRECISION, PERCENTAGE_100 } = require("../scripts/utils/constants");
 const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
-const { signBuy, signCreate } = require("./helpers/signatures");
+const { signBuy } = require("./helpers/signatures");
 const { getCurrentBlockTime, setTime } = require("./helpers/block-helper");
 
 const ContractsRegistry = artifacts.require("ContractsRegistry");

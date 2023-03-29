@@ -18,7 +18,6 @@ import "../interfaces/IRoleManager.sol";
 import "../interfaces/IMarketplace.sol";
 import "../ContractsRegistry.sol";
 
-// PausableUpgradeable,
 // ReentrancyGuardUpgradeable
 contract ERC721MintableToken is
     IERC721MintableToken,

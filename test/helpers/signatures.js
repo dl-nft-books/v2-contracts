@@ -31,7 +31,7 @@ const signBuy = (domain, message, privateKey) => {
   return fromRpcSig(signTypedData({ privateKey, data, version: "V4" }));
 };
 
-const signCreate = (domain, message, privateKey) => {
+const signPermit = (domain, message, privateKey) => {
   const { name, version = "1", chainId = 1, verifyingContract } = domain;
 
   const EIP712Domain = [
@@ -41,27 +41,57 @@ const signCreate = (domain, message, privateKey) => {
     { name: "verifyingContract", type: "address" },
   ];
 
-  const Create = [
-    { name: "tokenContractId", type: "uint256" },
-    { name: "tokenName", type: "bytes32" },
-    { name: "tokenSymbol", type: "bytes32" },
-    { name: "pricePerOneToken", type: "uint256" },
-    { name: "voucherTokenContract", type: "address" },
-    { name: "voucherTokensAmount", type: "uint256" },
-    { name: "minNFTFloorPrice", type: "uint256" },
-  ];
+  const Permit = [
+    { name: "owner", type: "address" },
+    { name: "spender", type: "address" },
+    { name: "value", type: "uint256" },
+    { name: "deadline", type: "uint256" }
+  ]
 
   const data = {
-    primaryType: "Create",
-    types: { EIP712Domain, Create },
+    primaryType: "Permit",
+    types: { EIP712Domain, Permit },
     domain: { name, version, chainId, verifyingContract },
-    message,
+    message: message,
   };
 
   return fromRpcSig(signTypedData({ privateKey, data, version: "V4" }));
 };
 
+
+
+// const signCreate = (domain, message, privateKey) => {
+//   const { name, version = "1", chainId = 1, verifyingContract } = domain;
+
+//   const EIP712Domain = [
+//     { name: "name", type: "string" },
+//     { name: "version", type: "string" },
+//     { name: "chainId", type: "uint256" },
+//     { name: "verifyingContract", type: "address" },
+//   ];
+
+//   const Create = [
+//     { name: "tokenContractId", type: "uint256" },
+//     { name: "tokenName", type: "bytes32" },
+//     { name: "tokenSymbol", type: "bytes32" },
+//     { name: "pricePerOneToken", type: "uint256" },
+//     { name: "voucherTokenContract", type: "address" },
+//     { name: "voucherTokensAmount", type: "uint256" },
+//     { name: "minNFTFloorPrice", type: "uint256" },
+//   ];
+
+//   const data = {
+//     primaryType: "Create",
+//     types: { EIP712Domain, Create },
+//     domain: { name, version, chainId, verifyingContract },
+//     message,
+//   };
+
+//   return fromRpcSig(signTypedData({ privateKey, data, version: "V4" }));
+// };
+
 module.exports = {
   signBuy,
-  signCreate,
+  signPermit,
+  // signCreate,
 };
