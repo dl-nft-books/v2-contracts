@@ -40,20 +40,31 @@ module.exports = {
       url: `https://goerli.infura.io/v3/${process.env.INFURA_KEY}`,
       accounts: privateKey(),
       gasMultiplier: 1.2,
+      gas: 5000000,
     },
-    chapel: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+    mumbai: {
+      url: "https://rpc-mumbai.maticvigil.com/",
       accounts: privateKey(),
       gasMultiplier: 1.2,
-      timeout: 60000,
+      gas: 5000000,
     },
-    bsc: {
-      url: "https://bsc-dataseed.binance.org/",
+    qtestnet: {
+      url: "https://rpc.qtestnet.org/",
+      accounts: privateKey(),
+      gasMultiplier: 1.2,
+    },
+    polygon: {
+      url: "https://matic-mainnet.chainstacklabs.com",
       accounts: privateKey(),
       gasMultiplier: 1.2,
     },
     ethereum: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
+      accounts: privateKey(),
+      gasMultiplier: 1.2,
+    },
+    qmainnet: {
+      url: "https://rpc.q.org",
       accounts: privateKey(),
       gasMultiplier: 1.2,
     },
@@ -71,9 +82,29 @@ module.exports = {
     apiKey: {
       mainnet: `${process.env.ETHERSCAN_KEY}`,
       goerli: `${process.env.ETHERSCAN_KEY}`,
-      bsc: `${process.env.BSCSCAN_KEY}`,
-      bscTestnet: `${process.env.BSCSCAN_KEY}`,
+      polygon: `${process.env.POLYGON_KEY}`,
+      polygonMumbai: `${process.env.POLYGON_KEY}`,      
+      qtestnet: "abc",
+      qmainnet: "abc",
     },
+    customChains: [
+      {
+        network: "qtestnet",
+        chainId: 35443,
+        urls: {
+          apiURL: "https://explorer.qtestnet.org/api",
+          browserURL: "https://explorer.qtestnet.org",
+        },
+      },
+      {
+        network: "qmainnet",
+        chainId: 35441,
+        urls: {
+          apiURL: "https://explorer.q.org/api",
+          browserURL: "https://explorer.q.org",
+        },
+      },
+    ],
   },
   migrate: {
     pathToMigrations: "./deploy/",
