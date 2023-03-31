@@ -22,9 +22,25 @@ interface IMarketplace {
         uint256 pricePerOneToken;
         uint256 minNFTFloorPrice;
         uint256 voucherTokensAmount;
-        bool isNFTBuyable;
         address voucherTokenContract;
         address fundsRecipient;
+        bool isNFTBuyable;
+    }
+
+    struct BaseTokenParams {
+        uint256 pricePerOneToken;
+        string tokenName;
+    }
+
+    struct DetailedTokenParams {
+        uint256 pricePerOneToken;
+        uint256 minNFTFloorPrice;
+        uint256 voucherTokensAmount;
+        address voucherTokenContract;
+        address fundsRecipient;
+        bool isNFTBuyable;
+        string tokenName;
+        string tokenSymbol;
     }
 
     /**
@@ -56,7 +72,7 @@ interface IMarketplace {
     /**
      * @notice This event is emitted when the TokenContract parameters are updated
      * @param tokenContract the address of the token contract
-     * @param tokenName the name of the collection 
+     * @param tokenName the name of the collection
      * @param tokenSymbol the symbol of the collection
      * @param tokenParams the new TokenParams struct with new parameters
      */
@@ -135,13 +151,12 @@ interface IMarketplace {
      */
     function __Marketplace_init(string memory baseTokenContractsURI_) external;
 
-
     /**
      * @notice The function for creating a new token contract
-     * @param name_ the name of the collection 
+     * @param name_ the name of the collection
      * @param symbol_ the symbol of the collection
      * @param tokenParams_ the TokenParams struct with the token contract params
-     */ 
+     */
     function addToken(
         string memory name_,
         string memory symbol_,
@@ -151,7 +166,7 @@ interface IMarketplace {
     /**
      * @notice The function for updating all TokenContract parameters
      * @param tokenContract_ the address of the token contract
-     * @param name_ the name of the collection 
+     * @param name_ the name of the collection
      * @param symbol_ the symbol of the collection
      * @param newTokenParams_ the new TokenParams struct
      */
@@ -233,13 +248,6 @@ interface IMarketplace {
     function baseTokenContractsURI() external view returns (string memory);
 
     /**
-     * @notice The function that returns the token params of the token contract
-     * @param tokenContract_ the address of the token contract
-     * @return the TokenParams struct with the token contract params
-     */
-    function getTokenParams(address tokenContract_) external view returns (TokenParams memory);
-
-    /**
      * @notice The function to get an array of tokenIDs owned by a particular user
      * @param tokenContract_ the address of the token contract
      * @param userAddr_ the address of the user for whom you want to get information
@@ -249,6 +257,7 @@ interface IMarketplace {
         address tokenContract_,
         address userAddr_
     ) external view returns (uint256[] memory tokenIDs_);
+
 
     /**
      * @notice The function that returns the total TokenContracts count
@@ -266,4 +275,55 @@ interface IMarketplace {
         uint256 offset_,
         uint256 limit_
     ) external view returns (address[] memory);
+
+    /**
+     * @notice The function for getting TokenParams with pagination
+     * @param offset_ the offset for pagination
+     * @param limit_ the maximum number of elements for
+     * @return array with the TokenParams structs
+     */
+    function getTokenContractsParamsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (TokenParams[] memory);
+
+    /**
+     * @notice The function that returns the token params of the token contract
+     * @param tokenContract_ the address of the token contract
+     * @return the BaseTokenParams struct with the base token params
+     */
+    function getBaseTokenParams(
+        address tokenContract_
+    ) external view returns (BaseTokenParams memory);
+
+    /**
+     * @notice The function that returns the base token params of the token contract with pagination
+     * @param offset_ the offset for pagination
+     * @param limit_ the maximum number of elements for
+     * @return tokenParams_ the array of BaseTokenParams structs with the base token params
+     */
+    function getBaseTokenParamsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (BaseTokenParams[] memory tokenParams_);
+
+    /**
+     * @notice The function that returns the token params of the token contract
+     * @param tokenContract_ the address of the token contract
+     * @return the DetailedTokenParams struct with the detailed token params
+     */
+    function getDetailedTokenParams(
+        address tokenContract_
+    ) external view returns (DetailedTokenParams memory);
+
+    /**
+     * @notice The function that returns the detailed token params of the token contract with pagination
+     * @param offset_ the offset for pagination
+     * @param limit_ the maximum number of elements for
+     * @return tokenParams_ the array of DetailedTokenParams structs with the detailed token params
+     */
+    function getDetailedTokenParamsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (DetailedTokenParams[] memory tokenParams_);
 }

@@ -1391,6 +1391,8 @@ describe("Marketplace", () => {
       await truffleAssert.reverts(marketplace.setBaseTokenContractsURI("", { from: NOTHING }), reason);
     });
   });
+
+  
   describe("getTokenContractsPart", () => {
     it("should return correct token contracts arr", async () => {
       const addressesArr = [];
@@ -1421,6 +1423,43 @@ describe("Marketplace", () => {
       assert.deepEqual(await marketplace.getTokenContractsPart(0, 10), addressesArr);
       assert.deepEqual(await marketplace.getTokenContractsPart(0, 3), addressesArr.slice(0, 3));
       assert.deepEqual(await marketplace.getTokenContractsPart(3, 10), addressesArr.slice(3));
+    });
+  });
+
+  describe("getTokenContractsParamsPart", () => {
+    it("should return correct token contracts params arr", async () => {
+      const addressesArr = [];
+      const paramsArr = [];
+
+      for (let i = 0; i < 5; i++) {
+        const tokenParam = [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          false,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+        ];
+        let addr = await marketplace.addToken.call("Test" + i, "TST" + i, tokenParam);
+        await marketplace.addToken("Test" + i, "TST" + i, tokenParam);
+
+        addressesArr.push(addr);
+        paramsArr.push([
+          defaultPricePerOneToken.toString(),
+          defaultMinNFTFloorPrice.toString(),
+          defaultVoucherTokensAmount.toString(),
+          false,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+        ]);
+
+      }
+
+      assert.equal((await marketplace.getTokenContractsCount()).toString(), 5);
+
+      assert.deepEqual(await marketplace.getTokenContractsParamsPart(0, 10), paramsArr);
+      assert.deepEqual(await marketplace.getTokenContractsParamsPart(0, 3), paramsArr.slice(0, 3));
+      assert.deepEqual(await marketplace.getTokenContractsParamsPart(3, 10), paramsArr.slice(3));
     });
   });
 });

@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20Metadat
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
@@ -331,21 +332,74 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         }
     }
 
-    function getTokenParams(
-        address tokenContract_
-    ) external view override returns (TokenParams memory) {
-        return _tokenParams[tokenContract_];
-    }
-
     function getTokenContractsCount() external view override returns (uint256) {
         return _tokenContracts.length();
+    }
+
+    function getBaseTokenParams(
+        address tokenContract_
+    ) public view override returns (BaseTokenParams memory) {
+        TokenParams memory _currentTokenParams = _tokenParams[tokenContract_];
+        return BaseTokenParams(
+            _currentTokenParams.pricePerOneToken,
+            ERC721Upgradeable(tokenContract_).name()
+        );
+    }
+
+    function getBaseTokenParamsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view override returns (BaseTokenParams[] memory tokenParams_) {
+        address[] memory tokenContracts_ = getTokenContractsPart(offset_, limit_);
+        tokenParams_ = new BaseTokenParams[](tokenContracts_.length);
+        for(uint256 i; i < tokenContracts_.length; i++) {
+            tokenParams_[i] = getBaseTokenParams(tokenContracts_[i]);
+        }
+    }
+
+    function getDetailedTokenParams(
+        address tokenContract_
+    ) public view override returns (DetailedTokenParams memory) {
+        TokenParams memory _currentTokenParams = _tokenParams[tokenContract_];
+        return DetailedTokenParams(
+            _currentTokenParams.pricePerOneToken,
+            _currentTokenParams.minNFTFloorPrice,
+            _currentTokenParams.voucherTokensAmount,
+            _currentTokenParams.voucherTokenContract,
+            _currentTokenParams.fundsRecipient,
+            _currentTokenParams.isNFTBuyable,
+            ERC721Upgradeable(tokenContract_).name(),
+            ERC721Upgradeable(tokenContract_).symbol()
+        );
+    }
+
+    function getDetailedTokenParamsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view override returns (DetailedTokenParams[] memory tokenParams_) {
+        address[] memory tokenContracts_ = getTokenContractsPart(offset_, limit_);
+        tokenParams_ = new DetailedTokenParams[](tokenContracts_.length);
+        for(uint256 i; i < tokenContracts_.length; i++) {
+            tokenParams_[i] = getDetailedTokenParams(tokenContracts_[i]);
+        }
     }
 
     function getTokenContractsPart(
         uint256 offset_,
         uint256 limit_
-    ) external view override returns (address[] memory) {
+    ) public view override returns (address[] memory) {
         return _tokenContracts.part(offset_, limit_);
+    }
+
+    function getTokenContractsParamsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view override returns (TokenParams[] memory tokenParams_) {
+        address[] memory tokenContracts_ = getTokenContractsPart(offset_, limit_);
+        tokenParams_ = new TokenParams[](tokenContracts_.length);
+        for(uint256 i; i < tokenContracts_.length; i++) {
+            tokenParams_[i] = _tokenParams[tokenContracts_[i]];
+        }
     }
 
     function _verifySignature(
