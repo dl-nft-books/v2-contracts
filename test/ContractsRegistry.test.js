@@ -1,5 +1,5 @@
-const { assert } = require("chai");
-const { toBN, accounts } = require("../scripts/utils/utils");
+const {assert} = require("chai");
+const {toBN, accounts} = require("../scripts/utils/utils");
 const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
 
@@ -63,8 +63,6 @@ describe("ContractsRegistry", () => {
       const _Marketplace = await ERC20MockUpgradeable.new("Marketplace", "MTP", 18);
 
       await contractsRegistry.addProxyContract(await contractsRegistry.MARKETPLACE_NAME(), _Marketplace.address);
-
-      const Marketplace = await contractsRegistry.getMarketplaceContract();
 
       await contractsRegistry.removeContract(await contractsRegistry.MARKETPLACE_NAME());
 

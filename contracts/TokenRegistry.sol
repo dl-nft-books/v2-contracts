@@ -3,8 +3,8 @@ pragma solidity ^0.8.9;
 
 import "@dlsl/dev-modules/contracts-registry/pools/AbstractPoolContractsRegistry.sol";
 
-import "./interfaces/ITokenRegistry.sol";
 import "./interfaces/IContractsRegistry.sol";
+import "./interfaces/ITokenRegistry.sol";
 import "./interfaces/IRoleManager.sol";
 
 contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {

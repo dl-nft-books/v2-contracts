@@ -1,5 +1,5 @@
-const { assert } = require("chai");
-const { accounts } = require("../scripts/utils/utils");
+const {assert} = require("chai");
+const {accounts} = require("../scripts/utils/utils");
 const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
 
@@ -21,6 +21,7 @@ describe("RoleManager", () => {
   let ROLE_SUPERVISOR_ROLE;
   let WITHDRAWAL_MANAGER_ROLE;
   let MARKETPLACE_MANAGER_ROLE;
+  let SIGNATURE_MANAGER_ROLE;
 
   let contractsRegistry;
   let roleManager;
@@ -60,6 +61,7 @@ describe("RoleManager", () => {
     ROLE_SUPERVISOR_ROLE = await roleManager.ROLE_SUPERVISOR();
     WITHDRAWAL_MANAGER_ROLE = await roleManager.WITHDRAWAL_MANAGER();
     MARKETPLACE_MANAGER_ROLE = await roleManager.MARKETPLACE_MANAGER();
+    SIGNATURE_MANAGER_ROLE = await roleManager.SIGNATURE_MANAGER();
 
     await reverter.snapshot();
   });
@@ -161,6 +163,16 @@ describe("RoleManager", () => {
       );
     });
 
+    it("should revert if tries to renounce last admin", async () => {
+      await roleManager.grantRole(ADMINISTRATOR_ROLE, SECOND);
+      assert.equal(await roleManager.getRoleMemberCount(ADMINISTRATOR_ROLE), 2);
+      await roleManager.renounceRole(ADMINISTRATOR_ROLE, SECOND, {from: SECOND});
+      await truffleAssert.reverts(
+        roleManager.renounceRole(ADMINISTRATOR_ROLE, OWNER, {from: OWNER}),
+        "RoleManager: cannot renounce last administrator"
+      );
+    })
+
     it("isTokenFactoryManager()", async () => {
       assert.equal(await roleManager.isTokenFactoryManager(NOTHING), false);
 
@@ -168,6 +180,12 @@ describe("RoleManager", () => {
       assert.equal(await roleManager.isTokenFactoryManager(NOTHING), true);
 
       await roleManager.revokeRole(TOKEN_FACTORY_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isTokenFactoryManager(NOTHING), false);
+
+      await roleManager.grantRole(TOKEN_FACTORY_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isTokenFactoryManager(NOTHING), true);
+
+      await roleManager.renounceRole(TOKEN_FACTORY_MANAGER_ROLE, NOTHING, {from: NOTHING});
       assert.equal(await roleManager.isTokenFactoryManager(NOTHING), false);
     });
 
@@ -179,6 +197,12 @@ describe("RoleManager", () => {
 
       await roleManager.revokeRole(TOKEN_REGISTRY_MANAGER_ROLE, NOTHING);
       assert.equal(await roleManager.isTokenRegistryManager(NOTHING), false);
+
+      await roleManager.grantRole(TOKEN_REGISTRY_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isTokenRegistryManager(NOTHING), true);
+
+      await roleManager.renounceRole(TOKEN_REGISTRY_MANAGER_ROLE, NOTHING, {from: NOTHING});
+      assert.equal(await roleManager.isTokenRegistryManager(NOTHING), false);
     });
 
     it("isTokenManager()", async () => {
@@ -188,6 +212,12 @@ describe("RoleManager", () => {
       assert.equal(await roleManager.isTokenManager(NOTHING), true);
 
       await roleManager.revokeRole(TOKEN_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isTokenManager(NOTHING), false);
+
+      await roleManager.grantRole(TOKEN_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isTokenManager(NOTHING), true);
+
+      await roleManager.renounceRole(TOKEN_MANAGER_ROLE, NOTHING, {from: NOTHING});
       assert.equal(await roleManager.isTokenManager(NOTHING), false);
     });
 
@@ -199,6 +229,12 @@ describe("RoleManager", () => {
 
       await roleManager.revokeRole(ROLE_SUPERVISOR_ROLE, NOTHING);
       assert.equal(await roleManager.isRoleSupervisor(NOTHING), false);
+
+      await roleManager.grantRole(ROLE_SUPERVISOR_ROLE, NOTHING);
+      assert.equal(await roleManager.isRoleSupervisor(NOTHING), true);
+
+      await roleManager.renounceRole(ROLE_SUPERVISOR_ROLE, NOTHING, {from: NOTHING});
+      assert.equal(await roleManager.isRoleSupervisor(NOTHING), false);
     });
 
     it("isWithdrawalManager()", async () => {
@@ -208,6 +244,12 @@ describe("RoleManager", () => {
       assert.equal(await roleManager.isWithdrawalManager(NOTHING), true);
 
       await roleManager.revokeRole(WITHDRAWAL_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isWithdrawalManager(NOTHING), false);
+
+      await roleManager.grantRole(WITHDRAWAL_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isWithdrawalManager(NOTHING), true);
+
+      await roleManager.renounceRole(WITHDRAWAL_MANAGER_ROLE, NOTHING, {from: NOTHING});
       assert.equal(await roleManager.isWithdrawalManager(NOTHING), false);
     });
 
@@ -219,6 +261,28 @@ describe("RoleManager", () => {
 
       await roleManager.revokeRole(MARKETPLACE_MANAGER_ROLE, NOTHING);
       assert.equal(await roleManager.isMarketplaceManager(NOTHING), false);
+
+      await roleManager.grantRole(MARKETPLACE_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isMarketplaceManager(NOTHING), true);
+
+      await roleManager.renounceRole(MARKETPLACE_MANAGER_ROLE, NOTHING, {from: NOTHING});
+      assert.equal(await roleManager.isMarketplaceManager(NOTHING), false);
+    });
+
+    it("isSignatureManager", async () => {
+      assert.equal(await roleManager.isSignatureManager(NOTHING), false);
+
+      await roleManager.grantRole(SIGNATURE_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isSignatureManager(NOTHING), true);
+
+      await roleManager.revokeRole(SIGNATURE_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isSignatureManager(NOTHING), false);
+
+      await roleManager.grantRole(SIGNATURE_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.isSignatureManager(NOTHING), true);
+
+      await roleManager.renounceRole(SIGNATURE_MANAGER_ROLE, NOTHING, {from: NOTHING});
+      assert.equal(await roleManager.isSignatureManager(NOTHING), false);
     });
   });
 
@@ -291,10 +355,23 @@ describe("RoleManager", () => {
       await roleManager.grantRole(MARKETPLACE_MANAGER_ROLE, NOTHING);
       assert.equal(await roleManager.hasAnyRole(NOTHING), true);
       await roleManager.revokeRole(MARKETPLACE_MANAGER_ROLE, NOTHING);
+
+      assert.equal(await roleManager.hasAnyRole(NOTHING), false);
+      await roleManager.grantRole(SIGNATURE_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.hasAnyRole(NOTHING), true);
+      await roleManager.revokeRole(SIGNATURE_MANAGER_ROLE, NOTHING);
     });
 
     it("should return false if user has no roles", async () => {
       assert.equal(await roleManager.hasAnyRole(NOTHING), false);
+    });
+  });
+
+  describe("hasSpecificRoles()", async () => {
+    it("should return true if user has any roles", async () => {
+      await roleManager.__RoleManager_init();
+      assert.equal(await roleManager.hasSpecificRoles([ADMINISTRATOR_ROLE, SIGNATURE_MANAGER_ROLE], OWNER), true);
+      assert.equal(await roleManager.hasSpecificRoles([ROLE_SUPERVISOR_ROLE, SIGNATURE_MANAGER_ROLE], OWNER), false);
     });
   });
 });

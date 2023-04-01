@@ -11,7 +11,7 @@ interface IRoleManager {
     function __RoleManager_init() external;
 
     /**
-     * @notice The function to grant multiple roels to multiple accounts.
+     * @notice The function to grant multiple roles to multiple accounts.
      * @param roles_ The array of roles to grant.
      * @param accounts_ The array of accounts to grant the roles to.
     */
@@ -60,9 +60,15 @@ interface IRoleManager {
     function MARKETPLACE_MANAGER() external view returns (bytes32);
 
     /**
-     * @notice The function to check if an account has rights of an Administator.
+     * @notice The function to retrieve the SIGNATURE_MANAGER role.
+     * @return The SIGNATURE_MANAGER role.
+    */
+    function SIGNATURE_MANAGER() external view returns (bytes32);
+
+    /**
+     * @notice The function to check if an account has rights of an Administrator.
      * @param admin_ The account to check.
-     * @return true if the account has rights of an Administator, false otherwise.
+     * @return true if the account has rights of an Administrator, false otherwise.
     */
     function isAdmin(address admin_) external view returns (bool);
 
@@ -107,6 +113,22 @@ interface IRoleManager {
      * @return true if the account has rights of a MarketplaceManager, false otherwise.
     */
     function isMarketplaceManager(address manager_) external view returns (bool);
+
+    /**
+     * @notice The function to check if an account has rights of a SignatureManager.
+     * @param manager_ The account to check.
+     * @return true if the account has rights of a SignatureManager, false otherwise.
+    */
+    function isSignatureManager(address manager_) external view returns (bool);
+
+
+    /**
+    * @notice The function to check if an account has specific roles.
+    * @param roles_ The roles to check.
+    * @param account_ The account to check.
+    * @return true if the account has the specific roles, false otherwise.
+    */
+    function hasSpecificRoles(bytes32[] memory roles_, address account_) external view returns (bool);
 
     /**
      * @notice The function to check if an account has any role.

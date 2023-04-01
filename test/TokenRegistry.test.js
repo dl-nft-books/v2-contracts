@@ -1,5 +1,5 @@
-const { assert } = require("chai");
-const { accounts } = require("../scripts/utils/utils");
+const {assert} = require("chai");
+const {accounts} = require("../scripts/utils/utils");
 const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
 
@@ -75,17 +75,17 @@ describe("TokenRegistry", () => {
     });
     it("only token registry manager should call these methods", async () => {
       await truffleAssert.reverts(
-        tokenRegistry.setNewImplementations([TOKEN_POOL], [token.address], { from: FACTORY }),
+        tokenRegistry.setNewImplementations([TOKEN_POOL], [token.address], {from: FACTORY}),
         "TokenRegistry: Caller is not a token registry manager"
       );
 
       await truffleAssert.reverts(
-        tokenRegistry.injectDependenciesToExistingPools(0, 0, { from: FACTORY }),
+        tokenRegistry.injectDependenciesToExistingPools(0, 0, {from: FACTORY}),
         "TokenRegistry: Caller is not a token registry manager"
       );
 
       await truffleAssert.reverts(
-        tokenRegistry.injectDependenciesToExistingPoolsWithData(0, 0, 0, { from: FACTORY }),
+        tokenRegistry.injectDependenciesToExistingPoolsWithData(0, 0, 0, {from: FACTORY}),
         "TokenRegistry: Caller is not a token registry manager"
       );
     });
@@ -113,8 +113,8 @@ describe("TokenRegistry", () => {
       assert.isFalse(await tokenRegistry.isTokenPool(POOL_2));
       assert.isFalse(await tokenRegistry.isTokenPool(POOL_3));
 
-      await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_1, { from: FACTORY });
-      await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_2, { from: FACTORY });
+      await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_1, {from: FACTORY});
+      await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_2, {from: FACTORY});
 
       assert.equal((await tokenRegistry.countPools(TOKEN_POOL)).toFixed(), "2");
 
@@ -124,8 +124,8 @@ describe("TokenRegistry", () => {
     });
 
     it("should list added pools", async () => {
-      await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_1, { from: FACTORY });
-      await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_2, { from: FACTORY });
+      await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_1, {from: FACTORY});
+      await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_2, {from: FACTORY});
 
       assert.deepEqual(await tokenRegistry.listPools(TOKEN_POOL, 0, 2), [POOL_1, POOL_2]);
       assert.deepEqual(await tokenRegistry.listPools(TOKEN_POOL, 0, 10), [POOL_1, POOL_2]);
@@ -136,7 +136,7 @@ describe("TokenRegistry", () => {
 
   describe("inject dependencies", () => {
     it("should successfully inject dependencies", async () => {
-      await tokenRegistry.addProxyPool(TOKEN_POOL, pool.address, { from: FACTORY });
+      await tokenRegistry.addProxyPool(TOKEN_POOL, pool.address, {from: FACTORY});
 
       assert.equal(await pool.roleManager(), 0);
 
@@ -147,7 +147,7 @@ describe("TokenRegistry", () => {
   });
 
   it("should successfully inject dependencies with data", async () => {
-    await tokenRegistry.addProxyPool(TOKEN_POOL, pool.address, { from: FACTORY });
+    await tokenRegistry.addProxyPool(TOKEN_POOL, pool.address, {from: FACTORY});
 
     assert.equal(await pool.roleManager(), 0);
 

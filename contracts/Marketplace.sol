@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
+import "@dlsl/dev-modules/utils/Globals.sol";
 import "@dlsl/dev-modules/libs/decimals/DecimalsConverter.sol";
 import "@dlsl/dev-modules/libs/arrays/Paginator.sol";
-import "@dlsl/dev-modules/utils/Globals.sol";
 
 import "./interfaces/IMarketplace.sol";
 import "./interfaces/IRoleManager.sol";
@@ -21,7 +23,7 @@ import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/ITokenFactory.sol";
 import "./interfaces/tokens/IERC721MintableToken.sol";
 
-contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upgradeable {
+contract Marketplace is IMarketplace, ERC721HolderUpgradeable, AbstractDependant, EIP712Upgradeable, PausableUpgradeable {
     using EnumerableSet for EnumerableSet.AddressSet;
     using Paginator for EnumerableSet.AddressSet;
     using DecimalsConverter for uint256;
@@ -45,6 +47,11 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         _;
     }
 
+    modifier onlyWithdrawalManager() {
+        _onlyWithdrawalManager();
+        _;
+    }
+
     function __Marketplace_init(
         string memory baseTokenContractsURI_
     ) external override initializer {
@@ -64,11 +71,19 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         _tokenFactory = ITokenFactory(registry_.getTokenFactoryContract());
     }
 
+    function pause() external override onlyMarketplaceManager {
+        _pause();
+    }
+
+    function unpause() external override onlyMarketplaceManager {
+        _unpause();
+    }
+
     function addToken(
         string memory name_,
         string memory symbol_,
         TokenParams memory tokenParams_
-    ) external onlyMarketplaceManager returns (address tokenProxy_) {
+    ) external whenNotPaused onlyMarketplaceManager returns (address tokenProxy_) {
         require(
             bytes(name_).length > 0 && bytes(symbol_).length > 0,
             "Marketplace: Token name or symbol is empty."
@@ -87,7 +102,7 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         string memory name_,
         string memory symbol_,
         TokenParams memory newTokenParams_
-    ) external override onlyMarketplaceManager {
+    ) external override whenNotPaused onlyMarketplaceManager {
         require(
             _tokenContracts.contains(tokenContract_),
             "Marketplace: Token contract not found."
@@ -105,7 +120,39 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         emit TokenContractParamsUpdated(tokenContract_, name_, symbol_, newTokenParams_);
     }
 
-    // TODO: when not paused?; nonReentrant?
+    function withdrawPaidTokens(address tokenAddr_, address recipient_)
+        external
+        override
+        onlyWithdrawalManager
+    {
+        IERC20MetadataUpgradeable token_ = IERC20MetadataUpgradeable(tokenAddr_);
+
+        uint256 amount_ = token_.balanceOf(address(this));
+        require(amount_ > 0, "Marketplace: Nothing to withdraw.");
+
+        token_.safeTransfer(recipient_, amount_);
+
+        amount_ = amount_.to18(token_.decimals());
+
+        emit PaidTokensWithdrawn(tokenAddr_, recipient_, amount_);
+    }
+
+    function withdrawNativeCurrency(address recipient_)
+        external
+        override
+        onlyWithdrawalManager
+    {
+        uint256 amount_ = address(this).balance;
+
+        require(amount_ > 0, "Marketplace: Nothing to withdraw.");
+
+        (bool success_, ) = recipient_.call{value: amount_}("");
+        require(success_, "Marketplace: Failed to transfer native currency.");
+
+        emit NativeCurrencyWithdrawn(recipient_, amount_);
+    }
+
+    // TODO: nonReentrant?
     function buyToken(
         address tokenContract_,
         uint256 futureTokenId_,
@@ -117,7 +164,7 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         bytes32 r_,
         bytes32 s_,
         uint8 v_
-    ) external payable {
+    ) external payable whenNotPaused {
         _verifySignature(
             tokenContract_,
             futureTokenId_,
@@ -178,7 +225,7 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         bytes32 r_,
         bytes32 s_,
         uint8 v_
-    ) external override {
+    ) external override whenNotPaused {
         TokenParams storage _currentTokenParams = _tokenParams[tokenContract_];
 
         require(
@@ -216,7 +263,7 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
 
     function setBaseTokenContractsURI(
         string memory baseTokenContractsURI_
-    ) external override onlyMarketplaceManager {
+    ) external override whenNotPaused onlyMarketplaceManager {
         baseTokenContractsURI = baseTokenContractsURI_;
 
         emit BaseTokenContractsURIUpdated(baseTokenContractsURI_);
@@ -336,6 +383,13 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         return _tokenContracts.length();
     }
 
+    function getTokenContractsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) public view override returns (address[] memory) {
+        return _tokenContracts.part(offset_, limit_);
+    }
+
     function getBaseTokenParams(
         address tokenContract_
     ) public view override returns (BaseTokenParams memory) {
@@ -384,24 +438,6 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         }
     }
 
-    function getTokenContractsPart(
-        uint256 offset_,
-        uint256 limit_
-    ) public view override returns (address[] memory) {
-        return _tokenContracts.part(offset_, limit_);
-    }
-
-    function getTokenContractsParamsPart(
-        uint256 offset_,
-        uint256 limit_
-    ) external view override returns (TokenParams[] memory tokenParams_) {
-        address[] memory tokenContracts_ = getTokenContractsPart(offset_, limit_);
-        tokenParams_ = new TokenParams[](tokenContracts_.length);
-        for(uint256 i; i < tokenContracts_.length; i++) {
-            tokenParams_[i] = _tokenParams[tokenContracts_[i]];
-        }
-    }
-
     function _verifySignature(
         address tokenContract_,
         uint256 futureTokenId_,
@@ -429,7 +465,7 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
 
         address signer_ = ECDSAUpgradeable.recover(_hashTypedDataV4(structHash_), v_, r_, s_);
 
-        require(_roleManager.isAdmin(signer_), "Marketplace: Invalid signature.");
+        require(_roleManager.isSignatureManager(signer_), "Marketplace: Invalid signature.");
         require(block.timestamp <= endTimestamp_, "Marketplace: Signature expired.");
     }
 
@@ -437,6 +473,13 @@ contract Marketplace is IMarketplace, ERC721Holder, AbstractDependant, EIP712Upg
         require(
             _roleManager.isMarketplaceManager(msg.sender),
             "Marketplace: Caller is not a marketplace manager."
+        );
+    }
+
+    function _onlyWithdrawalManager() internal view {
+        require(
+            _roleManager.isWithdrawalManager(msg.sender),
+            "Marketplace: Caller is not a withdrawal manager."
         );
     }
 

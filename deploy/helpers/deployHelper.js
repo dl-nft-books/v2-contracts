@@ -22,16 +22,6 @@ function nonEmptyAddress(addr, arrName, onlyUndefined = false) {
   throw new Error(`Zero address in ${arrName} array.`);
 }
 
-function validAddressesArr(arr, arrName, onlyUndefined = false) {
-  nonEmptyField(arr, arrName, onlyUndefined);
-
-  for (let i = 0; i < arr.length; i++) {
-    nonEmptyAddress(arr[i], arrName, onlyUndefined);
-  }
-
-  return arr;
-}
-
 function validOrEmptyAddressesArr(arr, arrName, onlyUndefined = false) {
   console.log(arr);
   console.log(arrName);
@@ -103,8 +93,6 @@ function parseRolesParams(path) {
 }
 
 module.exports = {
-  nonEmptyField,
-  validAddressesArr,
   parseMarketplaceParams,
   parseRolesParams,
 };

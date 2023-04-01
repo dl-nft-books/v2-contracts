@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "./tokens/IERC721MintableToken.sol";
-
 /**
  * This is the marketplace contract that stores information about
  * the token contracts and allows users to mint tokens.
@@ -27,11 +25,27 @@ interface IMarketplace {
         bool isNFTBuyable;
     }
 
+    /**
+     * @notice The structure that stores base information about the token contract
+     * @param pricePerOneToken the price of one token in USD
+     * @param tokenName the name of the token
+     */
     struct BaseTokenParams {
         uint256 pricePerOneToken;
         string tokenName;
     }
 
+    /**
+     * @notice The structure that stores detailed information about the token contract
+     * @param pricePerOneToken the price of one token in USD
+     * @param minNFTFloorPrice the minimum floor price of the NFT contract
+     * @param voucherTokensAmount the amount of tokens that can be bought with one voucher
+     * @param isNFTBuyable the flag that indicates if the NFT can be bought for the token price
+     * @param voucherTokenContract the address of the voucher token contract
+     * @param fundsRecipient the address of the recipient of the funds
+     * @param tokenName the name of the token
+     * @param tokenSymbol the symbol of the token
+    */
     struct DetailedTokenParams {
         uint256 pricePerOneToken;
         uint256 minNFTFloorPrice;
@@ -85,14 +99,22 @@ interface IMarketplace {
 
     /**
      * @notice This event is emitted when the owner of the contract withdraws the tokens that users have paid for tokens
-     * @param tokenContract the address of the token contract
      * @param tokenAddr the address of the token to be withdrawn
      * @param recipient the address of the recipient
      * @param amount the number of tokens withdrawn
      */
     event PaidTokensWithdrawn(
-        address indexed tokenContract,
         address indexed tokenAddr,
+        address recipient,
+        uint256 amount
+    );
+
+    /**
+     * @notice This event is emitted when the owner of the contract withdraws the native currency that users have paid for tokens
+     * @param recipient the address of the recipient
+     * @param amount the number of tokens withdrawn
+     */
+    event NativeCurrencyWithdrawn(
         address recipient,
         uint256 amount
     );
@@ -152,6 +174,16 @@ interface IMarketplace {
     function __Marketplace_init(string memory baseTokenContractsURI_) external;
 
     /**
+     * @notice The function for pausing mint functionality
+     */
+    function pause() external;
+
+    /**
+     * @notice The function for unpausing mint functionality
+     */
+    function unpause() external;
+
+    /**
      * @notice The function for creating a new token contract
      * @param name_ the name of the collection
      * @param symbol_ the symbol of the collection
@@ -177,11 +209,18 @@ interface IMarketplace {
         TokenParams memory newTokenParams_
     ) external;
 
-    // /**
-    //  * @notice Function to withdraw the tokens that users paid to buy tokens
-    //  * @param recipient_ the address of the recipient
-    //  */
-    // function withdrawPaidTokens(address recipient_) external;
+    /**
+     * @notice Function to withdraw the tokens that users paid to buy tokens
+     * @param tokenAddr_ the address of the token to be withdrawn
+     * @param recipient_ the address of the recipient
+     */
+    function withdrawPaidTokens(address tokenAddr_, address recipient_) external;
+
+    /**
+     * @notice Function to withdraw the native currency that users paid to buy tokens
+     * @param recipient_ the address of the recipient
+     */
+    function withdrawNativeCurrency(address recipient_) external;
 
     /**
      * @notice The function for creatinng a new coin for the token contract
@@ -275,17 +314,6 @@ interface IMarketplace {
         uint256 offset_,
         uint256 limit_
     ) external view returns (address[] memory);
-
-    /**
-     * @notice The function for getting TokenParams with pagination
-     * @param offset_ the offset for pagination
-     * @param limit_ the maximum number of elements for
-     * @return array with the TokenParams structs
-     */
-    function getTokenContractsParamsPart(
-        uint256 offset_,
-        uint256 limit_
-    ) external view returns (TokenParams[] memory);
 
     /**
      * @notice The function that returns the token params of the token contract

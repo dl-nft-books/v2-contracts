@@ -16,13 +16,14 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
     bytes32 public constant override ROLE_SUPERVISOR = keccak256("ROLE_SUPERVISOR");
     bytes32 public constant override WITHDRAWAL_MANAGER = keccak256("WITHDRAWAL_MANAGER");
     bytes32 public constant override MARKETPLACE_MANAGER = keccak256("MARKETPLACE_MANAGER");
+    bytes32 public constant override SIGNATURE_MANAGER = keccak256("SIGNATURE_MANAGER");
 
     function __RoleManager_init() external override initializer {
         __AccessControl_init();
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        grantRole(ADMINISTRATOR_ROLE, msg.sender);
+        _grantRole(ADMINISTRATOR_ROLE, msg.sender);
 
         _setRoleAdmin(ADMINISTRATOR_ROLE, ADMINISTRATOR_ROLE);
         _setRoleAdmin(TOKEN_FACTORY_MANAGER, ROLE_SUPERVISOR);
@@ -31,6 +32,7 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
         _setRoleAdmin(ROLE_SUPERVISOR, ADMINISTRATOR_ROLE);
         _setRoleAdmin(WITHDRAWAL_MANAGER, ROLE_SUPERVISOR);
         _setRoleAdmin(MARKETPLACE_MANAGER, ROLE_SUPERVISOR);
+        _setRoleAdmin(SIGNATURE_MANAGER, ROLE_SUPERVISOR);
     }
 
     function setDependencies(
@@ -44,6 +46,14 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
             "RoleManager: cannot revoke last administrator"
         );
         super.revokeRole(role_, account_);
+    }
+
+    function renounceRole(bytes32 role_, address account_) public override {
+        require(
+            role_ != ADMINISTRATOR_ROLE || getRoleMemberCount(ADMINISTRATOR_ROLE) > 1,
+            "RoleManager: cannot renounce last administrator"
+        );
+        super.renounceRole(role_, account_);
     }
 
     function grantRoleBatch(
@@ -87,14 +97,27 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
         return hasRole(MARKETPLACE_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
     }
 
+    function isSignatureManager(address manager_) public view override returns (bool) {
+        return hasRole(SIGNATURE_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
+    }
+
+    function hasSpecificRoles(bytes32[] memory roles_, address account_) public view override returns (bool){
+        for (uint256 i = 0; i < roles_.length; i++) {
+            if (hasRole(roles_[i], account_)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     function hasAnyRole(address account_) public view override returns (bool) {
-        return
-            hasRole(ADMINISTRATOR_ROLE, account_) ||
+        return hasRole(ADMINISTRATOR_ROLE, account_) ||
             hasRole(TOKEN_FACTORY_MANAGER, account_) ||
             hasRole(TOKEN_REGISTRY_MANAGER, account_) ||
             hasRole(TOKEN_MANAGER, account_) ||
             hasRole(ROLE_SUPERVISOR, account_) ||
             hasRole(WITHDRAWAL_MANAGER, account_) ||
-            hasRole(MARKETPLACE_MANAGER, account_);
+            hasRole(MARKETPLACE_MANAGER, account_) ||
+            hasRole(SIGNATURE_MANAGER, account_);
     }
 }

@@ -1,30 +1,29 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+
 import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
 import "@dlsl/dev-modules/utils/Globals.sol";
-
 import "@dlsl/dev-modules/libs/decimals/DecimalsConverter.sol";
 
-import "../interfaces/tokens/IERC721MintableToken.sol";
+import "../interfaces/IContractsRegistry.sol";
 import "../interfaces/IRoleManager.sol";
 import "../interfaces/IMarketplace.sol";
-import "../ContractsRegistry.sol";
+import "../interfaces/tokens/IERC721MintableToken.sol";
 
 // ReentrancyGuardUpgradeable
 contract ERC721MintableToken is
     IERC721MintableToken,
     AbstractDependant,
     ERC721EnumerableUpgradeable,
-    ERC721HolderUpgradeable,
-    PausableUpgradeable
+    ERC721HolderUpgradeable
 {
     using DecimalsConverter for uint256;
     using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
@@ -57,16 +56,7 @@ contract ERC721MintableToken is
 
         _tokenName = name_;
         _tokenSymbol = symbol_;
-        __Pausable_init();
         // __ReentrancyGuard_init();
-    }
-
-    function pause() external override onlyTokenManager {
-        _pause();
-    }
-
-    function unpause() external override onlyTokenManager {
-        _unpause();
     }
 
     function setDependencies(
@@ -79,7 +69,7 @@ contract ERC721MintableToken is
         _marketplace = registry_.getMarketplaceContract();
     }
 
-    function mint(address to_, uint256 tokenId_, string memory uri_) public whenNotPaused onlyMarketplace {
+    function mint(address to_, uint256 tokenId_, string memory uri_) public onlyMarketplace {
         require(!_exists(tokenId_), "ERC721MintableToken: Token with such id already exists.");
 
         require(tokenId_ == _nextTokenId++, "ERC721MintableToken: Token id is not valid.");
@@ -94,7 +84,7 @@ contract ERC721MintableToken is
         _setTokenURI(tokenId_, uri_);
     }
 
-    function burn(uint256 tokenId_) public whenNotPaused onlyTokenManager {
+    function burn(uint256 tokenId_) public onlyTokenManager {
         _burn(tokenId_);
     }
 

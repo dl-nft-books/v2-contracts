@@ -13,16 +13,6 @@ interface IERC721MintableToken {
     function __ERC721MintableToken_init(string calldata name_, string calldata symbol_) external;
     
     /**
-     * @notice The function for pausing mint functionality
-     */
-    function pause() external;
-
-    /**
-     * @notice The function for unpausing mint functionality
-     */
-    function unpause() external;
-    
-    /**
      * @notice The function to mint a new token.
      * @param to_ The address of the token owner.
      * @param tokenId_ The id of the token.
