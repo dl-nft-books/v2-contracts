@@ -168,6 +168,7 @@ describe("Marketplace", () => {
         voucherTokenContract,
         fundsRecipient,
         isNFTBuyable,
+        false,
       ]);
 
       assert.equal(tx.logs[0].event, "TokenContractDeployed");
@@ -179,6 +180,7 @@ describe("Marketplace", () => {
       assert.equal(tx.logs[0].args.tokenParams.isNFTBuyable, isNFTBuyable);
       assert.equal(tx.logs[0].args.tokenParams.voucherTokenContract, voucherTokenContract);
       assert.equal(tx.logs[0].args.tokenParams.fundsRecipient, fundsRecipient);
+      assert.equal(tx.logs[0].args.tokenParams.isDisabled, false);
 
       const token = await ERC721MintableToken.at(tx.logs[0].args.tokenContract);
       assert.equal(await token.name(), name);
@@ -190,7 +192,7 @@ describe("Marketplace", () => {
         marketplace.addToken(
           name,
           symbol,
-          [pricePerOneToken, minNFTFloorPrice, voucherTokensAmount, voucherTokenContract, fundsRecipient, isNFTBuyable],
+          [pricePerOneToken, minNFTFloorPrice, voucherTokensAmount, voucherTokenContract, fundsRecipient, isNFTBuyable, false],
           {from: NOTHING}
         ),
         "Marketplace: Caller is not a marketplace manager."
@@ -206,6 +208,7 @@ describe("Marketplace", () => {
           voucherTokenContract,
           fundsRecipient,
           isNFTBuyable,
+          false,
         ]),
         "Marketplace: Token name or symbol is empty."
       );
@@ -220,8 +223,24 @@ describe("Marketplace", () => {
           voucherTokenContract,
           fundsRecipient,
           isNFTBuyable,
+          false,
         ]),
         "Marketplace: Token name or symbol is empty."
+      );
+    });
+
+    it("should return if isDisabled is true", async () => {
+      await truffleAssert.reverts(
+        marketplace.addToken(name, symbol, [
+          pricePerOneToken,
+          minNFTFloorPrice,
+          voucherTokensAmount,
+          voucherTokenContract,
+          fundsRecipient,
+          isNFTBuyable,
+          true,
+        ]),
+        "Marketplace: Token can not be disabled on creation."
       );
     });
   });
@@ -246,6 +265,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         false,
+        false,
       ]);
       await marketplace.addToken("Test", "TST", [
         defaultPricePerOneToken,
@@ -253,6 +273,7 @@ describe("Marketplace", () => {
         defaultVoucherTokensAmount,
         defaultVoucherContract.address,
         ZERO_ADDR,
+        false,
         false,
       ]);
     });
@@ -265,6 +286,7 @@ describe("Marketplace", () => {
         newVoucherTokenContract,
         newFundsRecipient,
         newIsNFTBuyable,
+        true,
       ]);
 
       const tokenParams = await marketplace.getDetailedTokenParams(tokenContract);
@@ -274,6 +296,7 @@ describe("Marketplace", () => {
       assert.equal(tokenParams.isNFTBuyable, newIsNFTBuyable);
       assert.equal(tokenParams.voucherTokenContract, newVoucherTokenContract);
       assert.equal(tokenParams.fundsRecipient, newFundsRecipient);
+      assert.equal(tokenParams.isDisabled, true);
 
       assert.equal(tx.receipt.logs[0].event, "TokenContractParamsUpdated");
       assert.equal(tx.receipt.logs[0].args.tokenContract, tokenContract);
@@ -287,6 +310,7 @@ describe("Marketplace", () => {
       assert.equal(newTokenParams.isNFTBuyable, newIsNFTBuyable);
       assert.equal(newTokenParams.voucherTokenContract, newVoucherTokenContract);
       assert.equal(newTokenParams.fundsRecipient, newFundsRecipient);
+      assert.equal(newTokenParams.isDisabled, true);
     });
 
     it("should revert if caller is not a Marketplace manager", async () => {
@@ -302,6 +326,7 @@ describe("Marketplace", () => {
             newVoucherTokenContract,
             newFundsRecipient,
             newIsNFTBuyable,
+            false,
           ],
           {from: NOTHING}
         ),
@@ -318,6 +343,7 @@ describe("Marketplace", () => {
           newVoucherTokenContract,
           newFundsRecipient,
           newIsNFTBuyable,
+          false,
         ]),
         "Marketplace: Token contract not found."
       );
@@ -332,6 +358,7 @@ describe("Marketplace", () => {
           newVoucherTokenContract,
           newFundsRecipient,
           newIsNFTBuyable,
+          false,
         ]),
         "Marketplace: Token name or symbol is empty."
       );
@@ -346,6 +373,7 @@ describe("Marketplace", () => {
           newVoucherTokenContract,
           newFundsRecipient,
           newIsNFTBuyable,
+          false,
         ]),
         "Marketplace: Token name or symbol is empty."
       );
@@ -368,6 +396,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         true,
+        false,
       ]);
       await marketplace.addToken("Test", "TST", [
         defaultPricePerOneToken,
@@ -376,6 +405,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         true,
+        false,
       ]);
     });
 
@@ -392,6 +422,7 @@ describe("Marketplace", () => {
           defaultVoucherContract.address,
           ZERO_ADDR,
           true,
+          false,
         ]),
         reason
       );
@@ -405,6 +436,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         true,
+        false,
       ]);
     });
 
@@ -421,6 +453,7 @@ describe("Marketplace", () => {
           defaultVoucherContract.address,
           ZERO_ADDR,
           true,
+          false,
         ]),
         reason
       );
@@ -434,6 +467,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         true,
+        false,
       ]);
     });
 
@@ -561,6 +595,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         false,
+        false,
       ]);
       await marketplace.addToken("Test", "TST", [
         defaultPricePerOneToken,
@@ -568,6 +603,7 @@ describe("Marketplace", () => {
         defaultVoucherTokensAmount,
         defaultVoucherContract.address,
         ZERO_ADDR,
+        false,
         false,
       ]);
     });
@@ -637,6 +673,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         false,
+        false,
       ]);
       await marketplace.addToken("Test", "TST", [
         defaultPricePerOneToken,
@@ -644,6 +681,7 @@ describe("Marketplace", () => {
         defaultVoucherTokensAmount,
         defaultVoucherContract.address,
         ZERO_ADDR,
+        false,
         false,
       ]);
     });
@@ -746,6 +784,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         false,
+        false,
       ]);
       await marketplace.addToken("Test", "TST", [
         defaultPricePerOneToken,
@@ -753,6 +792,7 @@ describe("Marketplace", () => {
         defaultVoucherTokensAmount,
         defaultVoucherContract.address,
         ZERO_ADDR,
+        false,
         false,
       ]);
     });
@@ -804,6 +844,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         NOTHING,
         false,
+        false,
       ]);
       await marketplace.addToken("Test2", "TST2", [
         defaultPricePerOneToken,
@@ -811,6 +852,7 @@ describe("Marketplace", () => {
         defaultVoucherTokensAmount,
         defaultVoucherContract.address,
         NOTHING,
+        false,
         false,
       ]);
       const balanceBefore = toBN(await web3.eth.getBalance(SECOND));
@@ -868,6 +910,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         marketplace.address,
         false,
+        false,
       ]);
       await marketplace.addToken("Test2", "TST2", [
         defaultPricePerOneToken,
@@ -875,6 +918,7 @@ describe("Marketplace", () => {
         defaultVoucherTokensAmount,
         defaultVoucherContract.address,
         marketplace.address,
+        false,
         false,
       ]);
       const balanceBefore = toBN(await web3.eth.getBalance(SECOND));
@@ -1394,6 +1438,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         contractWithoutCallback.address,
         false,
+        false,
       ]);
       await marketplace.addToken("Test2", "TST2", [
         defaultPricePerOneToken,
@@ -1401,6 +1446,7 @@ describe("Marketplace", () => {
         defaultVoucherTokensAmount,
         defaultVoucherContract.address,
         contractWithoutCallback.address,
+        false,
         false,
       ]);
 
@@ -1492,6 +1538,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         true,
+        false,
       ]);
       await marketplace.addToken("Test", "TST", [
         defaultPricePerOneToken,
@@ -1500,6 +1547,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         true,
+        false,
       ]);
     });
 
@@ -1606,6 +1654,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         false,
+        false,
       ]);
       await marketplace.addToken("Test", "TST", [
         defaultPricePerOneToken,
@@ -1613,6 +1662,7 @@ describe("Marketplace", () => {
         defaultVoucherTokensAmount,
         defaultVoucherContract.address,
         ZERO_ADDR,
+        false,
         false,
       ]);
 
@@ -1671,6 +1721,7 @@ describe("Marketplace", () => {
         defaultVoucherContract.address,
         ZERO_ADDR,
         false,
+        false,
       ]);
       await marketplace.addToken("Test", "TST", [
         defaultPricePerOneToken,
@@ -1678,6 +1729,7 @@ describe("Marketplace", () => {
         defaultVoucherTokensAmount,
         defaultVoucherContract.address,
         ZERO_ADDR,
+        false,
         false,
       ]);
     });
@@ -1787,6 +1839,7 @@ describe("Marketplace", () => {
           defaultVoucherContract.address,
           ZERO_ADDR,
           false,
+          false,
         ]);
         await marketplace.addToken("Test" + i, "TST" + i, [
           defaultPricePerOneToken,
@@ -1794,6 +1847,7 @@ describe("Marketplace", () => {
           defaultVoucherTokensAmount,
           defaultVoucherContract.address,
           ZERO_ADDR,
+          false,
           false,
         ]);
 
@@ -1808,6 +1862,69 @@ describe("Marketplace", () => {
     });
   });
 
+  describe("getActiveTokenContractsPart", () => {
+    it("should return correct active token contracts arr", async () => {
+      const addressesArr = [];
+
+      for (let i = 0; i < 5; i++) {
+        let addr = await marketplace.addToken.call("Test" + i, "TST" + i, [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          false,
+        ]);
+        await marketplace.addToken("Test" + i, "TST" + i, [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          false,
+        ]);
+        addressesArr.push(addr);
+
+        addr = await marketplace.addToken.call("Test2" + i, "TST2" + i, [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          false,
+        ]);
+        await marketplace.addToken("Test2" + i, "TST2" + i, [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          false,
+        ]);
+        await marketplace.updateAllParams(addr, "Test2" + i, "TST2" + i, [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          true,
+        ]);
+        
+        assert.equal((await marketplace.getTokenContractsCount()).toString(), (i + 1) * 2);
+        assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), i + 1);
+      }
+
+      assert.deepEqual(await marketplace.getActiveTokenContractsPart(0, 10), addressesArr);
+      assert.deepEqual(await marketplace.getActiveTokenContractsPart(0, 3), addressesArr.slice(0, 3));
+      assert.deepEqual(await marketplace.getActiveTokenContractsPart(3, 10), addressesArr.slice(3));
+    });
+  });
+
   describe("getBaseTokenParamsPart()", () => {
     it("should return correct token params", async () => {
       const baseTokenParams = [];
@@ -1819,6 +1936,7 @@ describe("Marketplace", () => {
           defaultVoucherTokensAmount,
           defaultVoucherContract.address,
           ZERO_ADDR,
+          false,
           false,
         ];
         await marketplace.addToken("Test" + i, "TST" + i, tokenParam);
@@ -1845,6 +1963,7 @@ describe("Marketplace", () => {
           defaultVoucherContract.address,
           ZERO_ADDR,
           false,
+          false,
         ]);
         detailedTokenParams.push([
           i.toString(),
@@ -1852,6 +1971,7 @@ describe("Marketplace", () => {
           defaultVoucherTokensAmount.toString(),
           defaultVoucherContract.address,
           ZERO_ADDR,
+          false,
           false,
           "Test" + i,
           "TST" + i,

@@ -12,9 +12,10 @@ interface IMarketplace {
      * @param pricePerOneToken the price of one token in USD
      * @param minNFTFloorPrice the minimum floor price of the NFT contract
      * @param voucherTokensAmount the amount of tokens that can be bought with one voucher
-     * @param isNFTBuyable the flag that indicates if the NFT can be bought for the token price
      * @param voucherTokenContract the address of the voucher token contract
      * @param fundsRecipient the address of the recipient of the funds
+     * @param isNFTBuyable the flag that indicates if the NFT can be bought for the token price
+     * @param isDisabled the flag that indicates if the token contract is disabled
      */
     struct TokenParams {
         uint256 pricePerOneToken;
@@ -23,6 +24,7 @@ interface IMarketplace {
         address voucherTokenContract;
         address fundsRecipient;
         bool isNFTBuyable;
+        bool isDisabled;
     }
 
     /**
@@ -40,9 +42,10 @@ interface IMarketplace {
      * @param pricePerOneToken the price of one token in USD
      * @param minNFTFloorPrice the minimum floor price of the NFT contract
      * @param voucherTokensAmount the amount of tokens that can be bought with one voucher
-     * @param isNFTBuyable the flag that indicates if the NFT can be bought for the token price
      * @param voucherTokenContract the address of the voucher token contract
      * @param fundsRecipient the address of the recipient of the funds
+     * @param isNFTBuyable the flag that indicates if the NFT can be bought for the token price
+     * @param isDisabled the flag that indicates if the token contract is disabled
      * @param tokenName the name of the token
      * @param tokenSymbol the symbol of the token
     */
@@ -53,6 +56,7 @@ interface IMarketplace {
         address voucherTokenContract;
         address fundsRecipient;
         bool isNFTBuyable;
+        bool isDisabled;
         string tokenName;
         string tokenSymbol;
     }
@@ -305,12 +309,29 @@ interface IMarketplace {
     function getTokenContractsCount() external view returns (uint256);
 
     /**
+     * @notice The function that returns the active TokenContracts count
+     * @return active TokenContracts count
+     */
+    function getActiveTokenContractsCount() external view returns (uint256);
+
+    /**
      * @notice The function for getting addresses of token contracts with pagination
      * @param offset_ the offset for pagination
      * @param limit_ the maximum number of elements for
      * @return array with the addresses of the token contracts
      */
     function getTokenContractsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (address[] memory);
+
+    /**
+     * @notice The function for getting addresses of active token contracts with pagination
+     * @param offset_ the offset for pagination
+     * @param limit_ the maximum number of elements for
+     * @return array with the addresses of the active token contracts
+     */
+    function getActiveTokenContractsPart(
         uint256 offset_,
         uint256 limit_
     ) external view returns (address[] memory);
@@ -335,6 +356,17 @@ interface IMarketplace {
         uint256 limit_
     ) external view returns (BaseTokenParams[] memory tokenParams_);
 
+    // /**
+    //  * @notice The function that returns the base token params of active token contract with pagination
+    //  * @param offset_ the offset for pagination
+    //  * @param limit_ the maximum number of elements for
+    //  * @return tokenParams_ the array of BaseTokenParams structs with the base token params
+    //  */
+    // function getActiveBaseTokenParamsPart(
+    //     uint256 offset_,
+    //     uint256 limit_
+    // ) external view returns (BaseTokenParams[] memory tokenParams_);
+
     /**
      * @notice The function that returns the token params of the token contract
      * @param tokenContract_ the address of the token contract
@@ -354,4 +386,15 @@ interface IMarketplace {
         uint256 offset_,
         uint256 limit_
     ) external view returns (DetailedTokenParams[] memory tokenParams_);
+
+    // /**
+    //  * @notice The function that returns the detailed token params of active token contract with pagination
+    //  * @param offset_ the offset for pagination
+    //  * @param limit_ the maximum number of elements for
+    //  * @return tokenParams_ the array of DetailedTokenParams structs with the detailed token params
+    //  */
+    // function getActiveDetailedTokenParamsPart(
+    //     uint256 offset_,
+    //     uint256 limit_
+    // ) external view returns (DetailedTokenParams[] memory tokenParams_);
 }

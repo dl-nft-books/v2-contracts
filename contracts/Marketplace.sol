@@ -23,7 +23,15 @@ import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/ITokenFactory.sol";
 import "./interfaces/tokens/IERC721MintableToken.sol";
 
-contract Marketplace is IMarketplace, ERC721HolderUpgradeable, AbstractDependant, EIP712Upgradeable, PausableUpgradeable {
+import "hardhat/console.sol";
+
+contract Marketplace is
+    IMarketplace,
+    ERC721HolderUpgradeable,
+    AbstractDependant,
+    EIP712Upgradeable,
+    PausableUpgradeable
+{
     using EnumerableSet for EnumerableSet.AddressSet;
     using Paginator for EnumerableSet.AddressSet;
     using DecimalsConverter for uint256;
@@ -88,6 +96,7 @@ contract Marketplace is IMarketplace, ERC721HolderUpgradeable, AbstractDependant
             bytes(name_).length > 0 && bytes(symbol_).length > 0,
             "Marketplace: Token name or symbol is empty."
         );
+        require(!tokenParams_.isDisabled, "Marketplace: Token can not be disabled on creation.");
         tokenProxy_ = _tokenFactory.deployToken(name_, symbol_);
 
         _tokenParams[tokenProxy_] = tokenParams_;
@@ -120,11 +129,10 @@ contract Marketplace is IMarketplace, ERC721HolderUpgradeable, AbstractDependant
         emit TokenContractParamsUpdated(tokenContract_, name_, symbol_, newTokenParams_);
     }
 
-    function withdrawPaidTokens(address tokenAddr_, address recipient_)
-        external
-        override
-        onlyWithdrawalManager
-    {
+    function withdrawPaidTokens(
+        address tokenAddr_,
+        address recipient_
+    ) external override onlyWithdrawalManager {
         IERC20MetadataUpgradeable token_ = IERC20MetadataUpgradeable(tokenAddr_);
 
         uint256 amount_ = token_.balanceOf(address(this));
@@ -137,11 +145,7 @@ contract Marketplace is IMarketplace, ERC721HolderUpgradeable, AbstractDependant
         emit PaidTokensWithdrawn(tokenAddr_, recipient_, amount_);
     }
 
-    function withdrawNativeCurrency(address recipient_)
-        external
-        override
-        onlyWithdrawalManager
-    {
+    function withdrawNativeCurrency(address recipient_) external override onlyWithdrawalManager {
         uint256 amount_ = address(this).balance;
 
         require(amount_ > 0, "Marketplace: Nothing to withdraw.");
@@ -383,6 +387,34 @@ contract Marketplace is IMarketplace, ERC721HolderUpgradeable, AbstractDependant
         return _tokenContracts.length();
     }
 
+    function getActiveTokenContractsCount() external view override returns (uint256 count_) {
+        (count_, ) = _getActiveTokenContractsCount(_tokenContracts.values(), 0, type(uint256).max);
+    }
+
+    function _getActiveTokenContractsCount(
+        address[] memory allTokens_,
+        uint256 offset_,
+        uint256 limit_
+    ) internal view returns (uint256 activeTokenContractsCount_, uint256 activeTokenContractsCountOffset_) {
+        mapping(address => TokenParams) storage _allTokenParams = _tokenParams;
+
+        bool isOffsetReached_ = false;
+
+        for (uint256 i = 0; i < allTokens_.length && limit_ != 0; i++) {
+            if (!_allTokenParams[allTokens_[i]].isDisabled) {
+                if (activeTokenContractsCount_ == offset_){
+                    activeTokenContractsCountOffset_ = i;
+                    isOffsetReached_ = true;
+                    activeTokenContractsCount_ = 0;
+                }
+                if(isOffsetReached_){
+                    limit_--;
+                }
+                activeTokenContractsCount_++;
+            }
+        }
+    }
+
     function getTokenContractsPart(
         uint256 offset_,
         uint256 limit_
@@ -390,14 +422,32 @@ contract Marketplace is IMarketplace, ERC721HolderUpgradeable, AbstractDependant
         return _tokenContracts.part(offset_, limit_);
     }
 
+    function getActiveTokenContractsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) public view override returns (address[] memory list_) {
+        address[] memory tokenContracts_ = _tokenContracts.values();
+
+        (limit_, offset_) = _getActiveTokenContractsCount(tokenContracts_, offset_, limit_);
+        list_ = new address[](limit_);
+        uint256 index = 0;
+
+        for (uint256 i = offset_; index < limit_; i++) {
+            if (!_tokenParams[tokenContracts_[i]].isDisabled) {
+                list_[index++] = tokenContracts_[i];
+            }
+        }
+    }
+
     function getBaseTokenParams(
         address tokenContract_
     ) public view override returns (BaseTokenParams memory) {
         TokenParams memory _currentTokenParams = _tokenParams[tokenContract_];
-        return BaseTokenParams(
-            _currentTokenParams.pricePerOneToken,
-            ERC721Upgradeable(tokenContract_).name()
-        );
+        return
+            BaseTokenParams(
+                _currentTokenParams.pricePerOneToken,
+                ERC721Upgradeable(tokenContract_).name()
+            );
     }
 
     function getBaseTokenParamsPart(
@@ -406,25 +456,38 @@ contract Marketplace is IMarketplace, ERC721HolderUpgradeable, AbstractDependant
     ) external view override returns (BaseTokenParams[] memory tokenParams_) {
         address[] memory tokenContracts_ = getTokenContractsPart(offset_, limit_);
         tokenParams_ = new BaseTokenParams[](tokenContracts_.length);
-        for(uint256 i; i < tokenContracts_.length; i++) {
+        for (uint256 i; i < tokenContracts_.length; i++) {
             tokenParams_[i] = getBaseTokenParams(tokenContracts_[i]);
         }
     }
+
+    // function getActiveBaseTokenParamsPart(
+    //     uint256 offset_,
+    //     uint256 limit_
+    // ) external view override returns (BaseTokenParams[] memory tokenParams_) {
+    //     address[] memory tokenContracts_ = getActiveTokenContractsPart(offset_, limit_);
+    //     tokenParams_ = new BaseTokenParams[](tokenContracts_.length);
+    //     for (uint256 i; i < tokenContracts_.length; i++) {
+    //         tokenParams_[i] = getBaseTokenParams(tokenContracts_[i]);
+    //     }
+    // }
 
     function getDetailedTokenParams(
         address tokenContract_
     ) public view override returns (DetailedTokenParams memory) {
         TokenParams memory _currentTokenParams = _tokenParams[tokenContract_];
-        return DetailedTokenParams(
-            _currentTokenParams.pricePerOneToken,
-            _currentTokenParams.minNFTFloorPrice,
-            _currentTokenParams.voucherTokensAmount,
-            _currentTokenParams.voucherTokenContract,
-            _currentTokenParams.fundsRecipient,
-            _currentTokenParams.isNFTBuyable,
-            ERC721Upgradeable(tokenContract_).name(),
-            ERC721Upgradeable(tokenContract_).symbol()
-        );
+        return
+            DetailedTokenParams(
+                _currentTokenParams.pricePerOneToken,
+                _currentTokenParams.minNFTFloorPrice,
+                _currentTokenParams.voucherTokensAmount,
+                _currentTokenParams.voucherTokenContract,
+                _currentTokenParams.fundsRecipient,
+                _currentTokenParams.isNFTBuyable,
+                _currentTokenParams.isDisabled,
+                ERC721Upgradeable(tokenContract_).name(),
+                ERC721Upgradeable(tokenContract_).symbol()
+            );
     }
 
     function getDetailedTokenParamsPart(
@@ -433,10 +496,21 @@ contract Marketplace is IMarketplace, ERC721HolderUpgradeable, AbstractDependant
     ) external view override returns (DetailedTokenParams[] memory tokenParams_) {
         address[] memory tokenContracts_ = getTokenContractsPart(offset_, limit_);
         tokenParams_ = new DetailedTokenParams[](tokenContracts_.length);
-        for(uint256 i; i < tokenContracts_.length; i++) {
+        for (uint256 i; i < tokenContracts_.length; i++) {
             tokenParams_[i] = getDetailedTokenParams(tokenContracts_[i]);
         }
     }
+
+    // function getActiveDetailedTokenParamsPart(
+    //     uint256 offset_,
+    //     uint256 limit_
+    // ) external view override returns (DetailedTokenParams[] memory tokenParams_) {
+    //     address[] memory tokenContracts_ = getActiveTokenContractsPart(offset_, limit_);
+    //     tokenParams_ = new DetailedTokenParams[](tokenContracts_.length);
+    //     for (uint256 i; i < tokenContracts_.length; i++) {
+    //         tokenParams_[i] = getDetailedTokenParams(tokenContracts_[i]);
+    //     }
+    // }
 
     function _verifySignature(
         address tokenContract_,
