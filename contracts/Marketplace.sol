@@ -92,14 +92,13 @@ contract Marketplace is
         string memory symbol_,
         TokenParams memory tokenParams_
     ) external whenNotPaused onlyMarketplaceManager returns (address tokenProxy_) {
-        require(
-            bytes(name_).length > 0 && bytes(symbol_).length > 0,
-            "Marketplace: Token name or symbol is empty."
-        );
+        _validateTokenParams(name_, symbol_);
+
         require(!tokenParams_.isDisabled, "Marketplace: Token can not be disabled on creation.");
+        
         tokenProxy_ = _tokenFactory.deployToken(name_, symbol_);
 
-        _tokenParams[tokenProxy_] = tokenParams_;
+        _updateTokenParams(tokenParams_, tokenProxy_);
 
         _tokenContracts.add(tokenProxy_);
 
@@ -117,12 +116,9 @@ contract Marketplace is
             "Marketplace: Token contract not found."
         );
 
-        require(
-            bytes(name_).length > 0 && bytes(symbol_).length > 0,
-            "Marketplace: Token name or symbol is empty."
-        );
+        _validateTokenParams(name_, symbol_);
 
-        _tokenParams[tokenContract_] = newTokenParams_;
+        _updateTokenParams(newTokenParams_, tokenContract_);
 
         IERC721MintableToken(tokenContract_).updateTokenParams(name_, symbol_);
 
@@ -543,6 +539,17 @@ contract Marketplace is
 
         require(_roleManager.isSignatureManager(signer_), "Marketplace: Invalid signature.");
         require(block.timestamp <= endTimestamp_, "Marketplace: Signature expired.");
+    }
+
+    function _updateTokenParams(TokenParams memory tokenParams_, address tokenContract_) internal {
+        _tokenParams[tokenContract_] = tokenParams_;
+    }
+
+    function _validateTokenParams(string memory name_, string memory symbol_) internal pure {
+        require(
+            bytes(name_).length > 0 && bytes(symbol_).length > 0,
+            "Marketplace: Token name or symbol is empty."
+        );
     }
 
     function _onlyMarketplaceManager() internal view {
