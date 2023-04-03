@@ -1939,8 +1939,9 @@ describe("Marketplace", () => {
           false,
           false,
         ];
+        const addr = await marketplace.addToken.call("Test" + i, "TST" + i, tokenParam);
         await marketplace.addToken("Test" + i, "TST" + i, tokenParam);
-        baseTokenParams.push([i.toString(), "Test" + i]);
+        baseTokenParams.push([addr, i.toString(), "Test" + i]);
       }
 
       assert.equal((await marketplace.getTokenContractsCount()).toString(), 5);
@@ -1956,6 +1957,15 @@ describe("Marketplace", () => {
       const detailedTokenParams = [];
 
       for (let i = 0; i < 5; i++) {
+        const addr = await marketplace.addToken.call("Test" + i, "TST" + i, [
+          i,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          false,
+        ]);
         await marketplace.addToken("Test" + i, "TST" + i, [
           i,
           defaultMinNFTFloorPrice,
@@ -1966,6 +1976,7 @@ describe("Marketplace", () => {
           false,
         ]);
         detailedTokenParams.push([
+          addr,
           i.toString(),
           defaultMinNFTFloorPrice.toString(),
           defaultVoucherTokensAmount.toString(),

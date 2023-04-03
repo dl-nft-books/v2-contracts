@@ -445,6 +445,7 @@ contract Marketplace is
         TokenParams memory _currentTokenParams = _tokenParams[tokenContract_];
         return
             BaseTokenParams(
+                tokenContract_,
                 _currentTokenParams.pricePerOneToken,
                 ERC721Upgradeable(tokenContract_).name()
             );
@@ -478,6 +479,7 @@ contract Marketplace is
         TokenParams memory _currentTokenParams = _tokenParams[tokenContract_];
         return
             DetailedTokenParams(
+                tokenContract_,
                 _currentTokenParams.pricePerOneToken,
                 _currentTokenParams.minNFTFloorPrice,
                 _currentTokenParams.voucherTokensAmount,

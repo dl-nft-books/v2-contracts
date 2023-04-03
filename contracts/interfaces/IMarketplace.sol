@@ -29,16 +29,19 @@ interface IMarketplace {
 
     /**
      * @notice The structure that stores base information about the token contract
+     * @param tokenContract the address of the token contract
      * @param pricePerOneToken the price of one token in USD
      * @param tokenName the name of the token
      */
     struct BaseTokenParams {
+        address tokenContract;
         uint256 pricePerOneToken;
         string tokenName;
     }
 
     /**
      * @notice The structure that stores detailed information about the token contract
+     * @param tokenContract the address of the token contract
      * @param pricePerOneToken the price of one token in USD
      * @param minNFTFloorPrice the minimum floor price of the NFT contract
      * @param voucherTokensAmount the amount of tokens that can be bought with one voucher
@@ -50,6 +53,7 @@ interface IMarketplace {
      * @param tokenSymbol the symbol of the token
     */
     struct DetailedTokenParams {
+        address tokenContract;
         uint256 pricePerOneToken;
         uint256 minNFTFloorPrice;
         uint256 voucherTokensAmount;
