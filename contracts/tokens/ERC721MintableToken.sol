@@ -121,11 +121,6 @@ contract ERC721MintableToken is
         _tokenSymbol = symbol_;
     }
 
-    function _setTokenURI(uint256 tokenId_, string memory tokenURI_) internal {
-        _tokenURIs[tokenId_] = tokenURI_;
-        _existingTokenURIs[tokenURI_] = true;
-    }
-
     function _burn(uint256 tokenId_) internal override {
         super._burn(tokenId_);
 
