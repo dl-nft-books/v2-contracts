@@ -23,7 +23,7 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        _grantRole(ADMINISTRATOR_ROLE, msg.sender);
+        grantRole(ADMINISTRATOR_ROLE, msg.sender);
 
         _setRoleAdmin(ADMINISTRATOR_ROLE, ADMINISTRATOR_ROLE);
         _setRoleAdmin(TOKEN_FACTORY_MANAGER, ROLE_SUPERVISOR);
@@ -40,19 +40,19 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
         bytes calldata data_
     ) public override dependant {}
 
-    function revokeRole(bytes32 role_, address account_) public override {
+    modifier onlyNotLastAdministratorMember(bytes32 role_){
         require(
             role_ != ADMINISTRATOR_ROLE || getRoleMemberCount(ADMINISTRATOR_ROLE) > 1,
-            "RoleManager: cannot revoke last administrator"
+            "RoleManager: cannot remove last administrator"
         );
+        _;
+    }
+
+    function revokeRole(bytes32 role_, address account_) public override onlyNotLastAdministratorMember(role_) {
         super.revokeRole(role_, account_);
     }
 
-    function renounceRole(bytes32 role_, address account_) public override {
-        require(
-            role_ != ADMINISTRATOR_ROLE || getRoleMemberCount(ADMINISTRATOR_ROLE) > 1,
-            "RoleManager: cannot renounce last administrator"
-        );
+    function renounceRole(bytes32 role_, address account_) public override onlyNotLastAdministratorMember(role_) {
         super.renounceRole(role_, account_);
     }
 
@@ -74,34 +74,34 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
     }
 
     function isTokenFactoryManager(address manager_) public view override returns (bool) {
-        return hasRole(TOKEN_FACTORY_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
+        return hasRole(TOKEN_FACTORY_MANAGER, manager_);
     }
 
     function isTokenRegistryManager(address manager_) public view override returns (bool) {
-        return hasRole(TOKEN_REGISTRY_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
+        return hasRole(TOKEN_REGISTRY_MANAGER, manager_);
     }
 
     function isTokenManager(address manager_) public view override returns (bool) {
-        return hasRole(TOKEN_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
+        return hasRole(TOKEN_MANAGER, manager_);
     }
 
     function isRoleSupervisor(address supervisor_) public view override returns (bool) {
-        return hasRole(ROLE_SUPERVISOR, supervisor_) || hasRole(ADMINISTRATOR_ROLE, supervisor_);
+        return hasRole(ROLE_SUPERVISOR, supervisor_);
     }
 
     function isWithdrawalManager(address manager_) public view override returns (bool) {
-        return hasRole(WITHDRAWAL_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
+        return hasRole(WITHDRAWAL_MANAGER, manager_);
     }
 
     function isMarketplaceManager(address manager_) public view override returns (bool) {
-        return hasRole(MARKETPLACE_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
+        return hasRole(MARKETPLACE_MANAGER, manager_);
     }
 
     function isSignatureManager(address manager_) public view override returns (bool) {
-        return hasRole(SIGNATURE_MANAGER, manager_) || hasRole(ADMINISTRATOR_ROLE, manager_);
+        return hasRole(SIGNATURE_MANAGER, manager_);
     }
 
-    function hasSpecificRoles(bytes32[] memory roles_, address account_) public view override returns (bool){
+    function hasSpecificOrStrongerRoles(bytes32[] memory roles_, address account_) public view override returns (bool){
         for (uint256 i = 0; i < roles_.length; i++) {
             if (hasRole(roles_[i], account_)) {
                 return true;
@@ -111,13 +111,16 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
     }
     
     function hasAnyRole(address account_) public view override returns (bool) {
-        return hasRole(ADMINISTRATOR_ROLE, account_) ||
-            hasRole(TOKEN_FACTORY_MANAGER, account_) ||
+        return hasRole(TOKEN_FACTORY_MANAGER, account_) ||
             hasRole(TOKEN_REGISTRY_MANAGER, account_) ||
             hasRole(TOKEN_MANAGER, account_) ||
             hasRole(ROLE_SUPERVISOR, account_) ||
             hasRole(WITHDRAWAL_MANAGER, account_) ||
             hasRole(MARKETPLACE_MANAGER, account_) ||
             hasRole(SIGNATURE_MANAGER, account_);
+    }
+
+    function hasRole(bytes32 role_, address account_) public view override returns (bool) {
+        return super.hasRole(ADMINISTRATOR_ROLE, account_) || super.hasRole(role_, account_);
     }
 }

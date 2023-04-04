@@ -159,7 +159,7 @@ describe("RoleManager", () => {
     it("should revert if tries to remove last admin", async () => {
       await truffleAssert.reverts(
         roleManager.revokeRole(ADMINISTRATOR_ROLE, OWNER),
-        "RoleManager: cannot revoke last administrator"
+        "RoleManager: cannot remove last administrator"
       );
     });
 
@@ -169,7 +169,7 @@ describe("RoleManager", () => {
       await roleManager.renounceRole(ADMINISTRATOR_ROLE, SECOND, {from: SECOND});
       await truffleAssert.reverts(
         roleManager.renounceRole(ADMINISTRATOR_ROLE, OWNER, {from: OWNER}),
-        "RoleManager: cannot renounce last administrator"
+        "RoleManager: cannot remove last administrator"
       );
     })
 
@@ -367,11 +367,16 @@ describe("RoleManager", () => {
     });
   });
 
-  describe("hasSpecificRoles()", async () => {
+  describe("hasSpecificOrStrongerRoles()", async () => {
     it("should return true if user has any roles", async () => {
       await roleManager.__RoleManager_init();
-      assert.equal(await roleManager.hasSpecificRoles([ADMINISTRATOR_ROLE, SIGNATURE_MANAGER_ROLE], OWNER), true);
-      assert.equal(await roleManager.hasSpecificRoles([ROLE_SUPERVISOR_ROLE, SIGNATURE_MANAGER_ROLE], OWNER), false);
+      assert.equal(await roleManager.hasSpecificOrStrongerRoles([ADMINISTRATOR_ROLE, SIGNATURE_MANAGER_ROLE], OWNER), true);
+      assert.equal(await roleManager.hasSpecificOrStrongerRoles([ROLE_SUPERVISOR_ROLE, SIGNATURE_MANAGER_ROLE], OWNER), true);
+
+      
+      assert.equal(await roleManager.hasSpecificOrStrongerRoles([ROLE_SUPERVISOR_ROLE, SIGNATURE_MANAGER_ROLE], NOTHING), false);
+      await roleManager.grantRole(SIGNATURE_MANAGER_ROLE, NOTHING);
+      assert.equal(await roleManager.hasSpecificOrStrongerRoles([ROLE_SUPERVISOR_ROLE, SIGNATURE_MANAGER_ROLE], NOTHING), true);
     });
   });
 });

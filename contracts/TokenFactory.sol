@@ -15,11 +15,6 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
     address internal _marketplace;
     IRoleManager internal _roleManager;
 
-    // modifier onlyTokenFactoryManager() {
-    //     _onlyTokenFactoryManager();
-    //     _;
-    // }
-
     modifier onlyMarketplace() {
         _onlyMarketplace();
         _;
@@ -39,20 +34,14 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         string calldata name_,
         string calldata symbol_
     ) external override onlyMarketplace returns (address tokenProxy_) {
-        tokenProxy_ = _deploy(_tokenRegistry, ITokenRegistry(_tokenRegistry).TOKEN_POOL());
+        string memory tokenPool_ = ITokenRegistry(_tokenRegistry).TOKEN_POOL();
+        tokenProxy_ = _deploy(address(_tokenRegistry), tokenPool_);
 
         IERC721MintableToken(tokenProxy_).__ERC721MintableToken_init(name_, symbol_);
 
-        _register(_tokenRegistry, ITokenRegistry(_tokenRegistry).TOKEN_POOL(), tokenProxy_);
+        _register(_tokenRegistry, tokenPool_, tokenProxy_);
         _injectDependencies(_tokenRegistry, tokenProxy_);
     }
-
-    // function _onlyTokenFactoryManager() internal view {
-    //     require(
-    //         _roleManager.isTokenFactoryManager(msg.sender),
-    //         "TokenFactory: Caller is not a token factory manager"
-    //     );
-    // }
 
     function _onlyMarketplace() internal view {
         require(_marketplace == msg.sender, "TokenFactory: Caller is not a marketplace");

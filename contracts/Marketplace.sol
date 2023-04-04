@@ -23,8 +23,6 @@ import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/ITokenFactory.sol";
 import "./interfaces/tokens/IERC721MintableToken.sol";
 
-import "hardhat/console.sol";
-
 contract Marketplace is
     IMarketplace,
     ERC721HolderUpgradeable,
@@ -37,18 +35,18 @@ contract Marketplace is
     using DecimalsConverter for uint256;
     using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
 
+    string public baseTokenContractsURI;
+
     bytes32 internal constant _BUY_TYPEHASH =
         keccak256(
             "Buy(address tokenContract,uint256 futureTokenId,address paymentTokenAddress,uint256 paymentTokenPrice,uint256 discount,uint256 endTimestamp,bytes32 tokenURI)"
         );
 
-    IRoleManager private _roleManager;
-    ITokenFactory private _tokenFactory;
-
     EnumerableSet.AddressSet internal _tokenContracts;
     mapping(address => TokenParams) internal _tokenParams;
 
-    string public baseTokenContractsURI;
+    IRoleManager private _roleManager;
+    ITokenFactory private _tokenFactory;
 
     modifier onlyMarketplaceManager() {
         _onlyMarketplaceManager();
@@ -95,7 +93,7 @@ contract Marketplace is
         _validateTokenParams(name_, symbol_);
 
         require(!tokenParams_.isDisabled, "Marketplace: Token can not be disabled on creation.");
-        
+
         tokenProxy_ = _tokenFactory.deployToken(name_, symbol_);
 
         _updateTokenParams(tokenParams_, tokenProxy_);
@@ -392,12 +390,10 @@ contract Marketplace is
         uint256 offset_,
         uint256 limit_
     ) internal view returns (uint256 activeTokenContractsCount_, uint256 activeTokenContractsCountOffset_) {
-        mapping(address => TokenParams) storage _allTokenParams = _tokenParams;
-
         bool isOffsetReached_ = false;
 
         for (uint256 i = 0; i < allTokens_.length && limit_ != 0; i++) {
-            if (!_allTokenParams[allTokens_[i]].isDisabled) {
+            if (!_tokenParams[allTokens_[i]].isDisabled) {
                 if (activeTokenContractsCount_ == offset_){
                     activeTokenContractsCountOffset_ = i;
                     isOffsetReached_ = true;
@@ -458,17 +454,6 @@ contract Marketplace is
         }
     }
 
-    // function getActiveBaseTokenParamsPart(
-    //     uint256 offset_,
-    //     uint256 limit_
-    // ) external view override returns (BaseTokenParams[] memory tokenParams_) {
-    //     address[] memory tokenContracts_ = getActiveTokenContractsPart(offset_, limit_);
-    //     tokenParams_ = new BaseTokenParams[](tokenContracts_.length);
-    //     for (uint256 i; i < tokenContracts_.length; i++) {
-    //         tokenParams_[i] = getBaseTokenParams(tokenContracts_[i]);
-    //     }
-    // }
-
     function getDetailedTokenParams(
         address tokenContract_
     ) public view override returns (DetailedTokenParams memory) {
@@ -498,17 +483,6 @@ contract Marketplace is
             tokenParams_[i] = getDetailedTokenParams(tokenContracts_[i]);
         }
     }
-
-    // function getActiveDetailedTokenParamsPart(
-    //     uint256 offset_,
-    //     uint256 limit_
-    // ) external view override returns (DetailedTokenParams[] memory tokenParams_) {
-    //     address[] memory tokenContracts_ = getActiveTokenContractsPart(offset_, limit_);
-    //     tokenParams_ = new DetailedTokenParams[](tokenContracts_.length);
-    //     for (uint256 i; i < tokenContracts_.length; i++) {
-    //         tokenParams_[i] = getDetailedTokenParams(tokenContracts_[i]);
-    //     }
-    // }
 
     function _verifySignature(
         address tokenContract_,

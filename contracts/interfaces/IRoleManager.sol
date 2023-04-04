@@ -123,12 +123,12 @@ interface IRoleManager {
 
 
     /**
-    * @notice The function to check if an account has specific roles.
+    * @notice The function to check if an account has specific roles or major.
     * @param roles_ The roles to check.
     * @param account_ The account to check.
     * @return true if the account has the specific roles, false otherwise.
     */
-    function hasSpecificRoles(bytes32[] memory roles_, address account_) external view returns (bool);
+    function hasSpecificOrStrongerRoles(bytes32[] memory roles_, address account_) external view returns (bool);
 
     /**
      * @notice The function to check if an account has any role.

@@ -47,28 +47,7 @@ contract ERC721MintableToken is
         _onlyTokenManager();
         _;
     }
-
-    function __ERC721MintableToken_init(
-        string calldata name_,
-        string calldata symbol_
-    ) external override initializer {
-        __ERC721_init(name_, symbol_);
-
-        _tokenName = name_;
-        _tokenSymbol = symbol_;
-        // __ReentrancyGuard_init();
-    }
-
-    function setDependencies(
-        address contractsRegistry_,
-        bytes calldata
-    ) external override dependant {
-        IContractsRegistry registry_ = IContractsRegistry(contractsRegistry_);
-
-        _roleManager = IRoleManager(registry_.getRoleManagerContract());
-        _marketplace = registry_.getMarketplaceContract();
-    }
-
+    
     function mint(address to_, uint256 tokenId_, string memory uri_) public onlyMarketplace {
         require(!_exists(tokenId_), "ERC721MintableToken: Token with such id already exists.");
 
@@ -81,31 +60,12 @@ contract ERC721MintableToken is
 
         _mint(to_, tokenId_);
 
-        _setTokenURI(tokenId_, uri_);
+        _tokenURIs[tokenId_] = uri_;
+        _existingTokenURIs[uri_] = true;
     }
 
     function burn(uint256 tokenId_) public onlyTokenManager {
         _burn(tokenId_);
-    }
-
-    function updateTokenParams(
-        string memory name_,
-        string memory symbol_
-    ) external onlyMarketplace {
-        _tokenName = name_;
-        _tokenSymbol = symbol_;
-    }
-
-    function _setTokenURI(uint256 tokenId_, string memory tokenURI_) internal virtual {
-        _tokenURIs[tokenId_] = tokenURI_;
-        _existingTokenURIs[tokenURI_] = true;
-    }
-
-    function _burn(uint256 tokenId_) internal override {
-        super._burn(tokenId_);
-
-        delete _existingTokenURIs[_tokenURIs[tokenId_]];
-        delete _tokenURIs[tokenId_];
     }
 
     function name() public view override returns (string memory) {
@@ -130,6 +90,47 @@ contract ERC721MintableToken is
         }
 
         return base_;
+    }
+
+    function __ERC721MintableToken_init(
+        string calldata name_,
+        string calldata symbol_
+    ) external override initializer {
+        __ERC721_init(name_, symbol_);
+
+        _tokenName = name_;
+        _tokenSymbol = symbol_;
+        // __ReentrancyGuard_init();
+    }
+
+    function setDependencies(
+        address contractsRegistry_,
+        bytes calldata
+    ) external override dependant {
+        IContractsRegistry registry_ = IContractsRegistry(contractsRegistry_);
+
+        _roleManager = IRoleManager(registry_.getRoleManagerContract());
+        _marketplace = registry_.getMarketplaceContract();
+    }
+
+    function updateTokenParams(
+        string memory name_,
+        string memory symbol_
+    ) external onlyMarketplace {
+        _tokenName = name_;
+        _tokenSymbol = symbol_;
+    }
+
+    function _setTokenURI(uint256 tokenId_, string memory tokenURI_) internal {
+        _tokenURIs[tokenId_] = tokenURI_;
+        _existingTokenURIs[tokenURI_] = true;
+    }
+
+    function _burn(uint256 tokenId_) internal override {
+        super._burn(tokenId_);
+
+        delete _existingTokenURIs[_tokenURIs[tokenId_]];
+        delete _tokenURIs[tokenId_];
     }
 
     function _baseURI() internal view override returns (string memory) {
