@@ -40,7 +40,7 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
         bytes calldata data_
     ) public override dependant {}
 
-    modifier onlyNotLastAdministratorMember(bytes32 role_){
+    modifier onlyNotLastAdministratorMember(bytes32 role_) {
         require(
             role_ != ADMINISTRATOR_ROLE || getRoleMemberCount(ADMINISTRATOR_ROLE) > 1,
             "RoleManager: cannot remove last administrator"
@@ -48,11 +48,17 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
         _;
     }
 
-    function revokeRole(bytes32 role_, address account_) public override onlyNotLastAdministratorMember(role_) {
+    function revokeRole(
+        bytes32 role_,
+        address account_
+    ) public override onlyNotLastAdministratorMember(role_) {
         super.revokeRole(role_, account_);
     }
 
-    function renounceRole(bytes32 role_, address account_) public override onlyNotLastAdministratorMember(role_) {
+    function renounceRole(
+        bytes32 role_,
+        address account_
+    ) public override onlyNotLastAdministratorMember(role_) {
         super.renounceRole(role_, account_);
     }
 
@@ -101,7 +107,10 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
         return hasRole(SIGNATURE_MANAGER, manager_);
     }
 
-    function hasSpecificOrStrongerRoles(bytes32[] memory roles_, address account_) public view override returns (bool){
+    function hasSpecificOrStrongerRoles(
+        bytes32[] memory roles_,
+        address account_
+    ) public view override returns (bool) {
         for (uint256 i = 0; i < roles_.length; i++) {
             if (hasRole(roles_[i], account_)) {
                 return true;
@@ -109,9 +118,10 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
         }
         return false;
     }
-    
+
     function hasAnyRole(address account_) public view override returns (bool) {
-        return hasRole(TOKEN_FACTORY_MANAGER, account_) ||
+        return
+            hasRole(TOKEN_FACTORY_MANAGER, account_) ||
             hasRole(TOKEN_REGISTRY_MANAGER, account_) ||
             hasRole(TOKEN_MANAGER, account_) ||
             hasRole(ROLE_SUPERVISOR, account_) ||

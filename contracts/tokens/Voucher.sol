@@ -7,7 +7,7 @@ import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
 import "../interfaces/IContractsRegistry.sol";
 import "../interfaces/IRoleManager.sol";
 
-contract Voucher is ERC20PermitUpgradeable, AbstractDependant{
+contract Voucher is ERC20PermitUpgradeable, AbstractDependant {
     IRoleManager internal _roleManager;
 
     modifier onlyTokenManager() {
@@ -37,11 +37,22 @@ contract Voucher is ERC20PermitUpgradeable, AbstractDependant{
         _burn(from, amount);
     }
 
-    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public override {
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public override {
         super.permit(owner, spender, value, deadline, v, r, s);
     }
 
     function _onlyTokenManager() internal view {
-        require(_roleManager.isTokenManager(msg.sender), "Voucher: Caller is not an token manager.");
+        require(
+            _roleManager.isTokenManager(msg.sender),
+            "Voucher: Caller is not an token manager."
+        );
     }
 }

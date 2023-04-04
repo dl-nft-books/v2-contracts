@@ -83,7 +83,7 @@ module.exports = {
       mainnet: `${process.env.ETHERSCAN_KEY}`,
       goerli: `${process.env.ETHERSCAN_KEY}`,
       polygon: `${process.env.POLYGON_KEY}`,
-      polygonMumbai: `${process.env.POLYGON_KEY}`,      
+      polygonMumbai: `${process.env.POLYGON_KEY}`,
       qtestnet: "abc",
       qmainnet: "abc",
     },

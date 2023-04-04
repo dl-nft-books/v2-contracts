@@ -47,7 +47,7 @@ contract ERC721MintableToken is
         _onlyTokenManager();
         _;
     }
-    
+
     function mint(address to_, uint256 tokenId_, string memory uri_) public onlyMarketplace {
         require(!_exists(tokenId_), "ERC721MintableToken: Token with such id already exists.");
 

@@ -11,7 +11,7 @@ interface IERC721MintableToken {
      * @param symbol_ The symbol of the token.
      */
     function __ERC721MintableToken_init(string calldata name_, string calldata symbol_) external;
-    
+
     /**
      * @notice The function to mint a new token.
      * @param to_ The address of the token owner.

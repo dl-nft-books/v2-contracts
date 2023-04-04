@@ -389,17 +389,21 @@ contract Marketplace is
         address[] memory allTokens_,
         uint256 offset_,
         uint256 limit_
-    ) internal view returns (uint256 activeTokenContractsCount_, uint256 activeTokenContractsCountOffset_) {
+    )
+        internal
+        view
+        returns (uint256 activeTokenContractsCount_, uint256 activeTokenContractsCountOffset_)
+    {
         bool isOffsetReached_ = false;
 
         for (uint256 i = 0; i < allTokens_.length && limit_ != 0; i++) {
             if (!_tokenParams[allTokens_[i]].isDisabled) {
-                if (activeTokenContractsCount_ == offset_){
+                if (activeTokenContractsCount_ == offset_) {
                     activeTokenContractsCountOffset_ = i;
                     isOffsetReached_ = true;
                     activeTokenContractsCount_ = 0;
                 }
-                if(isOffsetReached_){
+                if (isOffsetReached_) {
                     limit_--;
                 }
                 activeTokenContractsCount_++;

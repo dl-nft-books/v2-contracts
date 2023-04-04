@@ -1,5 +1,5 @@
-const {assert} = require("chai");
-const {accounts} = require("../../scripts/utils/utils");
+const { assert } = require("chai");
+const { accounts } = require("../../scripts/utils/utils");
 const Reverter = require("../helpers/reverter");
 const truffleAssert = require("truffle-assertions");
 
@@ -63,8 +63,7 @@ describe("ERC721MintableToken", () => {
   afterEach(reverter.revert);
 
   describe("creation", () => {
-    it("should set correct data after deployment", async () => {
-    });
+    it("should set correct data after deployment", async () => {});
     it("should get exception if contract already initialized", async () => {
       await truffleAssert.reverts(
         token.__ERC721MintableToken_init("Test", "TST"),
@@ -81,7 +80,7 @@ describe("ERC721MintableToken", () => {
 
   describe("mint()", () => {
     it("should mint correctly", async () => {
-      await token.mint(SECOND, 0, "uri", {from: MARKETPLACE});
+      await token.mint(SECOND, 0, "uri", { from: MARKETPLACE });
       assert.equal(await token.ownerOf(0), SECOND);
     });
 
@@ -90,24 +89,24 @@ describe("ERC721MintableToken", () => {
     });
 
     it("should revert if token already exists", async () => {
-      await token.mint(SECOND, 0, "uri", {from: MARKETPLACE});
+      await token.mint(SECOND, 0, "uri", { from: MARKETPLACE });
       await truffleAssert.reverts(
-        token.mint(SECOND, 0, "uri", {from: MARKETPLACE}),
+        token.mint(SECOND, 0, "uri", { from: MARKETPLACE }),
         "ERC721MintableToken: Token with such id already exists."
       );
     });
 
     it("should revert if token id is not equal to token index", async () => {
       await truffleAssert.reverts(
-        token.mint(SECOND, 1, "uri", {from: MARKETPLACE}),
+        token.mint(SECOND, 1, "uri", { from: MARKETPLACE }),
         "ERC721MintableToken: Token id is not valid."
       );
     });
 
     it("should revert if token with such uri already exists", async () => {
-      await token.mint(SECOND, 0, "uri", {from: MARKETPLACE});
+      await token.mint(SECOND, 0, "uri", { from: MARKETPLACE });
       await truffleAssert.reverts(
-        token.mint(SECOND, 1, "uri", {from: MARKETPLACE}),
+        token.mint(SECOND, 1, "uri", { from: MARKETPLACE }),
         "ERC721MintableToken: Token with such URI already exists."
       );
     });
@@ -115,8 +114,8 @@ describe("ERC721MintableToken", () => {
 
   describe("tokenURI()", () => {
     it("should return correct tokenURI", async () => {
-      await token.mint(SECOND, 0, "uri", {from: MARKETPLACE});
-      await token.mint(SECOND, 1, "", {from: MARKETPLACE});
+      await token.mint(SECOND, 0, "uri", { from: MARKETPLACE });
+      await token.mint(SECOND, 1, "", { from: MARKETPLACE });
 
       const marketplace1 = await Marketplace.new();
       marketplace1.__Marketplace_init("");
@@ -146,17 +145,17 @@ describe("ERC721MintableToken", () => {
 
   describe("burn()", () => {
     it("should burn correctly", async () => {
-      await token.mint(SECOND, 0, "", {from: MARKETPLACE});
+      await token.mint(SECOND, 0, "", { from: MARKETPLACE });
 
       await token.burn(0);
       await truffleAssert.reverts(token.ownerOf(0), "ERC721: owner query for nonexistent token");
     });
 
     it("should revert if not a token manager", async () => {
-      await token.mint(SECOND, 0, "uri", {from: MARKETPLACE});
+      await token.mint(SECOND, 0, "uri", { from: MARKETPLACE });
 
       await truffleAssert.reverts(
-        token.burn(0, {from: MARKETPLACE}),
+        token.burn(0, { from: MARKETPLACE }),
         "ERC721MintableToken: Caller is not a token manager."
       );
     });
@@ -164,14 +163,14 @@ describe("ERC721MintableToken", () => {
 
   describe("updateTokenParams()", () => {
     it("should update token params correctly", async () => {
-      await token.updateTokenParams("Name", "Symbol", {from: MARKETPLACE});
+      await token.updateTokenParams("Name", "Symbol", { from: MARKETPLACE });
       assert.equal(await token.name(), "Name");
       assert.equal(await token.symbol(), "Symbol");
     });
 
     it("should revert if not a marketplace", async () => {
       await truffleAssert.reverts(
-        token.updateTokenParams("Name", "Symbol", {from: NOTHING}),
+        token.updateTokenParams("Name", "Symbol", { from: NOTHING }),
         "ERC721MintableToken: Caller is not a marketplace."
       );
     });

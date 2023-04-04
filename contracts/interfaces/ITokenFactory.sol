@@ -10,6 +10,9 @@ interface ITokenFactory {
      * @param name_ The name of the token.
      * @param symbol_ The symbol of the token.
      * @return tokenProxy_ the address of the deployed token.
-    */
-    function deployToken(string calldata name_, string calldata symbol_) external returns (address tokenProxy_);
+     */
+    function deployToken(
+        string calldata name_,
+        string calldata symbol_
+    ) external returns (address tokenProxy_);
 }

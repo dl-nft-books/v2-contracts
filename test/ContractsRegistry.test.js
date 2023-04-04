@@ -1,5 +1,5 @@
-const {assert} = require("chai");
-const {toBN, accounts} = require("../scripts/utils/utils");
+const { assert } = require("chai");
+const { toBN, accounts } = require("../scripts/utils/utils");
 const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
 

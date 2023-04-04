@@ -1,9 +1,9 @@
-const {assert} = require("chai");
-const {wei, accounts, toBN} = require("../../scripts/utils/utils");
-const {ZERO_ADDR, PRECISION, PERCENTAGE_100} = require("../../scripts/utils/constants");
+const { assert } = require("chai");
+const { wei, accounts, toBN } = require("../../scripts/utils/utils");
+const { ZERO_ADDR, PRECISION, PERCENTAGE_100 } = require("../../scripts/utils/constants");
 const Reverter = require("../helpers/reverter");
 const truffleAssert = require("truffle-assertions");
-const {signPermit} = require("../helpers/signatures");
+const { signPermit } = require("../helpers/signatures");
 
 const ContractsRegistry = artifacts.require("ContractsRegistry");
 const TokenFactory = artifacts.require("TokenFactory");
@@ -29,12 +29,12 @@ describe("Voucher", () => {
   const reverter = new Reverter();
 
   function signPermitTest({
-                            privateKey = OWNER_PK,
-                            owner = OWNER,
-                            spender = marketplace.address,
-                            value = defaultValue.toFixed(),
-                            deadline = defaultEndTime.toFixed(),
-                          }) {
+    privateKey = OWNER_PK,
+    owner = OWNER,
+    spender = marketplace.address,
+    value = defaultValue.toFixed(),
+    deadline = defaultEndTime.toFixed(),
+  }) {
     const buffer = Buffer.from(privateKey, "hex");
 
     const domain = {
@@ -58,7 +58,6 @@ describe("Voucher", () => {
 
     voucher = await Voucher.new();
     await voucher.__Voucher_init("name", "symbol");
-
 
     // const _roleManager = await RoleManager.new();
     // contractsRegistry = await ContractsRegistry.new();

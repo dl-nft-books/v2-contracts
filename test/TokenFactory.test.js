@@ -1,5 +1,5 @@
-const {assert} = require("chai");
-const {accounts} = require("../scripts/utils/utils");
+const { assert } = require("chai");
+const { accounts } = require("../scripts/utils/utils");
 const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
 
@@ -70,15 +70,11 @@ describe("TokenFactory", () => {
 
   describe("deployToken()", () => {
     it("should deploy token", async () => {
-      await tokenFactory.deployToken("TestToken", "TT", {from: MARKETPLACE});
+      await tokenFactory.deployToken("TestToken", "TT", { from: MARKETPLACE });
 
       assert.equal((await tokenRegistry.countPools(await tokenRegistry.TOKEN_POOL())).toFixed(), "1");
 
-      await ERC721MintableToken.at(
-        (
-          await tokenRegistry.listPools(await tokenRegistry.TOKEN_POOL(), 0, 1)
-        )[0]
-      );
+      await ERC721MintableToken.at((await tokenRegistry.listPools(await tokenRegistry.TOKEN_POOL(), 0, 1))[0]);
     });
   });
 });

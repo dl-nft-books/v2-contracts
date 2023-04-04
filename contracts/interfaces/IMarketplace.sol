@@ -51,7 +51,7 @@ interface IMarketplace {
      * @param isDisabled the flag that indicates if the token contract is disabled
      * @param tokenName the name of the token
      * @param tokenSymbol the symbol of the token
-    */
+     */
     struct DetailedTokenParams {
         address tokenContract;
         uint256 pricePerOneToken;
@@ -111,21 +111,14 @@ interface IMarketplace {
      * @param recipient the address of the recipient
      * @param amount the number of tokens withdrawn
      */
-    event PaidTokensWithdrawn(
-        address indexed tokenAddr,
-        address recipient,
-        uint256 amount
-    );
+    event PaidTokensWithdrawn(address indexed tokenAddr, address recipient, uint256 amount);
 
     /**
      * @notice This event is emitted when the owner of the contract withdraws the native currency that users have paid for tokens
      * @param recipient the address of the recipient
      * @param amount the number of tokens withdrawn
      */
-    event NativeCurrencyWithdrawn(
-        address recipient,
-        uint256 amount
-    );
+    event NativeCurrencyWithdrawn(address recipient, uint256 amount);
 
     /**
      * @notice This event is emitted when the user has successfully minted a new token
@@ -304,7 +297,6 @@ interface IMarketplace {
         address tokenContract_,
         address userAddr_
     ) external view returns (uint256[] memory tokenIDs_);
-
 
     /**
      * @notice The function that returns the total TokenContracts count
