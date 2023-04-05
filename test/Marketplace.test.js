@@ -591,17 +591,21 @@ describe("Marketplace", () => {
     });
   });
 
-  describe("withdrawPaidTokens()", () => {
+  describe("withdrawCurrency()", () => {
     let tokenContract;
+    const tokenId = 13;
+    const nftFloorPrice = wei(90, priceDecimals);
 
     beforeEach("setup", async () => {
+      await nft.mint(SECOND, tokenId);
+      await nft.approve(marketplace.address, tokenId, { from: SECOND });
       tokenContract = await marketplace.addToken.call("Test", "TST", [
         defaultPricePerOneToken,
         defaultMinNFTFloorPrice,
         defaultVoucherTokensAmount,
         defaultVoucherContract.address,
         ZERO_ADDR,
-        false,
+        true,
         false,
       ]);
       await marketplace.addToken("Test", "TST", [
@@ -610,7 +614,7 @@ describe("Marketplace", () => {
         defaultVoucherTokensAmount,
         defaultVoucherContract.address,
         ZERO_ADDR,
-        false,
+        true,
         false,
       ]);
     });
@@ -643,7 +647,7 @@ describe("Marketplace", () => {
 
       assert.equal((await paymentToken.balanceOf(marketplace.address)).toFixed(), expectedTokensAmount.toFixed());
 
-      const tx = await marketplace.withdrawPaidTokens(paymentToken.address, OWNER);
+      const tx = await marketplace.withdrawCurrency(paymentToken.address, OWNER);
 
       assert.equal(
         toBN(await paymentToken.balanceOf(OWNER)).toFixed(),
@@ -656,41 +660,49 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.amount).toFixed(), expectedPaymentAmount.toFixed());
     });
 
+    it("should withdraw nft", async () => {
+      const sig = signBuyTest({
+        tokenContract: tokenContract,
+        paymentTokenAddress: nft.address,
+        paymentTokenPrice: nftFloorPrice.toFixed(),
+      });
+
+      await marketplace.buyTokenByNFT(
+        tokenContract,
+        0,
+        nft.address,
+        nftFloorPrice,
+        tokenId,
+        defaultEndTime,
+        defaultTokenURI,
+        sig.r,
+        sig.s,
+        sig.v,
+        { from: SECOND }
+      );
+
+      assert.equal(await nft.ownerOf(tokenId), marketplace.address);
+
+      const tx = await marketplace.withdrawCurrency(nft.address, OWNER);
+
+      assert.equal(await nft.ownerOf(tokenId), OWNER);
+
+      assert.equal(tx.receipt.logs[0].event, "PaidTokensWithdrawn");
+      assert.equal(tx.receipt.logs[0].args.tokenAddr, nft.address);
+      assert.equal(tx.receipt.logs[0].args.recipient, OWNER);
+      assert.equal(tx.receipt.logs[0].args.amount, tokenId);
+    });
+
     it("should get exception if nothing to withdraw", async () => {
       const reason = "Marketplace: Nothing to withdraw.";
 
-      await truffleAssert.reverts(marketplace.withdrawPaidTokens(paymentToken.address, SECOND), reason);
+      await truffleAssert.reverts(marketplace.withdrawCurrency(paymentToken.address, SECOND), reason);
     });
 
     it("should get exception if no a withdrawal manager calls this function", async () => {
       const reason = "Marketplace: Caller is not a withdrawal manager.";
 
-      await truffleAssert.reverts(marketplace.withdrawPaidTokens(ZERO_ADDR, SECOND, { from: SECOND }), reason);
-    });
-  });
-
-  describe("withdrawNativeCurrency()", () => {
-    let tokenContract;
-
-    beforeEach("setup", async () => {
-      tokenContract = await marketplace.addToken.call("Test", "TST", [
-        defaultPricePerOneToken,
-        defaultMinNFTFloorPrice,
-        defaultVoucherTokensAmount,
-        defaultVoucherContract.address,
-        ZERO_ADDR,
-        false,
-        false,
-      ]);
-      await marketplace.addToken("Test", "TST", [
-        defaultPricePerOneToken,
-        defaultMinNFTFloorPrice,
-        defaultVoucherTokensAmount,
-        defaultVoucherContract.address,
-        ZERO_ADDR,
-        false,
-        false,
-      ]);
+      await truffleAssert.reverts(marketplace.withdrawCurrency(ZERO_ADDR, SECOND, { from: SECOND }), reason);
     });
 
     it("should correctly withdraw native currency", async () => {
@@ -724,13 +736,13 @@ describe("Marketplace", () => {
 
       const currencyBalanceBefore = toBN(await web3.eth.getBalance(SECOND));
 
-      const tx = await marketplace.withdrawNativeCurrency(SECOND);
+      const tx = await marketplace.withdrawCurrency(ZERO_ADDR, SECOND);
 
       const currencyBalanceAfter = toBN(await web3.eth.getBalance(SECOND));
 
       assert.equal(currencyBalanceAfter.minus(currencyBalanceBefore).toFixed(), expectedCurrencyAmount.toFixed());
 
-      assert.equal(tx.receipt.logs[0].event, "NativeCurrencyWithdrawn");
+      assert.equal(tx.receipt.logs[0].event, "PaidTokensWithdrawn");
       assert.equal(tx.receipt.logs[0].args.recipient, SECOND);
       assert.equal(toBN(tx.receipt.logs[0].args.amount).toFixed(), expectedCurrencyAmount.toFixed());
     });
@@ -764,19 +776,19 @@ describe("Marketplace", () => {
         }
       );
 
-      await truffleAssert.reverts(marketplace.withdrawNativeCurrency(marketplace.address), reason);
+      await truffleAssert.reverts(marketplace.withdrawCurrency(ZERO_ADDR, marketplace.address), reason);
     });
 
     it("should get exception if nothing to withdraw", async () => {
       const reason = "Marketplace: Nothing to withdraw.";
 
-      await truffleAssert.reverts(marketplace.withdrawNativeCurrency(SECOND), reason);
+      await truffleAssert.reverts(marketplace.withdrawCurrency(ZERO_ADDR, SECOND), reason);
     });
 
     it("should get exception if no a withdrawal manager calls this function", async () => {
       const reason = "Marketplace: Caller is not a withdrawal manager.";
 
-      await truffleAssert.reverts(marketplace.withdrawNativeCurrency(SECOND, { from: SECOND }), reason);
+      await truffleAssert.reverts(marketplace.withdrawCurrency(ZERO_ADDR, SECOND, { from: SECOND }), reason);
     });
   });
 
@@ -1815,6 +1827,7 @@ describe("Marketplace", () => {
       assert.deepEqual([tokenIDs[0].toString()], ["1"]);
     });
   });
+
   describe("setBaseTokenContractsURI", () => {
     it("should correctly update base token contracts URI", async () => {
       const newBaseTokenContractsURI = "new base URI/";

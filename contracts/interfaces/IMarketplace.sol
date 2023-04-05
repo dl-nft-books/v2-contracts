@@ -106,19 +106,12 @@ interface IMarketplace {
     );
 
     /**
-     * @notice This event is emitted when the owner of the contract withdraws the tokens that users have paid for tokens
+     * @notice This event is emitted when the owner of the contract withdraws the currency
      * @param tokenAddr the address of the token to be withdrawn
      * @param recipient the address of the recipient
      * @param amount the number of tokens withdrawn
      */
     event PaidTokensWithdrawn(address indexed tokenAddr, address recipient, uint256 amount);
-
-    /**
-     * @notice This event is emitted when the owner of the contract withdraws the native currency that users have paid for tokens
-     * @param recipient the address of the recipient
-     * @param amount the number of tokens withdrawn
-     */
-    event NativeCurrencyWithdrawn(address recipient, uint256 amount);
 
     /**
      * @notice This event is emitted when the user has successfully minted a new token
@@ -211,17 +204,11 @@ interface IMarketplace {
     ) external;
 
     /**
-     * @notice Function to withdraw the tokens that users paid to buy tokens
+     * @notice Function to withdraw the currency that users paid to buy tokens
      * @param tokenAddr_ the address of the token to be withdrawn
      * @param recipient_ the address of the recipient
      */
-    function withdrawPaidTokens(address tokenAddr_, address recipient_) external;
-
-    /**
-     * @notice Function to withdraw the native currency that users paid to buy tokens
-     * @param recipient_ the address of the recipient
-     */
-    function withdrawNativeCurrency(address recipient_) external;
+    function withdrawCurrency(address tokenAddr_, address recipient_) external;
 
     /**
      * @notice The function for creatinng a new coin for the token contract

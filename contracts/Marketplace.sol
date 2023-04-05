@@ -123,31 +123,29 @@ contract Marketplace is
         emit TokenContractParamsUpdated(tokenContract_, name_, symbol_, newTokenParams_);
     }
 
-    function withdrawPaidTokens(
+    function withdrawCurrency(
         address tokenAddr_,
         address recipient_
     ) external override onlyWithdrawalManager {
-        IERC20MetadataUpgradeable token_ = IERC20MetadataUpgradeable(tokenAddr_);
+        bool isNativeCurrency_ = tokenAddr_ == address(0);
 
-        uint256 amount_ = token_.balanceOf(address(this));
+        IERC20MetadataUpgradeable token_ = IERC20MetadataUpgradeable(tokenAddr_);
+        uint256 amount_ = isNativeCurrency_
+            ? address(this).balance
+            : token_.balanceOf(address(this));
+
         require(amount_ > 0, "Marketplace: Nothing to withdraw.");
 
-        token_.safeTransfer(recipient_, amount_);
+        if (isNativeCurrency_) {
+            (bool success_, ) = recipient_.call{value: amount_}("");
+            require(success_, "Marketplace: Failed to transfer native currency.");
+        } else {
+            token_.safeTransfer(recipient_, amount_);
 
-        amount_ = amount_.to18(token_.decimals());
+            amount_ = amount_.to18(token_.decimals());
+        }
 
         emit PaidTokensWithdrawn(tokenAddr_, recipient_, amount_);
-    }
-
-    function withdrawNativeCurrency(address recipient_) external override onlyWithdrawalManager {
-        uint256 amount_ = address(this).balance;
-
-        require(amount_ > 0, "Marketplace: Nothing to withdraw.");
-
-        (bool success_, ) = recipient_.call{value: amount_}("");
-        require(success_, "Marketplace: Failed to transfer native currency.");
-
-        emit NativeCurrencyWithdrawn(recipient_, amount_);
     }
 
     // TODO: nonReentrant?

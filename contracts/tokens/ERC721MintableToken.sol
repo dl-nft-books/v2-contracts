@@ -25,9 +25,6 @@ contract ERC721MintableToken is
     ERC721EnumerableUpgradeable,
     ERC721HolderUpgradeable
 {
-    using DecimalsConverter for uint256;
-    using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
-
     uint256 internal _nextTokenId;
     string internal _tokenName;
     string internal _tokenSymbol;
