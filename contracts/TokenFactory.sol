@@ -7,7 +7,6 @@ import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/ITokenRegistry.sol";
 import "./interfaces/ITokenFactory.sol";
 import "./interfaces/IRoleManager.sol";
-import "./interfaces/IMarketplace.sol";
 import "./interfaces/tokens/IERC721MintableToken.sol";
 
 contract TokenFactory is ITokenFactory, AbstractPoolFactory {
@@ -35,7 +34,7 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         string calldata symbol_
     ) external override onlyMarketplace returns (address tokenProxy_) {
         string memory tokenPool_ = ITokenRegistry(_tokenRegistry).TOKEN_POOL();
-        tokenProxy_ = _deploy(address(_tokenRegistry), tokenPool_);
+        tokenProxy_ = _deploy(_tokenRegistry, tokenPool_);
 
         IERC721MintableToken(tokenProxy_).__ERC721MintableToken_init(name_, symbol_);
 

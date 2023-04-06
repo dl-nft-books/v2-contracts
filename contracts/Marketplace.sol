@@ -96,7 +96,7 @@ contract Marketplace is
 
         tokenProxy_ = _tokenFactory.deployToken(name_, symbol_);
 
-        _updateTokenParams(tokenParams_, tokenProxy_);
+        _tokenParams[tokenProxy_] = tokenParams_;
 
         _tokenContracts.add(tokenProxy_);
 
@@ -116,7 +116,7 @@ contract Marketplace is
 
         _validateTokenParams(name_, symbol_);
 
-        _updateTokenParams(newTokenParams_, tokenContract_);
+        _tokenParams[tokenContract_] = newTokenParams_;
 
         IERC721MintableToken(tokenContract_).updateTokenParams(name_, symbol_);
 
@@ -380,31 +380,9 @@ contract Marketplace is
     }
 
     function getActiveTokenContractsCount() external view override returns (uint256 count_) {
-        (count_, ) = _getActiveTokenContractsCount(_tokenContracts.values(), 0, type(uint256).max);
-    }
-
-    function _getActiveTokenContractsCount(
-        address[] memory allTokens_,
-        uint256 offset_,
-        uint256 limit_
-    )
-        internal
-        view
-        returns (uint256 activeTokenContractsCount_, uint256 activeTokenContractsCountOffset_)
-    {
-        bool isOffsetReached_ = false;
-
-        for (uint256 i = 0; i < allTokens_.length && limit_ != 0; i++) {
-            if (!_tokenParams[allTokens_[i]].isDisabled) {
-                if (activeTokenContractsCount_ == offset_) {
-                    activeTokenContractsCountOffset_ = i;
-                    isOffsetReached_ = true;
-                    activeTokenContractsCount_ = 0;
-                }
-                if (isOffsetReached_) {
-                    limit_--;
-                }
-                activeTokenContractsCount_++;
+        for(uint256 i = 0; i < _tokenContracts.length(); i++) {
+            if (!_tokenParams[_tokenContracts.at(i)].isDisabled) {
+                count_++;
             }
         }
     }
@@ -416,74 +394,56 @@ contract Marketplace is
         return _tokenContracts.part(offset_, limit_);
     }
 
-    function getActiveTokenContractsPart(
-        uint256 offset_,
-        uint256 limit_
-    ) public view override returns (address[] memory list_) {
-        address[] memory tokenContracts_ = _tokenContracts.values();
-
-        (limit_, offset_) = _getActiveTokenContractsCount(tokenContracts_, offset_, limit_);
-        list_ = new address[](limit_);
-        uint256 index = 0;
-
-        for (uint256 i = offset_; index < limit_; i++) {
-            if (!_tokenParams[tokenContracts_[i]].isDisabled) {
-                list_[index++] = tokenContracts_[i];
-            }
-        }
-    }
-
     function getBaseTokenParams(
-        address tokenContract_
-    ) public view override returns (BaseTokenParams memory) {
-        TokenParams memory _currentTokenParams = _tokenParams[tokenContract_];
-        return
-            BaseTokenParams(
-                tokenContract_,
+        address[] memory tokenContract_
+    ) public view override returns (BaseTokenParams[] memory baseTokenParams_) {
+        baseTokenParams_ = new BaseTokenParams[](tokenContract_.length);
+        for(uint256 i; i < tokenContract_.length; i++) {
+            TokenParams memory _currentTokenParams = _tokenParams[tokenContract_[i]];
+            baseTokenParams_[i] = BaseTokenParams(
+                tokenContract_[i],
                 _currentTokenParams.pricePerOneToken,
-                ERC721Upgradeable(tokenContract_).name()
+                ERC721Upgradeable(tokenContract_[i]).name()
             );
+        }
     }
 
     function getBaseTokenParamsPart(
         uint256 offset_,
         uint256 limit_
-    ) external view override returns (BaseTokenParams[] memory tokenParams_) {
-        address[] memory tokenContracts_ = getTokenContractsPart(offset_, limit_);
-        tokenParams_ = new BaseTokenParams[](tokenContracts_.length);
-        for (uint256 i; i < tokenContracts_.length; i++) {
-            tokenParams_[i] = getBaseTokenParams(tokenContracts_[i]);
-        }
+    ) external view override returns (BaseTokenParams[] memory) {
+        return getBaseTokenParams(getTokenContractsPart(offset_, limit_));
     }
 
     function getDetailedTokenParams(
-        address tokenContract_
-    ) public view override returns (DetailedTokenParams memory) {
-        TokenParams memory _currentTokenParams = _tokenParams[tokenContract_];
-        return
-            DetailedTokenParams(
-                tokenContract_,
-                _currentTokenParams.pricePerOneToken,
-                _currentTokenParams.minNFTFloorPrice,
-                _currentTokenParams.voucherTokensAmount,
-                _currentTokenParams.voucherTokenContract,
-                _currentTokenParams.fundsRecipient,
-                _currentTokenParams.isNFTBuyable,
-                _currentTokenParams.isDisabled,
-                ERC721Upgradeable(tokenContract_).name(),
-                ERC721Upgradeable(tokenContract_).symbol()
+        address[] memory tokenContracts_
+    ) public view override returns (DetailedTokenParams[] memory detailedTokenParams_) {
+        detailedTokenParams_ = new DetailedTokenParams[](tokenContracts_.length);
+
+        for (uint256 i; i < tokenContracts_.length; i++) {
+            TokenParams memory _currentTokenParams = _tokenParams[tokenContracts_[i]];
+            detailedTokenParams_[i] = DetailedTokenParams(
+                tokenContracts_[i],
+                TokenParams(
+                    _currentTokenParams.pricePerOneToken,
+                    _currentTokenParams.minNFTFloorPrice,
+                    _currentTokenParams.voucherTokensAmount,
+                    _currentTokenParams.voucherTokenContract,
+                    _currentTokenParams.fundsRecipient,
+                    _currentTokenParams.isNFTBuyable,
+                    _currentTokenParams.isDisabled
+                ),
+                ERC721Upgradeable(tokenContracts_[i]).name(),
+                ERC721Upgradeable(tokenContracts_[i]).symbol()
             );
+        }
     }
 
     function getDetailedTokenParamsPart(
         uint256 offset_,
         uint256 limit_
-    ) external view override returns (DetailedTokenParams[] memory tokenParams_) {
-        address[] memory tokenContracts_ = getTokenContractsPart(offset_, limit_);
-        tokenParams_ = new DetailedTokenParams[](tokenContracts_.length);
-        for (uint256 i; i < tokenContracts_.length; i++) {
-            tokenParams_[i] = getDetailedTokenParams(tokenContracts_[i]);
-        }
+    ) external view override returns (DetailedTokenParams[] memory) {
+        return getDetailedTokenParams(getTokenContractsPart(offset_, limit_));
     }
 
     function _verifySignature(
@@ -515,10 +475,6 @@ contract Marketplace is
 
         require(_roleManager.isSignatureManager(signer_), "Marketplace: Invalid signature.");
         require(block.timestamp <= endTimestamp_, "Marketplace: Signature expired.");
-    }
-
-    function _updateTokenParams(TokenParams memory tokenParams_, address tokenContract_) internal {
-        _tokenParams[tokenContract_] = tokenParams_;
     }
 
     function _validateTokenParams(string memory name_, string memory symbol_) internal pure {

@@ -47,6 +47,13 @@ describe("Marketplace", () => {
   const defaultVoucherTokensAmount = wei(1);
   let defaultEndTime;
 
+  const PaymentType = {
+    "NATIVE": 0,
+    "ERC20": 1,
+    "NFT": 2,
+    "VOUCHER": 3
+  }
+
   const reverter = new Reverter();
 
   function signBuyTest({
@@ -296,14 +303,14 @@ describe("Marketplace", () => {
         true,
       ]);
 
-      const tokenParams = await marketplace.getDetailedTokenParams(tokenContract);
-      assert.equal(tokenParams.pricePerOneToken, newPricePerOneToken);
-      assert.equal(tokenParams.minNFTFloorPrice, newMinNFTFloorPrice);
-      assert.equal(tokenParams.voucherTokensAmount, newVoucherTokensAmount);
-      assert.equal(tokenParams.isNFTBuyable, newIsNFTBuyable);
-      assert.equal(tokenParams.voucherTokenContract, newVoucherTokenContract);
-      assert.equal(tokenParams.fundsRecipient, newFundsRecipient);
-      assert.equal(tokenParams.isDisabled, true);
+      const tokenParams = (await marketplace.getDetailedTokenParams([tokenContract]))[0];
+      assert.equal(tokenParams.tokenParams.pricePerOneToken, newPricePerOneToken);
+      assert.equal(tokenParams.tokenParams.minNFTFloorPrice, newMinNFTFloorPrice);
+      assert.equal(tokenParams.tokenParams.voucherTokensAmount, newVoucherTokensAmount);
+      assert.equal(tokenParams.tokenParams.isNFTBuyable, newIsNFTBuyable);
+      assert.equal(tokenParams.tokenParams.voucherTokenContract, newVoucherTokenContract);
+      assert.equal(tokenParams.tokenParams.fundsRecipient, newFundsRecipient);
+      assert.equal(tokenParams.tokenParams.isDisabled, true);
 
       assert.equal(tx.receipt.logs[0].event, "TokenContractParamsUpdated");
       assert.equal(tx.receipt.logs[0].args.tokenContract, tokenContract);
@@ -658,39 +665,6 @@ describe("Marketplace", () => {
       assert.equal(tx.receipt.logs[0].args.tokenAddr, paymentToken.address);
       assert.equal(tx.receipt.logs[0].args.recipient, OWNER);
       assert.equal(toBN(tx.receipt.logs[0].args.amount).toFixed(), expectedPaymentAmount.toFixed());
-    });
-
-    it("should withdraw nft", async () => {
-      const sig = signBuyTest({
-        tokenContract: tokenContract,
-        paymentTokenAddress: nft.address,
-        paymentTokenPrice: nftFloorPrice.toFixed(),
-      });
-
-      await marketplace.buyTokenByNFT(
-        tokenContract,
-        0,
-        nft.address,
-        nftFloorPrice,
-        tokenId,
-        defaultEndTime,
-        defaultTokenURI,
-        sig.r,
-        sig.s,
-        sig.v,
-        { from: SECOND }
-      );
-
-      assert.equal(await nft.ownerOf(tokenId), marketplace.address);
-
-      const tx = await marketplace.withdrawCurrency(nft.address, OWNER);
-
-      assert.equal(await nft.ownerOf(tokenId), OWNER);
-
-      assert.equal(tx.receipt.logs[0].event, "PaidTokensWithdrawn");
-      assert.equal(tx.receipt.logs[0].args.tokenAddr, nft.address);
-      assert.equal(tx.receipt.logs[0].args.recipient, OWNER);
-      assert.equal(tx.receipt.logs[0].args.amount, tokenId);
     });
 
     it("should get exception if nothing to withdraw", async () => {
@@ -1882,69 +1856,6 @@ describe("Marketplace", () => {
     });
   });
 
-  describe("getActiveTokenContractsPart", () => {
-    it("should return correct active token contracts arr", async () => {
-      const addressesArr = [];
-
-      for (let i = 0; i < 5; i++) {
-        let addr = await marketplace.addToken.call("Test" + i, "TST" + i, [
-          defaultPricePerOneToken,
-          defaultMinNFTFloorPrice,
-          defaultVoucherTokensAmount,
-          defaultVoucherContract.address,
-          ZERO_ADDR,
-          false,
-          false,
-        ]);
-        await marketplace.addToken("Test" + i, "TST" + i, [
-          defaultPricePerOneToken,
-          defaultMinNFTFloorPrice,
-          defaultVoucherTokensAmount,
-          defaultVoucherContract.address,
-          ZERO_ADDR,
-          false,
-          false,
-        ]);
-        addressesArr.push(addr);
-
-        addr = await marketplace.addToken.call("Test2" + i, "TST2" + i, [
-          defaultPricePerOneToken,
-          defaultMinNFTFloorPrice,
-          defaultVoucherTokensAmount,
-          defaultVoucherContract.address,
-          ZERO_ADDR,
-          false,
-          false,
-        ]);
-        await marketplace.addToken("Test2" + i, "TST2" + i, [
-          defaultPricePerOneToken,
-          defaultMinNFTFloorPrice,
-          defaultVoucherTokensAmount,
-          defaultVoucherContract.address,
-          ZERO_ADDR,
-          false,
-          false,
-        ]);
-        await marketplace.updateAllParams(addr, "Test2" + i, "TST2" + i, [
-          defaultPricePerOneToken,
-          defaultMinNFTFloorPrice,
-          defaultVoucherTokensAmount,
-          defaultVoucherContract.address,
-          ZERO_ADDR,
-          false,
-          true,
-        ]);
-
-        assert.equal((await marketplace.getTokenContractsCount()).toString(), (i + 1) * 2);
-        assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), i + 1);
-      }
-
-      assert.deepEqual(await marketplace.getActiveTokenContractsPart(0, 10), addressesArr);
-      assert.deepEqual(await marketplace.getActiveTokenContractsPart(0, 3), addressesArr.slice(0, 3));
-      assert.deepEqual(await marketplace.getActiveTokenContractsPart(3, 10), addressesArr.slice(3));
-    });
-  });
-
   describe("getBaseTokenParamsPart()", () => {
     it("should return correct token params", async () => {
       const baseTokenParams = [];
@@ -1997,13 +1908,13 @@ describe("Marketplace", () => {
         ]);
         detailedTokenParams.push([
           addr,
-          i.toString(),
+          [i.toString(),
           defaultMinNFTFloorPrice.toString(),
           defaultVoucherTokensAmount.toString(),
           defaultVoucherContract.address,
           ZERO_ADDR,
           false,
-          false,
+          false,],
           "Test" + i,
           "TST" + i,
         ]);
@@ -2014,6 +1925,50 @@ describe("Marketplace", () => {
       assert.deepEqual(await marketplace.getDetailedTokenParamsPart(0, 10), detailedTokenParams);
       assert.deepEqual(await marketplace.getDetailedTokenParamsPart(0, 3), detailedTokenParams.slice(0, 3));
       assert.deepEqual(await marketplace.getDetailedTokenParamsPart(3, 10), detailedTokenParams.slice(3));
+    });
+  });
+
+  describe("getActiveTokenContractsCount", () => {
+    it("should return correct active token contracts count", async () => {
+
+      for (let i = 0; i < 5; i++) {
+        let addr = await marketplace.addToken.call("Test" + i, "TST" + i, [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          false,
+        ]);
+        await marketplace.addToken("Test" + i, "TST" + i, [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          false,
+        ]);
+
+        assert.equal((await marketplace.getTokenContractsCount()).toString(), i + 1);
+        assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), 1);
+
+        await marketplace.updateAllParams(addr, 
+          "Test" + i,
+          "TST" + i,
+          [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          true,
+        ]);
+
+        assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), 0);
+      }
     });
   });
 });

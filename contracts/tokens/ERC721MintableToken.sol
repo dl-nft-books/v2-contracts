@@ -1,17 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
 import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
-import "@dlsl/dev-modules/utils/Globals.sol";
-import "@dlsl/dev-modules/libs/decimals/DecimalsConverter.sol";
 
 import "../interfaces/IContractsRegistry.sol";
 import "../interfaces/IRoleManager.sol";
@@ -97,7 +90,6 @@ contract ERC721MintableToken is
 
         _tokenName = name_;
         _tokenSymbol = symbol_;
-        // __ReentrancyGuard_init();
     }
 
     function setDependencies(

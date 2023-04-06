@@ -21,9 +21,9 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
     function __RoleManager_init() external override initializer {
         __AccessControl_init();
 
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        grantRole(ADMINISTRATOR_ROLE, msg.sender);
+        _grantRole(ADMINISTRATOR_ROLE, msg.sender);
 
         _setRoleAdmin(ADMINISTRATOR_ROLE, ADMINISTRATOR_ROLE);
         _setRoleAdmin(TOKEN_FACTORY_MANAGER, ROLE_SUPERVISOR);
