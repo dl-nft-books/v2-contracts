@@ -380,7 +380,7 @@ contract Marketplace is
     }
 
     function getActiveTokenContractsCount() external view override returns (uint256 count_) {
-        for(uint256 i = 0; i < _tokenContracts.length(); i++) {
+        for (uint256 i = 0; i < _tokenContracts.length(); i++) {
             if (!_tokenParams[_tokenContracts.at(i)].isDisabled) {
                 count_++;
             }
@@ -398,10 +398,11 @@ contract Marketplace is
         address[] memory tokenContract_
     ) public view override returns (BaseTokenParams[] memory baseTokenParams_) {
         baseTokenParams_ = new BaseTokenParams[](tokenContract_.length);
-        for(uint256 i; i < tokenContract_.length; i++) {
+        for (uint256 i; i < tokenContract_.length; i++) {
             TokenParams memory _currentTokenParams = _tokenParams[tokenContract_[i]];
             baseTokenParams_[i] = BaseTokenParams(
                 tokenContract_[i],
+                _currentTokenParams.isDisabled,
                 _currentTokenParams.pricePerOneToken,
                 ERC721Upgradeable(tokenContract_[i]).name()
             );

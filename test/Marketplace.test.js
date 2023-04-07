@@ -48,11 +48,11 @@ describe("Marketplace", () => {
   let defaultEndTime;
 
   const PaymentType = {
-    "NATIVE": 0,
-    "ERC20": 1,
-    "NFT": 2,
-    "VOUCHER": 3
-  }
+    NATIVE: 0,
+    ERC20: 1,
+    NFT: 2,
+    VOUCHER: 3,
+  };
 
   const reverter = new Reverter();
 
@@ -1872,7 +1872,7 @@ describe("Marketplace", () => {
         ];
         const addr = await marketplace.addToken.call("Test" + i, "TST" + i, tokenParam);
         await marketplace.addToken("Test" + i, "TST" + i, tokenParam);
-        baseTokenParams.push([addr, i.toString(), "Test" + i]);
+        baseTokenParams.push([addr, false, i.toString(), "Test" + i]);
       }
 
       assert.equal((await marketplace.getTokenContractsCount()).toString(), 5);
@@ -1908,13 +1908,15 @@ describe("Marketplace", () => {
         ]);
         detailedTokenParams.push([
           addr,
-          [i.toString(),
-          defaultMinNFTFloorPrice.toString(),
-          defaultVoucherTokensAmount.toString(),
-          defaultVoucherContract.address,
-          ZERO_ADDR,
-          false,
-          false,],
+          [
+            i.toString(),
+            defaultMinNFTFloorPrice.toString(),
+            defaultVoucherTokensAmount.toString(),
+            defaultVoucherContract.address,
+            ZERO_ADDR,
+            false,
+            false,
+          ],
           "Test" + i,
           "TST" + i,
         ]);
@@ -1930,7 +1932,6 @@ describe("Marketplace", () => {
 
   describe("getActiveTokenContractsCount", () => {
     it("should return correct active token contracts count", async () => {
-
       for (let i = 0; i < 5; i++) {
         let addr = await marketplace.addToken.call("Test" + i, "TST" + i, [
           defaultPricePerOneToken,
@@ -1954,10 +1955,7 @@ describe("Marketplace", () => {
         assert.equal((await marketplace.getTokenContractsCount()).toString(), i + 1);
         assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), 1);
 
-        await marketplace.updateAllParams(addr, 
-          "Test" + i,
-          "TST" + i,
-          [
+        await marketplace.updateAllParams(addr, "Test" + i, "TST" + i, [
           defaultPricePerOneToken,
           defaultMinNFTFloorPrice,
           defaultVoucherTokensAmount,

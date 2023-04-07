@@ -30,11 +30,13 @@ interface IMarketplace {
     /**
      * @notice The structure that stores base information about the token contract
      * @param tokenContract the address of the token contract
+     * @param isDisabled the flag that indicates if the token contract is disabled
      * @param pricePerOneToken the price of one token in USD
      * @param tokenName the name of the token
      */
     struct BaseTokenParams {
         address tokenContract;
+        bool isDisabled;
         uint256 pricePerOneToken;
         string tokenName;
     }
