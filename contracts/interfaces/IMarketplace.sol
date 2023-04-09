@@ -7,6 +7,13 @@ pragma solidity ^0.8.9;
  */
 
 interface IMarketplace {
+    enum PaymentType {
+        NATIVE,
+        ERC20,
+        NFT,
+        VOUCHER
+    }
+
     /**
      * @notice The structure that stores information about the token contract
      * @param pricePerOneToken the price of one token in USD
@@ -55,17 +62,34 @@ interface IMarketplace {
         string tokenSymbol;
     }
 
-    /**
-     * @notice The structure that stores information about the minted token
-     * @param tokenId the ID of the minted token
-     * @param mintedTokenPrice the price to be paid by the user
-     * @param tokenURI the token URI hash string
-     */
-    struct MintedTokenInfo {
-        uint256 tokenId;
-        uint256 mintedTokenPrice;
+    struct BuyParams {
+        PaymentDetails paymentDetails;
+        address tokenContract;
+        uint256 futureTokenId;
+        uint256 endTimestamp;
         string tokenURI;
     }
+
+    struct PaymentDetails {
+        address paymentTokenAddress;
+        uint256 paymentTokenPrice;
+        uint256 discount;
+        uint256 nftTokenId; // Only for NFT buy option
+    }
+
+    struct Sig {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+    }
+
+    event TokenSuccessfullyPurchased(
+        address indexed recipient,
+        uint256 mintedTokenPrice,
+        uint256 paidTokensAmount,
+        BuyParams buyParams,
+        PaymentType paymentType
+    );
 
     /**
      * @notice This event is emitted during the creation of a new token
@@ -102,48 +126,6 @@ interface IMarketplace {
      * @param amount the number of tokens withdrawn
      */
     event PaidTokensWithdrawn(address indexed tokenAddr, address recipient, uint256 amount);
-
-    /**
-     * @notice This event is emitted when the user has successfully minted a new token
-     * @param tokenContract the address of the token contract
-     * @param recipient the address of the user who received the token and who paid for it
-     * @param mintedTokenInfo the MintedTokenInfo struct with information about minted token
-     * @param paymentTokenAddress the address of the payment token contract
-     * @param paidTokensAmount the amount of tokens paid
-     * @param paymentTokenPrice the price in USD of the payment token
-     * @param discount discount value applied
-     * @param fundsRecipient the address of the recipient of the funds
-     */
-    event SuccessfullyMinted(
-        address indexed tokenContract,
-        address indexed recipient,
-        MintedTokenInfo mintedTokenInfo,
-        address indexed paymentTokenAddress,
-        uint256 paidTokensAmount,
-        uint256 paymentTokenPrice,
-        uint256 discount,
-        address fundsRecipient
-    );
-
-    /**
-     * @notice This event is emitted when the user has successfully minted a new token via NFT by NFT option
-     * @param tokenContract the address of the token contract
-     * @param recipient the address of the user who received the token and who paid for it
-     * @param mintedTokenInfo the MintedTokenInfo struct with information about minted token
-     * @param nftAddress the address of the NFT contract paid for the token mint
-     * @param tokenId the ID of the token that was paid for the mint
-     * @param nftFloorPrice the floor price of the NFT contract
-     * @param fundsRecipient the address of the recipient of the funds
-     */
-    event SuccessfullyMintedByNFT(
-        address indexed tokenContract,
-        address indexed recipient,
-        MintedTokenInfo mintedTokenInfo,
-        address indexed nftAddress,
-        uint256 tokenId,
-        uint256 nftFloorPrice,
-        address fundsRecipient
-    );
 
     /**
      * @notice This event is emitted when the URI of the base token contracts has been updated
@@ -200,57 +182,57 @@ interface IMarketplace {
      */
     function withdrawCurrency(address tokenAddr_, address recipient_) external;
 
-    /**
-     * @notice The function for creatinng a new coin for the token contract
-     * @param tokenContract_ the address of the token contract
-     * @param futureTokenId_ the future token ID
-     * @param paymentTokenAddress_ the payment token address
-     * @param paymentTokenPrice_ the payment token price in USD
-     * @param discount_ the discount value
-     * @param endTimestamp_ the end time of signature
-     * @param tokenURI_ the tokenURI string
-     * @param r_ the r parameter of the ECDSA signature
-     * @param s_ the s parameter of the ECDSA signature
-     * @param v_ the v parameter of the ECDSA signature
-     */
-    function buyToken(
-        address tokenContract_,
-        uint256 futureTokenId_,
-        address paymentTokenAddress_,
-        uint256 paymentTokenPrice_,
-        uint256 discount_,
-        uint256 endTimestamp_,
-        string memory tokenURI_,
-        bytes32 r_,
-        bytes32 s_,
-        uint8 v_
-    ) external payable;
+    // /**
+    //  * @notice The function for creatinng a new coin for the token contract
+    //  * @param tokenContract_ the address of the token contract
+    //  * @param futureTokenId_ the future token ID
+    //  * @param paymentTokenAddress_ the payment token address
+    //  * @param paymentTokenPrice_ the payment token price in USD
+    //  * @param discount_ the discount value
+    //  * @param endTimestamp_ the end time of signature
+    //  * @param tokenURI_ the tokenURI string
+    //  * @param r_ the r parameter of the ECDSA signature
+    //  * @param s_ the s parameter of the ECDSA signature
+    //  * @param v_ the v parameter of the ECDSA signature
+    //  */
+    // function buyToken(
+    //     address tokenContract_,
+    //     uint256 futureTokenId_,
+    //     address paymentTokenAddress_,
+    //     uint256 paymentTokenPrice_,
+    //     uint256 discount_,
+    //     uint256 endTimestamp_,
+    //     string memory tokenURI_,
+    //     bytes32 r_,
+    //     bytes32 s_,
+    //     uint8 v_
+    // ) external payable;
 
-    /**
-     * @notice The function for creatinng a new coin for the token contract by paying with NFT
-     * @param tokenContract_ the address of the token contract
-     * @param futureTokenId_ the future token ID
-     * @param nftAddress_ the payment NFT token address
-     * @param nftFloorPrice_ the floor price of the NFT collection in USD
-     * @param tokenId_ the ID of the token with which you will pay for the mint
-     * @param endTimestamp_ the end time of signature
-     * @param tokenURI_ the tokenURI string
-     * @param r_ the r parameter of the ECDSA signature
-     * @param s_ the s parameter of the ECDSA signature
-     * @param v_ the v parameter of the ECDSA signature
-     */
-    function buyTokenByNFT(
-        address tokenContract_,
-        uint256 futureTokenId_,
-        address nftAddress_,
-        uint256 nftFloorPrice_,
-        uint256 tokenId_,
-        uint256 endTimestamp_,
-        string memory tokenURI_,
-        bytes32 r_,
-        bytes32 s_,
-        uint8 v_
-    ) external;
+    // /**
+    //  * @notice The function for creatinng a new coin for the token contract by paying with NFT
+    //  * @param tokenContract_ the address of the token contract
+    //  * @param futureTokenId_ the future token ID
+    //  * @param nftAddress_ the payment NFT token address
+    //  * @param nftFloorPrice_ the floor price of the NFT collection in USD
+    //  * @param tokenId_ the ID of the token with which you will pay for the mint
+    //  * @param endTimestamp_ the end time of signature
+    //  * @param tokenURI_ the tokenURI string
+    //  * @param r_ the r parameter of the ECDSA signature
+    //  * @param s_ the s parameter of the ECDSA signature
+    //  * @param v_ the v parameter of the ECDSA signature
+    //  */
+    // function buyTokenByNFT(
+    //     address tokenContract_,
+    //     uint256 futureTokenId_,
+    //     address nftAddress_,
+    //     uint256 nftFloorPrice_,
+    //     uint256 tokenId_,
+    //     uint256 endTimestamp_,
+    //     string memory tokenURI_,
+    //     bytes32 r_,
+    //     bytes32 s_,
+    //     uint8 v_
+    // ) external;
 
     /**
      * @notice The function for updating the base token contracts URI string
