@@ -3,7 +3,7 @@ const { wei, accounts, toBN } = require("../scripts/utils/utils");
 const { ZERO_ADDR, PRECISION, PERCENTAGE_100 } = require("../scripts/utils/constants");
 const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
-const { signBuy } = require("./helpers/signatures");
+const { signBuy, signBuyWithRequest } = require("./helpers/signatures");
 const { getCurrentBlockTime, setTime } = require("./helpers/block-helper");
 
 const ContractsRegistry = artifacts.require("ContractsRegistry");
@@ -16,6 +16,7 @@ const ERC20Mock = artifacts.require("ERC20Mock");
 const ERC721Mock = artifacts.require("ERC721Mock");
 const Attacker = artifacts.require("Attacker");
 const ContractWithoutCallback = artifacts.require("ContractWithoutCallback");
+const ERC721HolderUpgradeable = artifacts.require("ERC721HolderUpgradeable");
 
 TokenRegistry.numberFormat = "BigNumber";
 Marketplace.numberFormat = "BigNumber";
@@ -54,6 +55,13 @@ describe("Marketplace", () => {
     VOUCHER: 3,
   };
 
+  const NFTRequestStatus = {
+    NONE: 0,
+    PENDING: 1,
+    MINTED: 2,
+    CANCELED: 3,
+  }
+
   const reverter = new Reverter();
 
   function signBuyTest({
@@ -84,6 +92,30 @@ describe("Marketplace", () => {
     };
 
     return signBuy(domain, buy, buffer);
+  }
+
+  function signBuyWithRequestTest({
+    privateKey = OWNER_PK,
+    requestId = 0,
+    futureTokenId = 0,
+    endTimestamp = defaultEndTime.toFixed(),
+    tokenURI = defaultTokenURI,
+  }) {
+    const buffer = Buffer.from(privateKey, "hex");
+
+    const domain = {
+      name: "Marketplace",
+      verifyingContract: marketplace.address,
+    };
+
+    const buyWithRequest = {
+      requestId: requestId,
+      futureTokenId: futureTokenId,
+      endTimestamp: endTimestamp,
+      tokenURI: web3.utils.soliditySha3(tokenURI),
+    };
+
+    return signBuyWithRequest(domain, buyWithRequest, buffer);
   }
 
   before("setup", async () => {
@@ -1967,6 +1999,430 @@ describe("Marketplace", () => {
 
         assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), 0);
       }
+    });
+  });
+
+  describe("createNFTRequest()", () => {
+    const tokenId = 13;
+    let tokenContract;
+
+    beforeEach("setup", async () => {
+      await nft.mint(SECOND, tokenId);
+      await nft.approve(marketplace.address, tokenId, { from: SECOND });
+
+      tokenContract = await marketplace.addToken.call("Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        true,
+        false,
+      ]);
+      await marketplace.addToken("Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        true,
+        false,
+      ]);
+    });
+
+    it("should create NFT request", async () => {
+      const tx = await marketplace.createNFTRequest(
+        nft.address,
+        tokenId,
+        tokenContract,
+        { from: SECOND }
+      );
+
+      assert.equal(await nft.ownerOf(tokenId), marketplace.address);
+
+      assert.equal(tx.logs.length, 1);
+      assert.equal(tx.logs[0].event, "NFTRequestCreated");
+      assert.equal(tx.logs[0].args.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.requester, SECOND);
+      assert.equal(tx.logs[0].args.nftId, tokenId);
+      assert.equal(tx.logs[0].args.tokenContract, tokenContract);
+    });
+
+    it("should revert if desired token is not exists", async () => {
+      await truffleAssert.reverts(marketplace.createNFTRequest(
+        nft.address,
+        tokenId,
+        ZERO_ADDR
+      ), "Marketplace: Token contract not found.");
+    });
+
+    it("should revert if desired token is disabled", async () => {
+      await marketplace.updateAllParams(tokenContract, "Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        true,
+        true,
+      ]);
+
+      await truffleAssert.reverts(marketplace.createNFTRequest(
+        nft.address,
+        tokenId,
+        tokenContract
+      ), "Marketplace: Token is disabled.");
+    });
+
+    it("should revert if desired token is not allowed for NFT", async () => {
+      await marketplace.updateAllParams(tokenContract, "Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        false,
+        false,
+      ]);
+
+      await truffleAssert.reverts(marketplace.createNFTRequest(
+        nft.address,
+        tokenId,
+        tokenContract
+      ), "Marketplace: This token cannot be purchased with NFT.");
+    });
+
+    it("should revert if sender is not owner of NFT", async () => {
+      await truffleAssert.reverts(marketplace.createNFTRequest(
+        nft.address,
+        tokenId,
+        tokenContract
+      ), "Marketplace: Sender is not the owner.");
+    });
+  });
+
+  describe("cancelNFTRequest()", () => {
+    const tokenId = 13;
+    let tokenContract;
+    let requestId;
+
+    beforeEach("setup", async () => {
+      await nft.mint(SECOND, tokenId);
+      await nft.approve(marketplace.address, tokenId, { from: SECOND });
+
+      tokenContract = await marketplace.addToken.call("Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        true,
+        false,
+      ]);
+      await marketplace.addToken("Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        true,
+        false,
+      ]);
+
+      requestId = await marketplace.createNFTRequest.call(nft.address,
+        tokenId,
+        tokenContract,
+        { from: SECOND }
+      );
+      requestId = toBN(requestId);
+      await marketplace.createNFTRequest(
+        nft.address,
+        tokenId,
+        tokenContract,
+        { from: SECOND }
+      );
+    });
+
+    it("should cancel NFT request", async () => {
+      const tx = await marketplace.cancelNFTRequest(requestId, { from: SECOND });
+
+      assert.equal(await nft.ownerOf(tokenId), SECOND);
+
+      assert.equal(tx.logs.length, 1);
+      assert.equal(tx.logs[0].event, "NFTRequestCanceled");
+      assert.equal(tx.logs[0].args.requestId.toString(), "0");
+    });
+
+    it("should revert if request is not exists", async () => {
+      await truffleAssert.reverts(marketplace.cancelNFTRequest(1, { from: SECOND }), 
+      "Marketplace: Request ID is not valid.");
+    });
+
+    it("should revert if sender is not requester", async () => {
+      await truffleAssert.reverts(marketplace.cancelNFTRequest(requestId, { from: NOTHING }), 
+      "Marketplace: Sender is not the requester.");
+    });
+
+    it("should revert if token is disabled", async () => {
+      await marketplace.updateAllParams(tokenContract, "Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        true,
+        true,
+      ]);
+
+      await truffleAssert.reverts(marketplace.cancelNFTRequest(requestId, { from: SECOND }), 
+      "Marketplace: Token is disabled.");
+    });
+
+    it("should revert if token is not allowed for NFT", async () => {
+      await marketplace.updateAllParams(tokenContract, "Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        false,
+        false,
+      ]);
+
+      await truffleAssert.reverts(marketplace.cancelNFTRequest(requestId, { from: SECOND }), 
+      "Marketplace: This token cannot be purchased with NFT.");
+    });
+
+    it("should revert if status of request is not valid", async () => {
+      const sig = signBuyWithRequestTest({});
+
+      await marketplace.buyTokenWithRequest(requestId, 0, defaultEndTime, defaultTokenURI, sig.r, sig.s, sig.v, { from: SECOND });
+
+      await truffleAssert.reverts(marketplace.cancelNFTRequest(requestId, { from: SECOND }), 
+      "Marketplace: Request status is not valid.");
+    });
+  });
+
+  describe("buyTokenWithRequest()", () => {
+    const tokenId = 13;
+    let tokenContract;
+    let requestId;
+
+    beforeEach("setup", async () => {
+      await nft.mint(SECOND, tokenId);
+      await nft.approve(marketplace.address, tokenId, { from: SECOND });
+
+      tokenContract = await marketplace.addToken.call("Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        true,
+        false,
+      ]);
+      await marketplace.addToken("Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        true,
+        false,
+      ]);
+
+      requestId = await marketplace.createNFTRequest.call(nft.address,
+        tokenId,
+        tokenContract,
+        { from: SECOND }
+      );
+      requestId = toBN(requestId);
+      await marketplace.createNFTRequest(
+        nft.address,
+        tokenId,
+        tokenContract,
+        { from: SECOND }
+      );
+    });
+
+    it("should buy token with NFT request", async () => {
+      const sig = signBuyWithRequestTest({});
+
+      const tx = await marketplace.buyTokenWithRequest(requestId, 0, defaultEndTime, defaultTokenURI, sig.r, sig.s, sig.v, { from: SECOND });
+
+      assert.equal(await nft.ownerOf(tokenId), marketplace.address);
+
+      assert.equal(tx.logs.length, 1);
+      assert.equal(tx.logs[0].event, "SuccessfullyMintedWithRequest");
+      assert.equal(tx.logs[0].args.tokenContract, tokenContract);
+      assert.equal(tx.logs[0].args.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.recipient, SECOND);
+
+      assert.equal(tx.logs[0].args.nftAddress, nft.address);
+      assert.equal(tx.logs[0].args.tokenId.toString(), tokenId.toString());
+      assert.equal(tx.logs[0].args.fundsRecipient, ZERO_ADDR);
+      
+      const token = await ERC721MintableToken.at(tokenContract);
+      assert.equal(await token.tokenURI(0), defaultBaseURI + defaultTokenURI);
+      assert.equal(await token.ownerOf(0), SECOND);
+    });
+
+    it("should buy token with NFT request and send funds to recipient contract", async () => {
+      const ERC721HolderUpgradeable_impl = await ERC721HolderUpgradeable.new()
+      await marketplace.updateAllParams(tokenContract, "Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ERC721HolderUpgradeable_impl.address,
+        true,
+        false,
+      ]);
+
+      const sig = signBuyWithRequestTest({});
+
+      const tx = await marketplace.buyTokenWithRequest(requestId, 0, defaultEndTime, defaultTokenURI, sig.r, sig.s, sig.v, { from: SECOND });
+
+      assert.equal(await nft.ownerOf(tokenId), ERC721HolderUpgradeable_impl.address);
+
+      assert.equal(tx.logs.length, 1);
+      assert.equal(tx.logs[0].event, "SuccessfullyMintedWithRequest");
+      assert.equal(tx.logs[0].args.tokenContract, tokenContract);
+      assert.equal(tx.logs[0].args.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.recipient, SECOND);
+
+      assert.equal(tx.logs[0].args.nftAddress, nft.address);
+      assert.equal(tx.logs[0].args.tokenId.toString(), tokenId.toString());
+      assert.equal(tx.logs[0].args.fundsRecipient, ERC721HolderUpgradeable_impl.address);
+      
+      const token = await ERC721MintableToken.at(tokenContract);
+      assert.equal(await token.tokenURI(0), defaultBaseURI + defaultTokenURI);
+      assert.equal(await token.ownerOf(0), SECOND);
+    });
+
+
+    it("should buy token with NFT request and send funds to recipient", async () => {
+      await marketplace.updateAllParams(tokenContract, "Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        NOTHING,
+        true,
+        false,
+      ]);
+
+      const sig = signBuyWithRequestTest({});
+
+      const tx = await marketplace.buyTokenWithRequest(requestId, 0, defaultEndTime, defaultTokenURI, sig.r, sig.s, sig.v, { from: SECOND });
+
+      assert.equal(await nft.ownerOf(tokenId), NOTHING);
+
+      assert.equal(tx.logs.length, 1);
+      assert.equal(tx.logs[0].event, "SuccessfullyMintedWithRequest");
+      assert.equal(tx.logs[0].args.tokenContract, tokenContract);
+      assert.equal(tx.logs[0].args.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.recipient, SECOND);
+
+      assert.equal(tx.logs[0].args.nftAddress, nft.address);
+      assert.equal(tx.logs[0].args.tokenId.toString(), tokenId.toString());
+      assert.equal(tx.logs[0].args.fundsRecipient, NOTHING);
+      
+      const token = await ERC721MintableToken.at(tokenContract);
+      assert.equal(await token.tokenURI(0), defaultBaseURI + defaultTokenURI);
+      assert.equal(await token.ownerOf(0), SECOND);
+    });
+
+    it("should revert if signature is invalid", async () => {
+      const sig = signBuyWithRequestTest({});
+
+      await truffleAssert.reverts(marketplace.buyTokenWithRequest(requestId, 1, defaultEndTime, defaultTokenURI, sig.r, sig.s, sig.v, { from: SECOND }), 
+      "Marketplace: Invalid signature.");
+    }); 
+
+    it("should revert if signature has expired", async () => {
+      const sig = signBuyWithRequestTest({});
+
+      await setTime(defaultEndTime.plus(100).toNumber());
+
+      await truffleAssert.reverts(marketplace.buyTokenWithRequest(requestId, 0, defaultEndTime, defaultTokenURI, sig.r, sig.s, sig.v, { from: SECOND }), 
+      "Marketplace: Signature expired.");
+    });
+  });
+
+  describe("getNFTRequestsPart", () => {
+    it("should return correct requests", async () => {
+      const requests = [];
+
+      for (let i = 0; i < 5; i++) {
+        const addr = await marketplace.addToken.call("Test" + i, "TST" + i, [
+          i,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          true,
+          false,
+        ]);
+        await marketplace.addToken("Test" + i, "TST" + i, [
+          i,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          true,
+          false,
+        ]);
+      
+        await nft.mint(SECOND, i);
+        await nft.approve(marketplace.address, i, { from: SECOND });
+    
+        let requestId = await marketplace.createNFTRequest.call(nft.address, i, addr, { from: SECOND });
+        await marketplace.createNFTRequest(nft.address, i, addr, { from: SECOND });
+        requests.push([
+          addr,
+          nft.address,
+          i.toString(),
+          SECOND,
+          NFTRequestStatus.PENDING.toString(),
+        ]);
+
+        await nft.mint(SECOND, (i + 1) * 100);
+        await nft.approve(marketplace.address, (i + 1) * 100, { from: SECOND });
+
+        requestId = await marketplace.createNFTRequest.call(nft.address, (i + 1) * 100, addr, { from: SECOND });
+        await marketplace.createNFTRequest(nft.address, (i + 1) * 100, addr, { from: SECOND });
+        await marketplace.cancelNFTRequest(requestId, { from: SECOND });
+        requests.push([
+          addr,
+          nft.address,
+          ((i + 1) * 100).toString(),
+          SECOND,
+          NFTRequestStatus.CANCELED.toString(),
+        ]);
+
+        await nft.mint(SECOND, (i + 1) * 1000);
+        await nft.approve(marketplace.address, (i + 1) * 1000, { from: SECOND });
+
+        requestId = await marketplace.createNFTRequest.call(nft.address, (i + 1) * 1000, addr, { from: SECOND });
+        await marketplace.createNFTRequest(nft.address, (i + 1) * 1000, addr, { from: SECOND });
+        const sig = signBuyWithRequestTest({ requestId: requestId.toNumber()});
+        await marketplace.buyTokenWithRequest(requestId, 0, defaultEndTime, defaultTokenURI, sig.r, sig.s, sig.v, { from: SECOND });
+        requests.push([
+          addr,
+          nft.address,
+          ((i + 1) * 1000).toString(),
+          SECOND,
+          NFTRequestStatus.MINTED.toString(),
+        ]);
+      }
+
+      assert.equal((await marketplace.getNFTRequestsCount()).toString(), "15");
+
+      assert.deepEqual(await marketplace.getNFTRequestsPart(0, 30), requests);
+      assert.deepEqual(await marketplace.getNFTRequestsPart(0, 3), requests.slice(0, 3));
+      assert.deepEqual(await marketplace.getNFTRequestsPart(3, 30), requests.slice(3));
+      assert.deepEqual(await marketplace.getNFTRequestsPart(30, 30), []);
     });
   });
 });

@@ -82,6 +82,52 @@ interface IMarketplace {
     );
 
     /**
+     * @notice The structure that stores information about the NFT request
+     * @param tokenContract the address of the token contract
+     * @param nftContract the address of the NFT contract
+     * @param nftId the ID of the NFT
+     * @param requester the address of the offerer
+     * @param status the status of the request
+     */
+    struct NFTRequestInfo {
+        address tokenContract;
+        address nftContract;
+        uint256 nftId;
+        address requester;
+        NFTRequestStatus status;
+    }
+
+    /* The enum that stores the status of the NFT request */
+    enum NFTRequestStatus {
+        NONE,
+        PENDING,
+        MINTED,
+        CANCELED
+    }
+
+    /**
+     * @notice This event is emitted when the user creates a new NFT request
+     * @param requestId the ID of the request
+     * @param requester the address of the user who created the request
+     * @param nftContract the address of the NFT contract
+     * @param nftId the ID of the NFT
+     * @param tokenContract the address of the desired token contract
+     */
+    event NFTRequestCreated(
+        uint256 indexed requestId,
+        address indexed requester,
+        address nftContract,
+        uint256 nftId,
+        address indexed tokenContract
+    );
+
+    /**
+     * @notice This event is emitted when the user approves the NFT request
+     * @param requestId the ID of the request
+     */
+    event NFTRequestCanceled(uint256 indexed requestId);
+
+    /**
      * @notice This event is emitted when the TokenContract parameters are updated
      * @param tokenContract the address of the token contract
      * @param tokenName the name of the collection
@@ -142,6 +188,16 @@ interface IMarketplace {
         address indexed nftAddress,
         uint256 tokenId,
         uint256 nftFloorPrice,
+        address fundsRecipient
+    );
+
+    event SuccessfullyMintedWithRequest(
+        address indexed tokenContract,
+        uint256 requestId,
+        address indexed recipient,
+        MintedTokenInfo mintedTokenInfo,
+        address indexed nftAddress,
+        uint256 tokenId,
         address fundsRecipient
     );
 
@@ -337,4 +393,21 @@ interface IMarketplace {
         uint256 offset_,
         uint256 limit_
     ) external view returns (DetailedTokenParams[] memory tokenParams_);
+
+    /**
+     * @notice The function that returns the total NFTRequests count
+     * @return total NFTRequests count
+     */
+    function getNFTRequestsCount() external view returns (uint256);
+
+    /**
+     * @notice The function that returns the requests for NFT swap
+     * @param offset_ the offset for pagination
+     * @param limit_ the maximum number of elements for
+     * @return nftRequests_ the array of NFTRequestInfo structs
+     */
+    function getNFTRequestsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (NFTRequestInfo[] memory nftRequests_);
 }

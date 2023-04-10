@@ -35,15 +35,22 @@ contract Marketplace is
     using DecimalsConverter for uint256;
     using SafeERC20Upgradeable for IERC20MetadataUpgradeable;
 
+    uint256 internal _nextRequestId;
     string public baseTokenContractsURI;
 
     bytes32 internal constant _BUY_TYPEHASH =
         keccak256(
             "Buy(address tokenContract,uint256 futureTokenId,address paymentTokenAddress,uint256 paymentTokenPrice,uint256 discount,uint256 endTimestamp,bytes32 tokenURI)"
         );
+    bytes32 internal constant _BUY_WITH_REQUEST = 
+        keccak256(
+            "BuyWithRequest(uint256 requestId,uint256 futureTokenId,uint256 endTimestamp,bytes32 tokenURI)"
+        );
 
     EnumerableSet.AddressSet internal _tokenContracts;
     mapping(address => TokenParams) internal _tokenParams;
+
+    NFTRequestInfo[] internal _nftRequests;
 
     IRoleManager private _roleManager;
     ITokenFactory private _tokenFactory;
@@ -257,6 +264,120 @@ contract Marketplace is
         );
     }
 
+    function createNFTRequest(
+        address nftContract_,
+        uint256 nftId_,
+        address tokenContract_
+    ) external returns (uint256 requestId_) {
+        require(
+            _tokenContracts.contains(tokenContract_),
+            "Marketplace: Token contract not found."
+        );
+
+        TokenParams storage _currentTokenParams = _tokenParams[tokenContract_];
+
+        require(
+            !_currentTokenParams.isDisabled,
+            "Marketplace: Token is disabled."
+        );
+
+        require(
+            _currentTokenParams.isNFTBuyable,
+            "Marketplace: This token cannot be purchased with NFT."
+        );
+
+        require(
+            IERC721Upgradeable(nftContract_).ownerOf(nftId_) == msg.sender,
+            "Marketplace: Sender is not the owner."
+        );
+
+        IERC721Upgradeable(nftContract_).safeTransferFrom(
+            msg.sender,
+            address(this),
+            nftId_);
+
+        requestId_ = _nftRequests.length;
+        
+        _nftRequests.push(
+            NFTRequestInfo(
+                tokenContract_,
+                nftContract_,
+                nftId_,
+                msg.sender,
+                NFTRequestStatus.PENDING
+            )
+        );
+
+        emit NFTRequestCreated(requestId_, msg.sender, nftContract_, nftId_, tokenContract_);
+    }
+
+    function cancelNFTRequest(
+        uint256 requestId_
+    ) external {
+        _checkNFTRequestAllowing(requestId_);
+
+        NFTRequestInfo storage _nftRequest = _nftRequests[requestId_];
+
+        _nftRequest.status = NFTRequestStatus.CANCELED;
+
+        IERC721Upgradeable(_nftRequest.nftContract).safeTransferFrom(
+            address(this),
+            msg.sender,
+            _nftRequest.nftId
+        );
+
+        emit NFTRequestCanceled(requestId_);
+    }
+
+    function buyTokenWithRequest(
+        uint256 requestId_,
+        uint256 futureTokenId_,
+        uint256 endTimestamp_,
+        string memory tokenURI_,
+        bytes32 r_,
+        bytes32 s_,
+        uint8 v_
+    ) external {
+        // Do we need to check all the params?
+        _checkNFTRequestAllowing(requestId_);
+         
+        NFTRequestInfo storage _nftRequest = _nftRequests[requestId_];
+
+        TokenParams storage _currentTokenParams = _tokenParams[_nftRequest.tokenContract];
+
+        _verifySignature(
+            requestId_,
+            futureTokenId_,
+            endTimestamp_,
+            tokenURI_,
+            r_,
+            s_,
+            v_
+        );
+
+        if(_currentTokenParams.fundsRecipient != address(0) && _currentTokenParams.fundsRecipient != address(this)) {
+            IERC721Upgradeable(_nftRequest.nftContract).safeTransferFrom(
+                address(this),
+                _currentTokenParams.fundsRecipient,
+                _nftRequest.nftId
+            );
+        }
+
+        _mintToken(_nftRequest.tokenContract, futureTokenId_, tokenURI_);
+
+        emit SuccessfullyMintedWithRequest(
+            _nftRequest.tokenContract,
+            requestId_,
+            msg.sender,
+            MintedTokenInfo(futureTokenId_, 0, tokenURI_),
+            _nftRequest.nftContract,
+            _nftRequest.nftId,
+            _currentTokenParams.fundsRecipient
+        );
+
+        _nftRequest.status = NFTRequestStatus.MINTED;
+    }
+
     function setBaseTokenContractsURI(
         string memory baseTokenContractsURI_
     ) external override whenNotPaused onlyMarketplaceManager {
@@ -447,6 +568,23 @@ contract Marketplace is
         return getDetailedTokenParams(getTokenContractsPart(offset_, limit_));
     }
 
+    function getNFTRequestsCount() external view override returns (uint256) {
+        return _nftRequests.length;
+    }
+
+    function getNFTRequestsPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view override returns (NFTRequestInfo[] memory nftRequests_) {
+        uint256 to_ = _handleIncomingParametersForPart(_nftRequests.length, offset_, limit_);
+        nftRequests_ = new NFTRequestInfo[](to_ - offset_);
+
+        for (uint256 i = offset_; i < to_; i++) {
+            nftRequests_[i - offset_] = _nftRequests[i];
+        }
+
+    }
+
     function _verifySignature(
         address tokenContract_,
         uint256 futureTokenId_,
@@ -478,10 +616,70 @@ contract Marketplace is
         require(block.timestamp <= endTimestamp_, "Marketplace: Signature expired.");
     }
 
+    function _verifySignature(
+            uint256 requestId_,
+            uint256 futureTokenId_,
+            uint256 endTimestamp_,
+            string memory tokenURI_,
+            bytes32 r_,
+            bytes32 s_,
+            uint8 v_
+        ) internal view {
+            bytes32 structHash_ = keccak256(
+                abi.encode(
+                    _BUY_WITH_REQUEST,
+                    requestId_,
+                    futureTokenId_,
+                    endTimestamp_,
+                    keccak256(abi.encodePacked(tokenURI_))
+                )
+            );
+
+            address signer_ = ECDSAUpgradeable.recover(_hashTypedDataV4(structHash_), v_, r_, s_);
+
+            require(_roleManager.isSignatureManager(signer_), "Marketplace: Invalid signature.");
+            require(block.timestamp <= endTimestamp_, "Marketplace: Signature expired.");
+        }
+
     function _validateTokenParams(string memory name_, string memory symbol_) internal pure {
         require(
             bytes(name_).length > 0 && bytes(symbol_).length > 0,
             "Marketplace: Token name or symbol is empty."
+        );
+    }
+
+    
+
+    function _checkNFTRequestAllowing(
+        uint256 requestId_
+    ) internal view {
+        require(
+            requestId_ < _nftRequests.length,
+            "Marketplace: Request ID is not valid."
+        );
+        
+        NFTRequestInfo storage nftRequest = _nftRequests[requestId_];
+
+        require(
+            nftRequest.requester == msg.sender,
+            "Marketplace: Sender is not the requester."
+        );
+
+        TokenParams storage _currentTokenParams = _tokenParams[nftRequest.tokenContract];
+        
+        require(
+            !_currentTokenParams.isDisabled,
+            "Marketplace: Token is disabled."
+        );
+
+        require(
+            _currentTokenParams.isNFTBuyable,
+            "Marketplace: This token cannot be purchased with NFT."
+        );
+
+        require(
+            nftRequest.status == NFTRequestStatus.PENDING,
+            "Marketplace: Request status is not valid."
         );
     }
 
@@ -504,5 +702,21 @@ contract Marketplace is
         uint256 discount_
     ) internal pure returns (uint256) {
         return (amount_ * (PERCENTAGE_100 - discount_)) / PERCENTAGE_100;
+    }
+
+    function _handleIncomingParametersForPart(
+        uint256 length_,
+        uint256 offset_,
+        uint256 limit_
+    ) private pure returns (uint256 to_) {
+        to_ = offset_ + limit_;
+
+        if (to_ > length_) {
+            to_ = length_;
+        }
+
+        if (offset_ > to_) {
+            to_ = offset_;
+        }
     }
 }
