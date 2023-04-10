@@ -175,4 +175,12 @@ describe("ERC721MintableToken", () => {
       );
     });
   });
+
+  describe("nextTokenId()", () => {
+    it("should return correct next token id", async () => {
+      assert.equal(await token.nextTokenId(), 0);
+      await token.mint(SECOND, 0, "", { from: MARKETPLACE });
+      assert.equal(await token.nextTokenId(), 1);
+    });
+  });
 });
