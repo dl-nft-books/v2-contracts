@@ -5,8 +5,14 @@ pragma solidity ^0.8.9;
  * This is the marketplace contract that stores information about
  * the token contracts and allows users to mint tokens.
  */
-
 interface IMarketplace {
+    /**
+     * @notice Enum representing different payment options available for purchasing
+     * @param NATIVE the payment can be made in native cryptocurrency
+     * @param ERC20 the payment can be made in any ERC20 token
+     * @param NFT the payment can be made using an NFT
+     * @param VOUCHER the payment can be made using a voucher
+     */
     enum PaymentType {
         NATIVE,
         ERC20,
@@ -62,6 +68,14 @@ interface IMarketplace {
         string tokenSymbol;
     }
 
+    /**
+     * @notice Struct representing the buying parameters for purchasing an NFT
+     * @param paymentDetails the payment details for purchasing an NFT
+     * @param tokenContract the contract address of the token used for payment
+     * @param futureTokenId the ID of the future token
+     * @param endTimestamp the timestamp when the purchase ends
+     * @param tokenURI the URI of the token to be purchased
+     */
     struct BuyParams {
         PaymentDetails paymentDetails;
         address tokenContract;
@@ -70,19 +84,40 @@ interface IMarketplace {
         string tokenURI;
     }
 
+    /**
+     * @notice Struct representing payment details for purchasing an NFT
+     * @param paymentTokenAddress the address of the token used for payment
+     * @param paymentTokenPrice the price of the token used for payment
+     * @param discount the discount amount for the purchase
+     * @param nftTokenId the ID of the NFT to be purchased (only for NFT payment option)
+     */
     struct PaymentDetails {
         address paymentTokenAddress;
         uint256 paymentTokenPrice;
         uint256 discount;
-        uint256 nftTokenId; // Only for NFT buy option
+        uint256 nftTokenId;
     }
 
+    /**
+     * @notice Struct representing the signature for a transaction
+     * @param r the r value of the signature
+     * @param s the s value of the signature
+     * @param v the v value of the signature
+     */
     struct Sig {
         bytes32 r;
         bytes32 s;
         uint8 v;
     }
 
+    /**
+     * @notice This event is emitted when a token has been successfully purchased
+     * @param recipient the address of the recipient of the purchased token
+     * @param mintedTokenPrice the price of the minted token
+     * @param paidTokensAmount the amount of tokens paid
+     * @param buyParams the buying parameters used for purchasing the token
+     * @param paymentType the type of payment used for purchasing the token
+     */
     event TokenSuccessfullyPurchased(
         address indexed recipient,
         uint256 mintedTokenPrice,
@@ -182,57 +217,37 @@ interface IMarketplace {
      */
     function withdrawCurrency(address tokenAddr_, address recipient_) external;
 
-    // /**
-    //  * @notice The function for creatinng a new coin for the token contract
-    //  * @param tokenContract_ the address of the token contract
-    //  * @param futureTokenId_ the future token ID
-    //  * @param paymentTokenAddress_ the payment token address
-    //  * @param paymentTokenPrice_ the payment token price in USD
-    //  * @param discount_ the discount value
-    //  * @param endTimestamp_ the end time of signature
-    //  * @param tokenURI_ the tokenURI string
-    //  * @param r_ the r parameter of the ECDSA signature
-    //  * @param s_ the s parameter of the ECDSA signature
-    //  * @param v_ the v parameter of the ECDSA signature
-    //  */
-    // function buyToken(
-    //     address tokenContract_,
-    //     uint256 futureTokenId_,
-    //     address paymentTokenAddress_,
-    //     uint256 paymentTokenPrice_,
-    //     uint256 discount_,
-    //     uint256 endTimestamp_,
-    //     string memory tokenURI_,
-    //     bytes32 r_,
-    //     bytes32 s_,
-    //     uint8 v_
-    // ) external payable;
+    /**
+     * @notice Function that allows users to buy a token using Ether
+     * @dev Requires the caller to send Ether to the contract for the purchase
+     * @param buyParams_ the buying parameters used for purchasing the token
+     * @param sig_ the signature for the purchasing
+     */
+    function buyTokenWithETH(BuyParams memory buyParams_, Sig memory sig_) external payable;
 
-    // /**
-    //  * @notice The function for creatinng a new coin for the token contract by paying with NFT
-    //  * @param tokenContract_ the address of the token contract
-    //  * @param futureTokenId_ the future token ID
-    //  * @param nftAddress_ the payment NFT token address
-    //  * @param nftFloorPrice_ the floor price of the NFT collection in USD
-    //  * @param tokenId_ the ID of the token with which you will pay for the mint
-    //  * @param endTimestamp_ the end time of signature
-    //  * @param tokenURI_ the tokenURI string
-    //  * @param r_ the r parameter of the ECDSA signature
-    //  * @param s_ the s parameter of the ECDSA signature
-    //  * @param v_ the v parameter of the ECDSA signature
-    //  */
-    // function buyTokenByNFT(
-    //     address tokenContract_,
-    //     uint256 futureTokenId_,
-    //     address nftAddress_,
-    //     uint256 nftFloorPrice_,
-    //     uint256 tokenId_,
-    //     uint256 endTimestamp_,
-    //     string memory tokenURI_,
-    //     bytes32 r_,
-    //     bytes32 s_,
-    //     uint8 v_
-    // ) external;
+    /**
+     * @notice Function that allows users to buy a token using an ERC20 token
+     * @dev Requires the caller to approve the ERC20 token transfer to this contract before calling this function
+     * @param buyParams_ the buying parameters used for purchasing the token
+     * @param sig_ the signature for the purchasing
+     */
+    function buyTokenWithERC20(BuyParams memory buyParams_, Sig memory sig_) external;
+
+    /**
+     * @notice Function that allows users to buy a token using a voucher
+     *
+     * @param buyParams_ the buying parameters used for purchasing the token
+     * @param sig_ the signature for the purchasing
+     */
+    function buyTokenWithVoucher(BuyParams memory buyParams_, Sig memory sig_) external;
+
+    /**
+     * @notice Function that allows users to buy an NFT token using an NFT
+     * @dev Requires the caller to own the NFT used for payment
+     * @param buyParams_ the buying parameters used for purchasing the token
+     * @param sig_ the signature for the purchasing
+     */
+    function buyTokenWithNFT(BuyParams memory buyParams_, Sig memory sig_) external;
 
     /**
      * @notice The function for updating the base token contracts URI string

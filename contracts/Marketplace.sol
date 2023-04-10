@@ -154,7 +154,10 @@ contract Marketplace is
         emit PaidTokensWithdrawn(tokenAddr_, recipient_, amount_);
     }
 
-    function buyTokenWithETH(BuyParams memory buyParams_, Sig memory sig_) external payable {
+    function buyTokenWithETH(
+        BuyParams memory buyParams_,
+        Sig memory sig_
+    ) external payable whenNotPaused {
         _beforeBuyTokenCheck(buyParams_, sig_);
 
         require(
@@ -191,7 +194,10 @@ contract Marketplace is
         );
     }
 
-    function buyTokenWithERC20(BuyParams memory buyParams_, Sig memory sig_) external {
+    function buyTokenWithERC20(
+        BuyParams memory buyParams_,
+        Sig memory sig_
+    ) external whenNotPaused {
         _beforeBuyTokenCheck(buyParams_, sig_);
 
         TokenParams storage _currentTokenParams = _tokenParams[buyParams_.tokenContract];
@@ -216,7 +222,10 @@ contract Marketplace is
         );
     }
 
-    function buyTokenWithVoucher(BuyParams memory buyParams_, Sig memory sig_) external {
+    function buyTokenWithVoucher(
+        BuyParams memory buyParams_,
+        Sig memory sig_
+    ) external whenNotPaused {
         _beforeBuyTokenCheck(buyParams_, sig_);
 
         TokenParams storage _currentTokenParams = _tokenParams[buyParams_.tokenContract];
@@ -246,7 +255,7 @@ contract Marketplace is
         );
     }
 
-    function buyTokenWithNFT(BuyParams memory buyParams_, Sig memory sig_) external {
+    function buyTokenWithNFT(BuyParams memory buyParams_, Sig memory sig_) external whenNotPaused {
         _beforeBuyTokenCheck(buyParams_, sig_);
 
         TokenParams storage _currentTokenParams = _tokenParams[buyParams_.tokenContract];
