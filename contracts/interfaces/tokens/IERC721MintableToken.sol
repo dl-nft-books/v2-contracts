@@ -38,4 +38,11 @@ interface IERC721MintableToken {
      * @return The futute token id.
      */
     function nextTokenId() external view returns (uint256);
+
+    /**
+     * @notice The function to get an array of tokenIDs owned by a particular user
+     * @param user_ The address of the user.
+     * @return The array of tokenIDs owned by a particular user.
+     */
+    function getUserTokenIDs(address user_) external view returns (uint256[] memory);
 }

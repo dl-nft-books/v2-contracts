@@ -1703,105 +1703,6 @@ describe("Marketplace", () => {
     //   });
   });
 
-  describe("getUserTokenIDs", () => {
-    let tokenContract;
-
-    beforeEach("setup", async () => {
-      tokenContract = await marketplace.addToken.call("Test", "TST", [
-        defaultPricePerOneToken,
-        defaultMinNFTFloorPrice,
-        defaultVoucherTokensAmount,
-        defaultVoucherContract.address,
-        ZERO_ADDR,
-        false,
-        false,
-      ]);
-      await marketplace.addToken("Test", "TST", [
-        defaultPricePerOneToken,
-        defaultMinNFTFloorPrice,
-        defaultVoucherTokensAmount,
-        defaultVoucherContract.address,
-        ZERO_ADDR,
-        false,
-        false,
-      ]);
-    });
-
-    it("should return correct user token IDs arr", async () => {
-      let sig = signBuyTest({ tokenContract: tokenContract, paymentTokenAddress: ZERO_ADDR, paymentTokenPrice: "0" });
-
-      await marketplace.buyToken(
-        tokenContract,
-        0,
-        ZERO_ADDR,
-        0,
-        defaultDiscountValue,
-        defaultEndTime,
-        defaultTokenURI,
-        sig.r,
-        sig.s,
-        sig.v,
-        {
-          from: OWNER,
-        }
-      );
-
-      sig = signBuyTest({
-        tokenContract: tokenContract,
-        futureTokenId: 1,
-        paymentTokenAddress: ZERO_ADDR,
-        paymentTokenPrice: "0",
-        tokenURI: defaultTokenURI + 1,
-      });
-
-      await marketplace.buyToken(
-        tokenContract,
-        1,
-        ZERO_ADDR,
-        0,
-        defaultDiscountValue,
-        defaultEndTime,
-        defaultTokenURI + 1,
-        sig.r,
-        sig.s,
-        sig.v,
-        {
-          from: SECOND,
-        }
-      );
-
-      sig = signBuyTest({
-        tokenContract: tokenContract,
-        futureTokenId: 2,
-        paymentTokenAddress: ZERO_ADDR,
-        paymentTokenPrice: "0",
-        tokenURI: defaultTokenURI + 2,
-      });
-
-      await marketplace.buyToken(
-        tokenContract,
-        2,
-        ZERO_ADDR,
-        0,
-        defaultDiscountValue,
-        defaultEndTime,
-        defaultTokenURI + 2,
-        sig.r,
-        sig.s,
-        sig.v,
-        {
-          from: OWNER,
-        }
-      );
-
-      let tokenIDs = await marketplace.getUserTokenIDs(tokenContract, OWNER);
-      assert.deepEqual([tokenIDs[0].toString(), tokenIDs[1].toString()], ["0", "2"]);
-
-      tokenIDs = await marketplace.getUserTokenIDs(tokenContract, SECOND);
-      assert.deepEqual([tokenIDs[0].toString()], ["1"]);
-    });
-  });
-
   describe("setBaseTokenContractsURI", () => {
     it("should correctly update base token contracts URI", async () => {
       const newBaseTokenContractsURI = "new base URI/";
@@ -1967,6 +1868,99 @@ describe("Marketplace", () => {
 
         assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), 0);
       }
+    });
+  });
+
+  describe("getUserTokensPart()", () => {
+    let tokenContract;
+    let tokenContract2;
+
+    beforeEach(async () => {
+      tokenContract = await marketplace.addToken.call("Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        false,
+        false,
+      ]);
+      await marketplace.addToken("Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        false,
+        false,
+      ]);
+
+      tokenContract2 = await marketplace.addToken.call("Test2", "TST2", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        false,
+        false,
+      ]);
+      await marketplace.addToken("Test2", "TST2", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        false,
+        false,
+      ]);
+    });
+
+    it("should return correct user tokens", async () => {
+      const userTokens1 = [];
+
+      for (let i = 0; i < 4; i++) {
+        const sig = signBuyTest({
+          tokenContract: tokenContract,
+          futureTokenId: i,
+          paymentTokenAddress: ZERO_ADDR,
+          paymentTokenPrice: "0",
+          tokenURI: defaultTokenURI + i,
+        });
+
+        await marketplace.buyToken(
+          tokenContract,
+          i,
+          ZERO_ADDR,
+          0,
+          defaultDiscountValue,
+          defaultEndTime,
+          defaultTokenURI + i,
+          sig.r,
+          sig.s,
+          sig.v,
+          {
+            from: SECOND,
+          }
+        );
+
+        userTokens1.push(i.toString());
+      }
+      const userTokensInfo1 = [
+        [tokenContract, userTokens1],
+        [tokenContract2, []],
+      ];
+      const userTokensInfo2 = [
+        [tokenContract, []],
+        [tokenContract2, []],
+      ];
+
+      assert.deepEqual(await marketplace.getUserTokensPart(SECOND, 0, 10), userTokensInfo1);
+      assert.deepEqual(await marketplace.getUserTokensPart(SECOND, 0, 3), userTokensInfo1.slice(0, 3));
+      assert.deepEqual(await marketplace.getUserTokensPart(SECOND, 3, 10), userTokensInfo1.slice(3));
+
+      assert.deepEqual(await marketplace.getUserTokensPart(NOTHING, 0, 10), userTokensInfo2);
+      assert.deepEqual(await marketplace.getUserTokensPart(NOTHING, 0, 3), userTokensInfo2.slice(0, 3));
+      assert.deepEqual(await marketplace.getUserTokensPart(NOTHING, 3, 10), userTokensInfo2.slice(3));
     });
   });
 });

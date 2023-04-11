@@ -118,6 +118,18 @@ contract ERC721MintableToken is
         delete _tokenURIs[tokenId_];
     }
 
+    function getUserTokenIDs(
+        address user_
+    ) external view override returns (uint256[] memory tokens_) {
+        uint256 balance_ = balanceOf(user_);
+
+        tokens_ = new uint256[](balance_);
+
+        for (uint256 i = 0; i < balance_; i++) {
+            tokens_[i] = tokenOfOwnerByIndex(user_, i);
+        }
+    }
+
     function _baseURI() internal view override returns (string memory) {
         return IMarketplace(_marketplace).baseTokenContractsURI();
     }

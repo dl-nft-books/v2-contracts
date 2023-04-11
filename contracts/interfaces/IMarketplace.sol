@@ -68,6 +68,16 @@ interface IMarketplace {
     }
 
     /**
+     * @notice The structure that stores information about the user tokens
+     * @param tokenContract the address of the token contract
+     * @param tokenIds the array of token IDs
+     */
+    struct UserTokens {
+        address tokenContract;
+        uint256[] tokenIds;
+    }
+
+    /**
      * @notice This event is emitted during the creation of a new token
      * @param tokenContract the address of the token contract
      * @param tokenName the name of the collection
@@ -265,15 +275,17 @@ interface IMarketplace {
     function baseTokenContractsURI() external view returns (string memory);
 
     /**
-     * @notice The function to get an array of tokenIDs owned by a particular user
-     * @param tokenContract_ the address of the token contract
+     * @notice The function to get an array of token owned by a particular user with pagination
      * @param userAddr_ the address of the user for whom you want to get information
-     * @return tokenIDs_ the array of token IDs owned by the user
+     * @param offset_ the offset for pagination
+     * @param limit_ the maximum number of elements for
+     * @return userTokens_ the array of UserTokens structs
      */
-    function getUserTokenIDs(
-        address tokenContract_,
-        address userAddr_
-    ) external view returns (uint256[] memory tokenIDs_);
+    function getUserTokensPart(
+        address userAddr_,
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (UserTokens[] memory userTokens_);
 
     /**
      * @notice The function that returns the total TokenContracts count
