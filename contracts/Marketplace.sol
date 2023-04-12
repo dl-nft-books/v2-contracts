@@ -132,14 +132,20 @@ contract Marketplace is
 
     function withdrawCurrency(
         address tokenAddr_,
-        address recipient_
+        address recipient_,
+        uint256 desiredAmount_,
+        bool withdrawAll_
     ) external override onlyWithdrawalManager {
         IERC20Metadata token_ = IERC20Metadata(tokenAddr_);
         bool isNativeCurrency_ = tokenAddr_ == address(0);
 
         uint256 amount_ = isNativeCurrency_
-            ? address(this).balance
-            : token_.balanceOf(address(this));
+                ? address(this).balance
+                : token_.balanceOf(address(this));
+                
+        if(!withdrawAll_) {
+            amount_ = amount_ > desiredAmount_ ? desiredAmount_ : amount_;
+        }
 
         require(amount_ > 0, "Marketplace: Nothing to withdraw.");
 

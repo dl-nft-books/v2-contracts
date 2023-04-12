@@ -591,7 +591,6 @@ describe("Marketplace", () => {
 
   describe("withdrawCurrency()", () => {
     const tokenId = 13;
-    const nftFloorPrice = wei(90, priceDecimals);
     let tokenContract;
 
     beforeEach("setup", async () => {
@@ -637,7 +636,7 @@ describe("Marketplace", () => {
 
       assert.equal((await paymentToken.balanceOf(marketplace.address)).toFixed(), expectedTokensAmount.toFixed());
 
-      const tx = await marketplace.withdrawCurrency(paymentToken.address, OWNER);
+      const tx = await marketplace.withdrawCurrency(paymentToken.address, OWNER, 0, true);
 
       assert.equal(
         toBN(await paymentToken.balanceOf(OWNER)).toFixed(),
@@ -650,16 +649,72 @@ describe("Marketplace", () => {
       assert.equal(toBN(tx.receipt.logs[0].args.amount).toFixed(), expectedPaymentAmount.toFixed());
     });
 
+    it("should withdraw ERC20 tokens partially", async () => {
+      const newDecimals = 8;
+
+      await paymentToken.setDecimals(newDecimals);
+
+      const sig = signBuyTest({ tokenContract: tokenContract.address });
+
+      const expectedPaymentAmount = defaultPricePerOneToken.times(wei(1)).idiv(tokenPrice);
+      const expectedTokensAmount = expectedPaymentAmount.idiv(wei(1, 10));
+
+      const desiredWithdrawalAmount = expectedTokensAmount.idiv(2);
+
+      await marketplace.buyTokenWithERC20(
+        [
+          [paymentToken.address, tokenPrice, defaultDiscountValue, 0],
+          tokenContract.address,
+          0,
+          defaultEndTime,
+          defaultTokenURI,
+        ],
+        [sig.r, sig.s, sig.v],
+        {
+          from: USER1,
+        }
+      );
+
+      assert.equal((await paymentToken.balanceOf(marketplace.address)).toFixed(), expectedTokensAmount.toFixed());
+
+      const tx = await marketplace.withdrawCurrency(paymentToken.address, OWNER, desiredWithdrawalAmount, false);
+
+      assert.equal(
+        toBN(await paymentToken.balanceOf(OWNER)).toFixed(),
+        mintTokensAmount.plus(desiredWithdrawalAmount).toFixed()
+      );
+
+      assert.equal(tx.receipt.logs[0].event, "PaidTokensWithdrawn");
+      assert.equal(tx.receipt.logs[0].args.tokenAddr, paymentToken.address);
+      assert.equal(tx.receipt.logs[0].args.recipient, OWNER);
+      assert.equal(toBN(tx.receipt.logs[0].args.amount).toFixed(), expectedPaymentAmount.idiv(2).toFixed());
+
+      const tx2 = await marketplace.withdrawCurrency(paymentToken.address, OWNER, expectedTokensAmount, false);
+
+      assert.equal(
+        toBN(await paymentToken.balanceOf(OWNER)).toFixed(),
+        mintTokensAmount.plus(expectedTokensAmount).toFixed()
+      );
+
+      assert.equal(tx2.receipt.logs[0].event, "PaidTokensWithdrawn");
+      assert.equal(tx2.receipt.logs[0].args.tokenAddr, paymentToken.address);
+      assert.equal(tx2.receipt.logs[0].args.recipient, OWNER);
+      assert.equal(toBN(tx2.receipt.logs[0].args.amount).toFixed(), expectedPaymentAmount.idiv(2).toFixed());
+    });
+
     it("should get exception if nothing to withdraw", async () => {
       const reason = "Marketplace: Nothing to withdraw.";
 
-      await truffleAssert.reverts(marketplace.withdrawCurrency(paymentToken.address, USER1), reason);
+      await truffleAssert.reverts(marketplace.withdrawCurrency(paymentToken.address, USER1, 0, true), reason);
+      await truffleAssert.reverts(marketplace.withdrawCurrency(paymentToken.address, USER1, 1, true), reason);
+      await truffleAssert.reverts(marketplace.withdrawCurrency(paymentToken.address, USER1, 0, false), reason);
+      await truffleAssert.reverts(marketplace.withdrawCurrency(paymentToken.address, USER1, 1, false), reason);
     });
 
     it("should get exception if no a withdrawal manager calls this function", async () => {
       const reason = "Marketplace: Caller is not a withdrawal manager.";
 
-      await truffleAssert.reverts(marketplace.withdrawCurrency(ZERO_ADDR, USER1, { from: USER1 }), reason);
+      await truffleAssert.reverts(marketplace.withdrawCurrency(ZERO_ADDR, USER1, 0, true, { from: USER1 }), reason);
     });
 
     it("should correctly withdraw native currency", async () => {
@@ -683,7 +738,7 @@ describe("Marketplace", () => {
 
       const currencyBalanceBefore = toBN(await web3.eth.getBalance(USER1));
 
-      const tx = await marketplace.withdrawCurrency(ZERO_ADDR, USER1);
+      const tx = await marketplace.withdrawCurrency(ZERO_ADDR, USER1, 1, true);
 
       const currencyBalanceAfter = toBN(await web3.eth.getBalance(USER1));
 
@@ -693,6 +748,53 @@ describe("Marketplace", () => {
       assert.equal(tx.receipt.logs[0].args.tokenAddr, ZERO_ADDR);
       assert.equal(tx.receipt.logs[0].args.recipient, USER1);
       assert.equal(toBN(tx.receipt.logs[0].args.amount).toFixed(), expectedCurrencyAmount.toFixed());
+    });
+
+    it("should correctly withdraw native currency partially", async () => {
+      const sig = signBuyTest({
+        tokenContract: tokenContract.address,
+        paymentTokenAddress: ZERO_ADDR,
+      });
+
+      const expectedCurrencyAmount = defaultPricePerOneToken.times(wei(1)).idiv(tokenPrice);
+
+      await marketplace.buyTokenWithETH(
+        [[ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], tokenContract.address, 0, defaultEndTime, defaultTokenURI],
+        [sig.r, sig.s, sig.v],
+        {
+          from: USER1,
+          value: expectedCurrencyAmount,
+        }
+      );
+
+      const desiredWithdrawalAmount = expectedCurrencyAmount.div(2);
+      assert.equal(toBN(await web3.eth.getBalance(marketplace.address)).toFixed(), expectedCurrencyAmount.toFixed());
+
+      const currencyBalanceBefore = toBN(await web3.eth.getBalance(USER1));
+
+      const tx = await marketplace.withdrawCurrency(ZERO_ADDR, USER1, desiredWithdrawalAmount, false);
+
+      const currencyBalanceAfter = toBN(await web3.eth.getBalance(USER1));
+
+      assert.equal(currencyBalanceAfter.minus(currencyBalanceBefore).toFixed(), desiredWithdrawalAmount.toFixed());
+
+      assert.equal(tx.receipt.logs[0].event, "PaidTokensWithdrawn");
+      assert.equal(tx.receipt.logs[0].args.tokenAddr, ZERO_ADDR);
+      assert.equal(tx.receipt.logs[0].args.recipient, USER1);
+      assert.equal(toBN(tx.receipt.logs[0].args.amount).toFixed(), desiredWithdrawalAmount.toFixed());
+
+      const currencyBalanceBefore2 = toBN(await web3.eth.getBalance(USER1));
+
+      const tx2 = await marketplace.withdrawCurrency(ZERO_ADDR, USER1, expectedCurrencyAmount, false);
+
+      const currencyBalanceAfter2 = toBN(await web3.eth.getBalance(USER1));
+
+      assert.equal(currencyBalanceAfter2.minus(currencyBalanceBefore2).toFixed(), desiredWithdrawalAmount.toFixed());
+
+      assert.equal(tx2.receipt.logs[0].event, "PaidTokensWithdrawn");
+      assert.equal(tx2.receipt.logs[0].args.tokenAddr, ZERO_ADDR);
+      assert.equal(tx2.receipt.logs[0].args.recipient, USER1);
+      assert.equal(toBN(tx2.receipt.logs[0].args.amount).toFixed(), desiredWithdrawalAmount.toFixed());
     });
 
     it("should get exception if failed to transfer native currency to the recipient", async () => {
@@ -714,19 +816,7 @@ describe("Marketplace", () => {
         }
       );
 
-      await truffleAssert.reverts(marketplace.withdrawCurrency(ZERO_ADDR, marketplace.address), reason);
-    });
-
-    it("should get exception if nothing to withdraw", async () => {
-      const reason = "Marketplace: Nothing to withdraw.";
-
-      await truffleAssert.reverts(marketplace.withdrawCurrency(ZERO_ADDR, USER1), reason);
-    });
-
-    it("should get exception if no a withdrawal manager calls this function", async () => {
-      const reason = "Marketplace: Caller is not a withdrawal manager.";
-
-      await truffleAssert.reverts(marketplace.withdrawCurrency(ZERO_ADDR, USER1, { from: USER1 }), reason);
+      await truffleAssert.reverts(marketplace.withdrawCurrency(ZERO_ADDR, marketplace.address, 0, true), reason);
     });
   });
 
