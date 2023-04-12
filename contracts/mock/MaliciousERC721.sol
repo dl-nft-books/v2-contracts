@@ -30,37 +30,37 @@ contract MaliciousERC721 {
         params = params_;
     }
 
-    function safeTransferFrom(address, address, uint256) external {
-        for (uint256 i = 0; i < counter; i++) {
-            marketplace.buyTokenByNFT(
-                params.contractAddress,
-                params.nextTokenId + 1 + i,
-                address(this),
-                params.nftFloorPrice,
-                params.tokenId,
-                params.endTimestamp,
-                params.tokenURI,
-                params.r,
-                params.s,
-                params.v
-            );
-        }
-    }
+    // function safeTransferFrom(address, address, uint256) external {
+    //     for (uint256 i = 0; i < counter; i++) {
+    //         marketplace.buyTokenByNFT(
+    //             params.contractAddress,
+    //             params.nextTokenId + 1 + i,
+    //             address(this),
+    //             params.nftFloorPrice,
+    //             params.tokenId,
+    //             params.endTimestamp,
+    //             params.tokenURI,
+    //             params.r,
+    //             params.s,
+    //             params.v
+    //         );
+    //     }
+    // }
 
-    function mintToken() external {
-        marketplace.buyTokenByNFT(
-            params.contractAddress,
-            params.nextTokenId,
-            address(this),
-            params.nftFloorPrice,
-            params.tokenId,
-            params.endTimestamp,
-            params.tokenURI,
-            params.r,
-            params.s,
-            params.v
-        );
-    }
+    // function mintToken() external {
+    //     marketplace.buyTokenByNFT(
+    //         params.contractAddress,
+    //         params.nextTokenId,
+    //         address(this),
+    //         params.nftFloorPrice,
+    //         params.tokenId,
+    //         params.endTimestamp,
+    //         params.tokenURI,
+    //         params.r,
+    //         params.s,
+    //         params.v
+    //     );
+    // }
 
     function ownerOf(uint256) external view returns (address) {
         return address(this);
