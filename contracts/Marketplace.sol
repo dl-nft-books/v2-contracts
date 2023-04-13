@@ -283,16 +283,20 @@ contract Marketplace is
         _mintToken(buyParams_, PaymentType.NFT, _currentTokenParams.minNFTFloorPrice, 1);
     }
 
-    function getUserTokenIDs(
-        address tokenContract_,
-        address userAddr_
-    ) external view override returns (uint256[] memory tokenIDs_) {
-        uint256 _tokensCount = IERC721(tokenContract_).balanceOf(userAddr_);
+    function getUserTokensPart(
+        address userAddr_,
+        uint256 offset_,
+        uint256 limit_
+    ) external view override returns (UserTokens[] memory userTokens_) {
+        address[] memory _tokenContractsPart = _tokenContracts.part(offset_, limit_);
 
-        tokenIDs_ = new uint256[](_tokensCount);
+        userTokens_ = new UserTokens[](_tokenContractsPart.length);
 
-        for (uint256 i; i < _tokensCount; i++) {
-            tokenIDs_[i] = IERC721Enumerable(tokenContract_).tokenOfOwnerByIndex(userAddr_, i);
+        for (uint256 i = 0; i < _tokenContractsPart.length; i++) {
+            userTokens_[i] = UserTokens(
+                _tokenContractsPart[i],
+                IERC721MintableToken(_tokenContractsPart[i]).getUserTokenIDs(userAddr_)
+            );
         }
     }
 

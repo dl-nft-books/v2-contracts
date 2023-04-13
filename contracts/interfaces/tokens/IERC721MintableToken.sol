@@ -32,4 +32,17 @@ interface IERC721MintableToken {
      * @param symbol_ The symbol of the token.
      */
     function updateTokenParams(string memory name_, string memory symbol_) external;
+
+    /**
+     * @notice The function to get the futute token id.
+     * @return The futute token id.
+     */
+    function nextTokenId() external view returns (uint256);
+
+    /**
+     * @notice The function to get an array of tokenIDs owned by a particular user
+     * @param user_ The address of the user.
+     * @return The array of tokenIDs owned by a particular user.
+     */
+    function getUserTokenIDs(address user_) external view returns (uint256[] memory);
 }

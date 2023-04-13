@@ -18,7 +18,8 @@ contract ERC721MintableToken is
     ERC721EnumerableUpgradeable,
     ERC721HolderUpgradeable
 {
-    uint256 internal _nextTokenId;
+    uint256 public nextTokenId;
+
     string internal _tokenName;
     string internal _tokenSymbol;
 
@@ -41,7 +42,7 @@ contract ERC721MintableToken is
     function mint(address to_, uint256 tokenId_, string memory uri_) public onlyMarketplace {
         require(!_exists(tokenId_), "ERC721MintableToken: Token with such id already exists.");
 
-        require(tokenId_ == _nextTokenId++, "ERC721MintableToken: Token id is not valid.");
+        require(tokenId_ == nextTokenId++, "ERC721MintableToken: Token id is not valid.");
 
         require(
             !_existingTokenURIs[uri_],
@@ -115,6 +116,18 @@ contract ERC721MintableToken is
 
         delete _existingTokenURIs[_tokenURIs[tokenId_]];
         delete _tokenURIs[tokenId_];
+    }
+
+    function getUserTokenIDs(
+        address user_
+    ) external view override returns (uint256[] memory tokens_) {
+        uint256 balance_ = balanceOf(user_);
+
+        tokens_ = new uint256[](balance_);
+
+        for (uint256 i = 0; i < balance_; i++) {
+            tokens_[i] = tokenOfOwnerByIndex(user_, i);
+        }
     }
 
     function _baseURI() internal view override returns (string memory) {

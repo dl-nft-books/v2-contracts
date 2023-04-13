@@ -1357,88 +1357,6 @@ describe("Marketplace", () => {
     });
   });
 
-  describe("getUserTokenIDs", () => {
-    let tokenContract;
-
-    beforeEach("setup", async () => {
-      await marketplace.addToken("Test", "TST", [
-        defaultPricePerOneToken,
-        defaultMinNFTFloorPrice,
-        defaultVoucherTokensAmount,
-        defaultVoucherContract.address,
-        ZERO_ADDR,
-        true,
-        false,
-      ]);
-
-      tokenContract = await ERC721MintableToken.at((await marketplace.getTokenContractsPart(0, 10))[0]);
-    });
-
-    it("should return correct user token IDs arr", async () => {
-      let sig = signBuyTest({ tokenContract: tokenContract.address });
-
-      await marketplace.buyTokenWithERC20(
-        [
-          [paymentToken.address, tokenPrice, defaultDiscountValue, 0],
-          tokenContract.address,
-          0,
-          defaultEndTime,
-          defaultTokenURI,
-        ],
-        [sig.r, sig.s, sig.v],
-        {
-          from: OWNER,
-        }
-      );
-
-      sig = signBuyTest({
-        tokenContract: tokenContract.address,
-        futureTokenId: 1,
-        tokenURI: defaultTokenURI + 1,
-      });
-
-      await marketplace.buyTokenWithERC20(
-        [
-          [paymentToken.address, tokenPrice, defaultDiscountValue, 0],
-          tokenContract.address,
-          1,
-          defaultEndTime,
-          defaultTokenURI + 1,
-        ],
-        [sig.r, sig.s, sig.v],
-        {
-          from: USER1,
-        }
-      );
-
-      sig = signBuyTest({
-        tokenContract: tokenContract.address,
-        futureTokenId: 2,
-        tokenURI: defaultTokenURI + 2,
-      });
-
-      await marketplace.buyTokenWithERC20(
-        [
-          [paymentToken.address, tokenPrice, defaultDiscountValue, 0],
-          tokenContract.address,
-          2,
-          defaultEndTime,
-          defaultTokenURI + 2,
-        ],
-        [sig.r, sig.s, sig.v],
-        {
-          from: OWNER,
-        }
-      );
-
-      let tokenIDs = await marketplace.getUserTokenIDs(tokenContract.address, OWNER);
-      assert.deepEqual([tokenIDs[0].toString(), tokenIDs[1].toString()], ["0", "2"]);
-
-      tokenIDs = await marketplace.getUserTokenIDs(tokenContract.address, USER1);
-      assert.deepEqual([tokenIDs[0].toString()], ["1"]);
-    });
-  });
-
   describe("setBaseTokenContractsURI", () => {
     it("should correctly update base token contracts URI", async () => {
       const newBaseTokenContractsURI = "new base URI/";
@@ -1604,6 +1522,93 @@ describe("Marketplace", () => {
 
         assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), 0);
       }
+    });
+  });
+
+  describe("getUserTokensPart()", () => {
+    let tokenContract;
+    let tokenContract2;
+
+    beforeEach(async () => {
+      tokenContract = await marketplace.addToken.call("Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        false,
+        false,
+      ]);
+      await marketplace.addToken("Test", "TST", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        false,
+        false,
+      ]);
+
+      tokenContract2 = await marketplace.addToken.call("Test2", "TST2", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        false,
+        false,
+      ]);
+      await marketplace.addToken("Test2", "TST2", [
+        defaultPricePerOneToken,
+        defaultMinNFTFloorPrice,
+        defaultVoucherTokensAmount,
+        defaultVoucherContract.address,
+        ZERO_ADDR,
+        false,
+        false,
+      ]);
+    });
+
+    it("should return correct user tokens", async () => {
+      const userTokens1 = [];
+
+      for (let i = 0; i < 4; i++) {
+        const sig = signBuyTest({
+          tokenContract: tokenContract,
+          futureTokenId: i,
+          paymentTokenAddress: ZERO_ADDR,
+          tokenURI: defaultTokenURI + i,
+        });
+
+        const expectedValueAmount = defaultPricePerOneToken.times(wei(1)).idiv(tokenPrice);
+
+        await marketplace.buyTokenWithETH(
+          [[ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], tokenContract, i, defaultEndTime, defaultTokenURI + i],
+          [sig.r, sig.s, sig.v],
+          {
+            from: USER1,
+            value: expectedValueAmount,
+          }
+        );
+
+        userTokens1.push(i.toString());
+      }
+      const userTokensInfo1 = [
+        [tokenContract, userTokens1],
+        [tokenContract2, []],
+      ];
+      const userTokensInfo2 = [
+        [tokenContract, []],
+        [tokenContract2, []],
+      ];
+
+      assert.deepEqual(await marketplace.getUserTokensPart(USER1, 0, 10), userTokensInfo1);
+      assert.deepEqual(await marketplace.getUserTokensPart(USER1, 0, 3), userTokensInfo1.slice(0, 3));
+      assert.deepEqual(await marketplace.getUserTokensPart(USER1, 3, 10), userTokensInfo1.slice(3));
+
+      assert.deepEqual(await marketplace.getUserTokensPart(NOTHING, 0, 10), userTokensInfo2);
+      assert.deepEqual(await marketplace.getUserTokensPart(NOTHING, 0, 3), userTokensInfo2.slice(0, 3));
+      assert.deepEqual(await marketplace.getUserTokensPart(NOTHING, 3, 10), userTokensInfo2.slice(3));
     });
   });
 });
