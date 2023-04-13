@@ -22,7 +22,13 @@ interface IMarketplace {
         REQUEST
     }
 
-    /* The enum that stores the status of the NFT request */
+    /**
+     * @notice Enum representing different NFT request statuses
+     * @param NONE the request has not been created
+     * @param PENDING the request is pending
+     * @param MINTED the request has been minted
+     * @param CANCELED the request has been canceled
+     */
     enum NFTRequestStatus {
         NONE,
         PENDING,
@@ -329,6 +335,34 @@ interface IMarketplace {
      * @param sig_ the signature for the purchasing
      */
     function buyTokenWithNFT(BuyParams memory buyParams_, Sig memory sig_) external;
+
+    /**
+     * @notice Function that allows users to buy a token using a request
+     * @param requestBuyParams_ the buying parameters used for purchasing the token
+     * @param sig_ the signature for the purchasing
+     */
+    function buyTokenWithRequest(
+        RequestBuyParams memory requestBuyParams_,
+        Sig memory sig_
+    ) external;
+
+    /**
+     * @notice Function that allows users to create a new NFT request
+     * @param nftContract_ the address of the NFT contract
+     * @param nftId_ the ID of the NFT
+     * @param tokenContract_ the address of the desired token contract
+     */
+    function createNFTRequest(
+        address nftContract_,
+        uint256 nftId_,
+        address tokenContract_
+    ) external returns (uint256 requestId_);
+
+    /**
+     * @notice Function that allows users to cancel an NFT request
+     * @param requestId_ the ID of the request
+     */
+    function cancelNFTRequest(uint256 requestId_) external;
 
     /**
      * @notice The function for updating the base token contracts URI string

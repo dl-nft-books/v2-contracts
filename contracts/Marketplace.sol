@@ -102,7 +102,7 @@ contract Marketplace is
         string memory name_,
         string memory symbol_,
         TokenParams memory tokenParams_
-    ) external whenNotPaused onlyMarketplaceManager returns (address tokenProxy_) {
+    ) external override whenNotPaused onlyMarketplaceManager returns (address tokenProxy_) {
         _validateTokenParams(name_, symbol_);
 
         require(!tokenParams_.isDisabled, "Marketplace: Token can not be disabled on creation.");
@@ -166,7 +166,7 @@ contract Marketplace is
     function buyTokenWithETH(
         BuyParams memory buyParams_,
         Sig memory sig_
-    ) external payable whenNotPaused {
+    ) external payable override whenNotPaused {
         _beforeBuyTokenCheck(buyParams_, sig_);
 
         require(
@@ -206,7 +206,7 @@ contract Marketplace is
     function buyTokenWithERC20(
         BuyParams memory buyParams_,
         Sig memory sig_
-    ) external whenNotPaused {
+    ) external override whenNotPaused {
         _beforeBuyTokenCheck(buyParams_, sig_);
 
         TokenParams storage _currentTokenParams = _tokenParams[buyParams_.tokenContract];
@@ -234,7 +234,7 @@ contract Marketplace is
     function buyTokenWithVoucher(
         BuyParams memory buyParams_,
         Sig memory sig_
-    ) external whenNotPaused {
+    ) external override whenNotPaused {
         _beforeBuyTokenCheck(buyParams_, sig_);
 
         TokenParams storage _currentTokenParams = _tokenParams[buyParams_.tokenContract];
@@ -264,7 +264,10 @@ contract Marketplace is
         );
     }
 
-    function buyTokenWithNFT(BuyParams memory buyParams_, Sig memory sig_) external whenNotPaused {
+    function buyTokenWithNFT(
+        BuyParams memory buyParams_,
+        Sig memory sig_
+    ) external override whenNotPaused {
         _beforeBuyTokenCheck(buyParams_, sig_);
 
         TokenParams storage _currentTokenParams = _tokenParams[buyParams_.tokenContract];
@@ -289,7 +292,7 @@ contract Marketplace is
     function buyTokenWithRequest(
         RequestBuyParams memory requestBuyParams_,
         Sig memory sig_
-    ) external {
+    ) external override {
         _beforeBuyTokenWithRequestCheck(requestBuyParams_, sig_);
 
         NFTRequestInfo storage _nftRequest = _nftRequests[requestBuyParams_.requestId];
@@ -322,7 +325,7 @@ contract Marketplace is
         address nftContract_,
         uint256 nftId_,
         address tokenContract_
-    ) external returns (uint256 requestId_) {
+    ) external override returns (uint256 requestId_) {
         _checkTokenContractExists(tokenContract_);
 
         TokenParams storage _currentTokenParams = _tokenParams[tokenContract_];
@@ -351,7 +354,7 @@ contract Marketplace is
         emit NFTRequestCreated(requestId_, msg.sender, nftContract_, nftId_, tokenContract_);
     }
 
-    function cancelNFTRequest(uint256 requestId_) external {
+    function cancelNFTRequest(uint256 requestId_) external override {
         require(requestId_ < _nftRequests.length, "Marketplace: Request ID is not valid.");
 
         NFTRequestInfo storage _nftRequest = _nftRequests[requestId_];
