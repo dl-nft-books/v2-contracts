@@ -87,6 +87,16 @@ interface IMarketplace {
     }
 
     /**
+     * @notice The structure that stores information about the user tokens
+     * @param tokenContract the address of the token contract
+     * @param tokenIds the array of token IDs
+     */
+    struct UserTokens {
+        address tokenContract;
+        uint256[] tokenIds;
+    }
+
+    /**
      * @notice Struct representing payment details for purchasing an NFT
      * @param paymentTokenAddress the address of the token used for payment
      * @param paymentTokenPrice the price of the token used for payment
@@ -262,8 +272,15 @@ interface IMarketplace {
      * @notice Function to withdraw the currency that users paid to buy tokens
      * @param tokenAddr_ the address of the token to be withdrawn
      * @param recipient_ the address of the recipient
+     * @param desiredAmount_ the amount to withdraw
+     * @param withdrawAll_ the flag to withdraw everything
      */
-    function withdrawCurrency(address tokenAddr_, address recipient_) external;
+    function withdrawCurrency(
+        address tokenAddr_,
+        address recipient_,
+        uint256 desiredAmount_,
+        bool withdrawAll_
+    ) external;
 
     /**
      * @notice Function that allows users to buy a token using Ether
@@ -310,15 +327,17 @@ interface IMarketplace {
     function baseTokenContractsURI() external view returns (string memory);
 
     /**
-     * @notice The function to get an array of tokenIDs owned by a particular user
-     * @param tokenContract_ the address of the token contract
+     * @notice The function to get an array of token owned by a particular user with pagination
      * @param userAddr_ the address of the user for whom you want to get information
-     * @return tokenIDs_ the array of token IDs owned by the user
+     * @param offset_ the offset for pagination
+     * @param limit_ the maximum number of elements for
+     * @return userTokens_ the array of UserTokens structs
      */
-    function getUserTokenIDs(
-        address tokenContract_,
-        address userAddr_
-    ) external view returns (uint256[] memory tokenIDs_);
+    function getUserTokensPart(
+        address userAddr_,
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (UserTokens[] memory userTokens_);
 
     /**
      * @notice The function that returns the total TokenContracts count

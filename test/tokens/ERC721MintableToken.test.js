@@ -175,4 +175,28 @@ describe("ERC721MintableToken", () => {
       );
     });
   });
+
+  describe("nextTokenId()", () => {
+    it("should return correct next token id", async () => {
+      assert.equal(await token.nextTokenId(), 0);
+      await token.mint(SECOND, 0, "", { from: MARKETPLACE });
+      assert.equal(await token.nextTokenId(), 1);
+    });
+  });
+
+  describe("getUserTokenIDs", () => {
+    it("should return correct user token IDs arr", async () => {
+      await token.mint(OWNER, 0, "0", { from: MARKETPLACE });
+      await token.mint(SECOND, 1, "1", { from: MARKETPLACE });
+      await token.mint(OWNER, 2, "2", { from: MARKETPLACE });
+
+      let tokenIDs = await token.getUserTokenIDs(OWNER);
+      assert.deepEqual([tokenIDs[0].toString(), tokenIDs[1].toString()], ["0", "2"]);
+
+      tokenIDs = await token.getUserTokenIDs(SECOND);
+      assert.deepEqual([tokenIDs[0].toString()], ["1"]);
+
+      assert.deepEqual(await token.getUserTokenIDs(NOTHING), []);
+    });
+  });
 });

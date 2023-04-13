@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
 import "@dlsl/dev-modules/utils/Globals.sol";
@@ -137,7 +138,9 @@ contract Marketplace is
 
     function withdrawCurrency(
         address tokenAddr_,
-        address recipient_
+        address recipient_,
+        uint256 desiredAmount_,
+        bool withdrawAll_
     ) external override onlyWithdrawalManager {
         IERC20Metadata token_ = IERC20Metadata(tokenAddr_);
         bool isNativeCurrency_ = tokenAddr_ == address(0);
@@ -145,6 +148,10 @@ contract Marketplace is
         uint256 amount_ = isNativeCurrency_
             ? address(this).balance
             : token_.balanceOf(address(this));
+
+        if (!withdrawAll_) {
+            amount_ = Math.min(amount_, desiredAmount_);
+        }
 
         require(amount_ > 0, "Marketplace: Nothing to withdraw.");
 
@@ -424,16 +431,20 @@ contract Marketplace is
         emit NFTRequestCanceled(requestId_);
     }
 
-    function getUserTokenIDs(
-        address tokenContract_,
-        address userAddr_
-    ) external view override returns (uint256[] memory tokenIDs_) {
-        uint256 _tokensCount = IERC721(tokenContract_).balanceOf(userAddr_);
+    function getUserTokensPart(
+        address userAddr_,
+        uint256 offset_,
+        uint256 limit_
+    ) external view override returns (UserTokens[] memory userTokens_) {
+        address[] memory _tokenContractsPart = _tokenContracts.part(offset_, limit_);
 
-        tokenIDs_ = new uint256[](_tokensCount);
+        userTokens_ = new UserTokens[](_tokenContractsPart.length);
 
-        for (uint256 i; i < _tokensCount; i++) {
-            tokenIDs_[i] = IERC721Enumerable(tokenContract_).tokenOfOwnerByIndex(userAddr_, i);
+        for (uint256 i = 0; i < _tokenContractsPart.length; i++) {
+            userTokens_[i] = UserTokens(
+                _tokenContractsPart[i],
+                IERC721MintableToken(_tokenContractsPart[i]).getUserTokenIDs(userAddr_)
+            );
         }
     }
 
@@ -615,28 +626,6 @@ contract Marketplace is
 
     function _getFundsRecipient(address fundsRecipient_) internal view returns (address) {
         return fundsRecipient_ == address(0) ? address(this) : fundsRecipient_;
-    }
-
-    function _checkNFTRequestAllowing(uint256 requestId_) internal view {
-        require(requestId_ < _nftRequests.length, "Marketplace: Request ID is not valid.");
-
-        NFTRequestInfo storage nftRequest = _nftRequests[requestId_];
-
-        require(nftRequest.requester == msg.sender, "Marketplace: Sender is not the requester.");
-
-        TokenParams storage _currentTokenParams = _tokenParams[nftRequest.tokenContract];
-
-        require(!_currentTokenParams.isDisabled, "Marketplace: Token is disabled.");
-
-        require(
-            _currentTokenParams.isNFTBuyable,
-            "Marketplace: This token cannot be purchased with NFT."
-        );
-
-        require(
-            nftRequest.status == NFTRequestStatus.PENDING,
-            "Marketplace: Request status is not valid."
-        );
     }
 
     function _onlyMarketplaceManager() internal view {
