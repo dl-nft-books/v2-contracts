@@ -22,6 +22,14 @@ interface IMarketplace {
         REQUEST
     }
 
+    /* The enum that stores the status of the NFT request */
+    enum NFTRequestStatus {
+        NONE,
+        PENDING,
+        MINTED,
+        CANCELED
+    }
+
     /**
      * @notice The structure that stores information about the token contract
      * @param pricePerOneToken the price of one token in USD
@@ -111,6 +119,36 @@ interface IMarketplace {
     }
 
     /**
+     * @notice The structure that stores information about the NFT request
+     * @param tokenContract the address of the token contract
+     * @param nftContract the address of the NFT contract
+     * @param nftId the ID of the NFT
+     * @param requester the address of the offerer
+     * @param status the status of the request
+     */
+    struct NFTRequestInfo {
+        address tokenContract;
+        address nftContract;
+        uint256 nftId;
+        address requester;
+        NFTRequestStatus status;
+    }
+
+    /**
+     * @notice Struct representing the buying parameters for purchasing an NFT using a request
+     * @param requestId_ the ID of the request
+     * @param futureTokenId_ the ID of the future token
+     * @param endTimestamp_ the timestamp when the purchase ends
+     * @param tokenURI_ the URI of the token to be purchased
+     */
+    struct RequestBuyParams {
+        uint256 requestId;
+        uint256 futureTokenId;
+        uint256 endTimestamp;
+        string tokenURI;
+    }
+
+    /**
      * @notice Struct representing the signature for a transaction
      * @param r the r value of the signature
      * @param s the s value of the signature
@@ -121,6 +159,20 @@ interface IMarketplace {
         bytes32 s;
         uint8 v;
     }
+
+    /**
+     * @notice This event is emitted during the creation of a new token
+     * @param tokenContract the address of the token contract
+     * @param tokenName the name of the collection
+     * @param tokenSymbol the symbol of the collection
+     * @param tokenParams struct with the token contract params
+     */
+    event TokenContractDeployed(
+        address indexed tokenContract,
+        string tokenName,
+        string tokenSymbol,
+        TokenParams tokenParams
+    );
 
     /**
      * @notice This event is emitted when a token has been successfully purchased
@@ -138,43 +190,7 @@ interface IMarketplace {
         PaymentType paymentType
     );
 
-    /**
-     * @notice This event is emitted during the creation of a new token
-     * @param tokenContract the address of the token contract
-     * @param tokenName the name of the collection
-     * @param tokenSymbol the symbol of the collection
-     * @param tokenParams struct with the token contract params
-     */
-    event TokenContractDeployed(
-        address indexed tokenContract,
-        string tokenName,
-        string tokenSymbol,
-        TokenParams tokenParams
-    );
-
-    /**
-     * @notice The structure that stores information about the NFT request
-     * @param tokenContract the address of the token contract
-     * @param nftContract the address of the NFT contract
-     * @param nftId the ID of the NFT
-     * @param requester the address of the offerer
-     * @param status the status of the request
-     */
-    struct NFTRequestInfo {
-        address tokenContract;
-        address nftContract;
-        uint256 nftId;
-        address requester;
-        NFTRequestStatus status;
-    }
-
-    /* The enum that stores the status of the NFT request */
-    enum NFTRequestStatus {
-        NONE,
-        PENDING,
-        MINTED,
-        CANCELED
-    }
+    event TokenSuccessfullyExchanged(address indexed recipient, RequestBuyParams buyParams);
 
     /**
      * @notice This event is emitted when the user creates a new NFT request
