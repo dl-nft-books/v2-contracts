@@ -1859,6 +1859,11 @@ describe("Marketplace", () => {
       assert.equal(tx.logs[0].args.buyParams.futureTokenId.toString(), 0);
       assert.equal(tx.logs[0].args.buyParams.endTimestamp, defaultEndTime);
       assert.equal(tx.logs[0].args.buyParams.tokenURI, defaultTokenURI);
+      assert.equal(tx.logs[0].args.nftRequestInfo.tokenContract, tokenContract);
+      assert.equal(tx.logs[0].args.nftRequestInfo.nftContract, nft.address);
+      assert.equal(tx.logs[0].args.nftRequestInfo.nftId, tokenId);
+      assert.equal(tx.logs[0].args.nftRequestInfo.requester, USER1);
+      assert.equal(tx.logs[0].args.nftRequestInfo.status, NFTRequestStatus.MINTED);
 
       const token = await ERC721MintableToken.at(tokenContract);
       assert.equal(await token.tokenURI(0), defaultBaseURI + defaultTokenURI);
@@ -1894,6 +1899,11 @@ describe("Marketplace", () => {
       assert.equal(tx.logs[0].args.buyParams.futureTokenId.toString(), 0);
       assert.equal(tx.logs[0].args.buyParams.endTimestamp, defaultEndTime);
       assert.equal(tx.logs[0].args.buyParams.tokenURI, defaultTokenURI);
+      assert.equal(tx.logs[0].args.nftRequestInfo.tokenContract, tokenContract);
+      assert.equal(tx.logs[0].args.nftRequestInfo.nftContract, nft.address);
+      assert.equal(tx.logs[0].args.nftRequestInfo.nftId, tokenId);
+      assert.equal(tx.logs[0].args.nftRequestInfo.requester, USER1);
+      assert.equal(tx.logs[0].args.nftRequestInfo.status, NFTRequestStatus.MINTED);
 
       const token = await ERC721MintableToken.at(tokenContract);
       assert.equal(await token.tokenURI(0), defaultBaseURI + defaultTokenURI);
@@ -1928,6 +1938,11 @@ describe("Marketplace", () => {
       assert.equal(tx.logs[0].args.buyParams.futureTokenId.toString(), 0);
       assert.equal(tx.logs[0].args.buyParams.endTimestamp, defaultEndTime);
       assert.equal(tx.logs[0].args.buyParams.tokenURI, defaultTokenURI);
+      assert.equal(tx.logs[0].args.nftRequestInfo.tokenContract, tokenContract);
+      assert.equal(tx.logs[0].args.nftRequestInfo.nftContract, nft.address);
+      assert.equal(tx.logs[0].args.nftRequestInfo.nftId, tokenId);
+      assert.equal(tx.logs[0].args.nftRequestInfo.requester, USER1);
+      assert.equal(tx.logs[0].args.nftRequestInfo.status, NFTRequestStatus.MINTED);
 
       const token = await ERC721MintableToken.at(tokenContract);
       assert.equal(await token.tokenURI(0), defaultBaseURI + defaultTokenURI);

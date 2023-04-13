@@ -142,10 +142,10 @@ interface IMarketplace {
 
     /**
      * @notice Struct representing the buying parameters for purchasing an NFT using a request
-     * @param requestId_ the ID of the request
-     * @param futureTokenId_ the ID of the future token
-     * @param endTimestamp_ the timestamp when the purchase ends
-     * @param tokenURI_ the URI of the token to be purchased
+     * @param requestId the ID of the request
+     * @param futureTokenId the ID of the future token
+     * @param endTimestamp the timestamp when the purchase ends
+     * @param tokenURI the URI of the token to be purchased
      */
     struct RequestBuyParams {
         uint256 requestId;
@@ -196,7 +196,17 @@ interface IMarketplace {
         PaymentType paymentType
     );
 
-    event TokenSuccessfullyExchanged(address indexed recipient, RequestBuyParams buyParams);
+    /**
+     * @notice This event is emitted when a token has been successfully exchanged
+     * @param recipient the address of the recipient of the purchased token
+     * @param buyParams the buying parameters used for purchasing the token
+     * @param nftRequestInfo the NFTRequestInfo struct with the NFT request info
+     */
+    event TokenSuccessfullyExchanged(
+        address indexed recipient,
+        RequestBuyParams buyParams,
+        NFTRequestInfo nftRequestInfo
+    );
 
     /**
      * @notice This event is emitted when the user creates a new NFT request

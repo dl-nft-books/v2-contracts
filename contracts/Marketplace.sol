@@ -318,7 +318,7 @@ contract Marketplace is
             requestBuyParams_.tokenURI
         );
 
-        emit TokenSuccessfullyExchanged(msg.sender, requestBuyParams_);
+        emit TokenSuccessfullyExchanged(msg.sender, requestBuyParams_, _nftRequest);
     }
 
     function createNFTRequest(
