@@ -227,7 +227,12 @@ interface IMarketplace {
      * @param desiredAmount_ the amount to withdraw
      * @param withdrawAll_ the flag to withdraw everything
      */
-    function withdrawCurrency(address tokenAddr_, address recipient_, uint256 desiredAmount_, bool withdrawAll_) external;
+    function withdrawCurrency(
+        address tokenAddr_,
+        address recipient_,
+        uint256 desiredAmount_,
+        bool withdrawAll_
+    ) external;
 
     /**
      * @notice Function that allows users to buy a token using Ether

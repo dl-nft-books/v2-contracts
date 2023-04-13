@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
 import "@dlsl/dev-modules/utils/Globals.sol";
@@ -140,11 +141,11 @@ contract Marketplace is
         bool isNativeCurrency_ = tokenAddr_ == address(0);
 
         uint256 amount_ = isNativeCurrency_
-                ? address(this).balance
-                : token_.balanceOf(address(this));
-                
-        if(!withdrawAll_) {
-            amount_ = amount_ > desiredAmount_ ? desiredAmount_ : amount_;
+            ? address(this).balance
+            : token_.balanceOf(address(this));
+
+        if (!withdrawAll_) {
+            amount_ = Math.min(amount_, desiredAmount_);
         }
 
         require(amount_ > 0, "Marketplace: Nothing to withdraw.");
