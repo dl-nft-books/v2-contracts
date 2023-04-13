@@ -31,7 +31,6 @@ const signBuy = (domain, message, privateKey) => {
   return fromRpcSig(signTypedData({ privateKey, data, version: "V4" }));
 };
 
-
 const signBuyWithRequest = (domain, message, privateKey) => {
   const { name, version = "1", chainId = 1, verifyingContract } = domain;
 
@@ -89,5 +88,5 @@ const signPermit = (domain, message, privateKey) => {
 module.exports = {
   signBuy,
   signPermit,
-  signBuyWithRequest
+  signBuyWithRequest,
 };

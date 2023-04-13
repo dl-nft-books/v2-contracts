@@ -1823,11 +1823,9 @@ describe("Marketplace", () => {
     it("should revert if status of request is not valid", async () => {
       const sig = signBuyWithRequestTest({});
 
-      await marketplace.buyTokenWithRequest(
-        [ZERO_ADDR, 0, 0, requestId], tokenContract, 0, defaultEndTime, defaultTokenURI, 
-        [sig.r, sig.s, sig.v], 
-        { from: USER1}
-        );
+      await marketplace.buyTokenWithRequest(requestId, 0, defaultEndTime, defaultTokenURI, [sig.r, sig.s, sig.v], {
+        from: USER1,
+      });
 
       await truffleAssert.reverts(
         marketplace.cancelNFTRequest(requestId, { from: USER1 }),
@@ -1877,16 +1875,14 @@ describe("Marketplace", () => {
         0,
         defaultEndTime,
         defaultTokenURI,
-        sig.r,
-        sig.s,
-        sig.v,
+        [sig.r, sig.s, sig.v],
         { from: USER1 }
       );
 
       assert.equal(await nft.ownerOf(tokenId), marketplace.address);
 
       assert.equal(tx.logs.length, 1);
-      assert.equal(tx.logs[0].event, "SuccessfullyMintedWithRequest");
+      assert.equal(tx.logs[0].event, "TokenSuccessfullyPurchased");
       assert.equal(tx.logs[0].args.tokenContract, tokenContract);
       assert.equal(tx.logs[0].args.requestId.toString(), "0");
       assert.equal(tx.logs[0].args.recipient, USER1);
@@ -1919,16 +1915,14 @@ describe("Marketplace", () => {
         0,
         defaultEndTime,
         defaultTokenURI,
-        sig.r,
-        sig.s,
-        sig.v,
+        [sig.r, sig.s, sig.v],
         { from: USER1 }
       );
 
       assert.equal(await nft.ownerOf(tokenId), ERC721Holder_impl.address);
 
       assert.equal(tx.logs.length, 1);
-      assert.equal(tx.logs[0].event, "SuccessfullyMintedWithRequest");
+      assert.equal(tx.logs[0].event, "TokenSuccessfullyPurchased");
       assert.equal(tx.logs[0].args.tokenContract, tokenContract);
       assert.equal(tx.logs[0].args.requestId.toString(), "0");
       assert.equal(tx.logs[0].args.recipient, USER1);
@@ -1960,16 +1954,14 @@ describe("Marketplace", () => {
         0,
         defaultEndTime,
         defaultTokenURI,
-        sig.r,
-        sig.s,
-        sig.v,
+        [sig.r, sig.s, sig.v],
         { from: USER1 }
       );
 
       assert.equal(await nft.ownerOf(tokenId), NOTHING);
 
       assert.equal(tx.logs.length, 1);
-      assert.equal(tx.logs[0].event, "SuccessfullyMintedWithRequest");
+      assert.equal(tx.logs[0].event, "TokenSuccessfullyPurchased");
       assert.equal(tx.logs[0].args.tokenContract, tokenContract);
       assert.equal(tx.logs[0].args.requestId.toString(), "0");
       assert.equal(tx.logs[0].args.recipient, USER1);
@@ -1987,7 +1979,7 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       await truffleAssert.reverts(
-        marketplace.buyTokenWithRequest(requestId, 1, defaultEndTime, defaultTokenURI, sig.r, sig.s, sig.v, {
+        marketplace.buyTokenWithRequest(requestId, 1, defaultEndTime, defaultTokenURI, [sig.r, sig.s, sig.v], {
           from: USER1,
         }),
         "Marketplace: Invalid signature."
@@ -2000,7 +1992,7 @@ describe("Marketplace", () => {
       await setNextBlockTime(defaultEndTime.plus(100).toNumber());
 
       await truffleAssert.reverts(
-        marketplace.buyTokenWithRequest(requestId, 0, defaultEndTime, defaultTokenURI, sig.r, sig.s, sig.v, {
+        marketplace.buyTokenWithRequest(requestId, 0, defaultEndTime, defaultTokenURI, [sig.r, sig.s, sig.v], {
           from: USER1,
         }),
         "Marketplace: Signature expired."
@@ -2053,7 +2045,7 @@ describe("Marketplace", () => {
         requestId = await marketplace.createNFTRequest.call(nft.address, (i + 1) * 1000, addr, { from: USER1 });
         await marketplace.createNFTRequest(nft.address, (i + 1) * 1000, addr, { from: USER1 });
         const sig = signBuyWithRequestTest({ requestId: requestId.toNumber() });
-        await marketplace.buyTokenWithRequest(requestId, 0, defaultEndTime, defaultTokenURI, sig.r, sig.s, sig.v, {
+        await marketplace.buyTokenWithRequest(requestId, 0, defaultEndTime, defaultTokenURI, [sig.r, sig.s, sig.v], {
           from: USER1,
         });
         requests.push([addr, nft.address, ((i + 1) * 1000).toString(), USER1, NFTRequestStatus.MINTED.toString()]);

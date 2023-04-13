@@ -41,7 +41,7 @@ contract Marketplace is
         keccak256(
             "Buy(address tokenContract,uint256 futureTokenId,address paymentTokenAddress,uint256 paymentTokenPrice,uint256 discount,uint256 endTimestamp,bytes32 tokenURI)"
         );
-    bytes32 internal constant _BUY_WITH_REQUEST = 
+    bytes32 internal constant _BUY_WITH_REQUEST =
         keccak256(
             "BuyWithRequest(uint256 requestId,uint256 futureTokenId,uint256 endTimestamp,bytes32 tokenURI)"
         );
@@ -227,97 +227,6 @@ contract Marketplace is
         );
     }
 
-    function createNFTRequest(
-        address nftContract_,
-        uint256 nftId_,
-        address tokenContract_
-    ) external returns (uint256 requestId_) {
-        require(
-            _tokenContracts.contains(tokenContract_),
-            "Marketplace: Token contract not found."
-        );
-
-        TokenParams storage _currentTokenParams = _tokenParams[tokenContract_];
-
-        require(
-            !_currentTokenParams.isDisabled,
-            "Marketplace: Token is disabled."
-        );
-
-        require(
-            _currentTokenParams.isNFTBuyable,
-            "Marketplace: This token cannot be purchased with NFT."
-        );
-
-        require(
-            IERC721(nftContract_).ownerOf(nftId_) == msg.sender,
-            "Marketplace: Sender is not the owner."
-        );
-
-        IERC721(nftContract_).safeTransferFrom(
-            msg.sender,
-            address(this),
-            nftId_);
-
-        requestId_ = _nftRequests.length;
-        
-        _nftRequests.push(
-            NFTRequestInfo(
-                tokenContract_,
-                nftContract_,
-                nftId_,
-                msg.sender,
-                NFTRequestStatus.PENDING
-            )
-        );
-
-        emit NFTRequestCreated(requestId_, msg.sender, nftContract_, nftId_, tokenContract_);
-    }
-
-    function cancelNFTRequest(
-        uint256 requestId_
-    ) external {
-        _checkNFTRequestAllowing(requestId_);
-
-        NFTRequestInfo storage _nftRequest = _nftRequests[requestId_];
-
-        _nftRequest.status = NFTRequestStatus.CANCELED;
-
-        IERC721(_nftRequest.nftContract).safeTransferFrom(
-            address(this),
-            msg.sender,
-            _nftRequest.nftId
-        );
-
-        emit NFTRequestCanceled(requestId_);
-    }
-
-    function buyTokenWithRequest(
-        BuyParams memory buyParams_,
-        Sig memory sig_
-    ) external {
-        _beforeBuyTokenCheck(buyParams_, sig_);
-        // Do we need to check all the params?
-        _checkNFTRequestAllowing(buyParams_.paymentDetails.nftTokenId);
-         
-        NFTRequestInfo storage _nftRequest = _nftRequests[buyParams_.paymentDetails.nftTokenId];
-
-        TokenParams storage _currentTokenParams = _tokenParams[_nftRequest.tokenContract];
-
-        address fundsRecipient_ = _getFundsRecipient(_currentTokenParams.fundsRecipient);
-        if (fundsRecipient_ != address(this)) {
-            IERC721(_nftRequest.nftContract).safeTransferFrom(
-                address(this),
-                fundsRecipient_,
-                _nftRequest.nftId
-            );
-        }
-
-        _nftRequest.status = NFTRequestStatus.MINTED;
-
-        _mintToken(buyParams_, PaymentType.REQUEST, _currentTokenParams.minNFTFloorPrice, 1);
-    }
-
     function buyTokenWithVoucher(
         BuyParams memory buyParams_,
         Sig memory sig_
@@ -377,6 +286,142 @@ contract Marketplace is
         );
 
         _mintToken(buyParams_, PaymentType.NFT, _currentTokenParams.minNFTFloorPrice, 1);
+    }
+
+    function buyTokenWithRequest(
+        uint256 requestId_,
+        uint256 futureTokenId_,
+        uint256 endTimestamp_,
+        string memory tokenURI_,
+        Sig memory sig_
+    ) external {
+        require(requestId_ < _nftRequests.length, "Marketplace: Request ID is not valid.");
+
+        _verifySignature(requestId_, futureTokenId_, endTimestamp_, tokenURI_, sig_);
+
+        NFTRequestInfo storage _nftRequest = _nftRequests[requestId_];
+
+        require(_nftRequest.requester == msg.sender, "Marketplace: Sender is not the requester.");
+
+        TokenParams storage _currentTokenParams = _tokenParams[_nftRequest.tokenContract];
+
+        require(!_currentTokenParams.isDisabled, "Marketplace: Token is disabled.");
+
+        require(
+            _currentTokenParams.isNFTBuyable,
+            "Marketplace: This token cannot be purchased with NFT."
+        );
+
+        require(
+            _nftRequest.status == NFTRequestStatus.PENDING,
+            "Marketplace: Request status is not valid."
+        );
+
+        address fundsRecipient_ = _getFundsRecipient(_currentTokenParams.fundsRecipient);
+        if (fundsRecipient_ != address(this)) {
+            IERC721(_nftRequest.nftContract).safeTransferFrom(
+                address(this),
+                fundsRecipient_,
+                _nftRequest.nftId
+            );
+        }
+
+        _nftRequest.status = NFTRequestStatus.MINTED;
+
+        IERC721MintableToken(_nftRequest.tokenContract).mint(
+            msg.sender,
+            futureTokenId_,
+            tokenURI_
+        );
+
+        emit TokenSuccessfullyPurchased(
+            msg.sender,
+            _currentTokenParams.pricePerOneToken,
+            1,
+            BuyParams(
+                PaymentDetails(_nftRequest.nftContract, 0, 0, _nftRequest.nftId),
+                _nftRequest.tokenContract,
+                futureTokenId_,
+                endTimestamp_,
+                tokenURI_
+            ),
+            PaymentType.REQUEST
+        );
+    }
+
+    function createNFTRequest(
+        address nftContract_,
+        uint256 nftId_,
+        address tokenContract_
+    ) external returns (uint256 requestId_) {
+        require(
+            _tokenContracts.contains(tokenContract_),
+            "Marketplace: Token contract not found."
+        );
+
+        TokenParams storage _currentTokenParams = _tokenParams[tokenContract_];
+
+        require(!_currentTokenParams.isDisabled, "Marketplace: Token is disabled.");
+
+        require(
+            _currentTokenParams.isNFTBuyable,
+            "Marketplace: This token cannot be purchased with NFT."
+        );
+
+        require(
+            IERC721(nftContract_).ownerOf(nftId_) == msg.sender,
+            "Marketplace: Sender is not the owner."
+        );
+
+        IERC721(nftContract_).safeTransferFrom(msg.sender, address(this), nftId_);
+
+        requestId_ = _nftRequests.length;
+
+        _nftRequests.push(
+            NFTRequestInfo(
+                tokenContract_,
+                nftContract_,
+                nftId_,
+                msg.sender,
+                NFTRequestStatus.PENDING
+            )
+        );
+
+        emit NFTRequestCreated(requestId_, msg.sender, nftContract_, nftId_, tokenContract_);
+    }
+
+    function cancelNFTRequest(uint256 requestId_) external {
+        require(requestId_ < _nftRequests.length, "Marketplace: Request ID is not valid.");
+
+        NFTRequestInfo storage nftRequest = _nftRequests[requestId_];
+
+        require(nftRequest.requester == msg.sender, "Marketplace: Sender is not the requester.");
+
+        TokenParams storage _currentTokenParams = _tokenParams[nftRequest.tokenContract];
+
+        require(!_currentTokenParams.isDisabled, "Marketplace: Token is disabled.");
+
+        require(
+            _currentTokenParams.isNFTBuyable,
+            "Marketplace: This token cannot be purchased with NFT."
+        );
+
+        require(
+            nftRequest.status == NFTRequestStatus.PENDING,
+            "Marketplace: Request status is not valid."
+        );
+
+        NFTRequestInfo storage _nftRequest = _nftRequests[requestId_];
+
+        _nftRequest.status = NFTRequestStatus.CANCELED;
+
+        IERC721(_nftRequest.nftContract).safeTransferFrom(
+            address(this),
+            msg.sender,
+            _nftRequest.nftId
+        );
+
+        emit NFTRequestCanceled(requestId_);
     }
 
     function getUserTokenIDs(
@@ -540,31 +585,48 @@ contract Marketplace is
         require(block.timestamp <= buyParams_.endTimestamp, "Marketplace: Signature expired.");
     }
 
+    function _verifySignature(
+        uint256 requestId_,
+        uint256 futureTokenId_,
+        uint256 endTimestamp_,
+        string memory tokenURI_,
+        Sig memory sig_
+    ) internal view {
+        bytes32 structHash_ = keccak256(
+            abi.encode(
+                _BUY_WITH_REQUEST,
+                requestId_,
+                futureTokenId_,
+                endTimestamp_,
+                keccak256(abi.encodePacked(tokenURI_))
+            )
+        );
+
+        address signer_ = ECDSAUpgradeable.recover(
+            _hashTypedDataV4(structHash_),
+            sig_.v,
+            sig_.r,
+            sig_.s
+        );
+
+        require(_roleManager.isSignatureManager(signer_), "Marketplace: Invalid signature.");
+        require(block.timestamp <= endTimestamp_, "Marketplace: Signature expired.");
+    }
+
     function _getFundsRecipient(address fundsRecipient_) internal view returns (address) {
         return fundsRecipient_ == address(0) ? address(this) : fundsRecipient_;
     }
 
-    function _checkNFTRequestAllowing(
-        uint256 requestId_
-    ) internal view {
-        require(
-            requestId_ < _nftRequests.length,
-            "Marketplace: Request ID is not valid."
-        );
-        
+    function _checkNFTRequestAllowing(uint256 requestId_) internal view {
+        require(requestId_ < _nftRequests.length, "Marketplace: Request ID is not valid.");
+
         NFTRequestInfo storage nftRequest = _nftRequests[requestId_];
 
-        require(
-            nftRequest.requester == msg.sender,
-            "Marketplace: Sender is not the requester."
-        );
+        require(nftRequest.requester == msg.sender, "Marketplace: Sender is not the requester.");
 
         TokenParams storage _currentTokenParams = _tokenParams[nftRequest.tokenContract];
-        
-        require(
-            !_currentTokenParams.isDisabled,
-            "Marketplace: Token is disabled."
-        );
+
+        require(!_currentTokenParams.isDisabled, "Marketplace: Token is disabled.");
 
         require(
             _currentTokenParams.isNFTBuyable,
