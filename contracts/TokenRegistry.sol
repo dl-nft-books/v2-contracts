@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.18;
 
 import "@dlsl/dev-modules/contracts-registry/pools/AbstractPoolContractsRegistry.sol";
 
@@ -11,6 +11,7 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     string public constant override TOKEN_POOL = "TOKEN_POOL";
+    string public constant override VOUCHER_POOL = "VOUCHER_POOL";
 
     address internal _tokenFactory;
     IRoleManager internal _roleManager;
@@ -42,18 +43,20 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
     }
 
     function injectDependenciesToExistingPools(
+        string calldata name_,
         uint256 offset_,
         uint256 limit_
     ) external onlyTokenRegistryManager {
-        _injectDependenciesToExistingPools(TOKEN_POOL, offset_, limit_);
+        _injectDependenciesToExistingPools(name_, offset_, limit_);
     }
 
     function injectDependenciesToExistingPoolsWithData(
+        string calldata name_,
         bytes calldata data_,
         uint256 offset_,
         uint256 limit_
     ) external onlyTokenRegistryManager {
-        _injectDependenciesToExistingPoolsWithData(TOKEN_POOL, data_, offset_, limit_);
+        _injectDependenciesToExistingPoolsWithData(name_, data_, offset_, limit_);
     }
 
     function addProxyPool(
@@ -65,6 +68,10 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
 
     function isTokenPool(address potentialPool_) public view override returns (bool) {
         return _pools[TOKEN_POOL].contains(potentialPool_);
+    }
+
+    function isVoucherPool(address potentialPool_) public view override returns (bool) {
+        return _pools[VOUCHER_POOL].contains(potentialPool_);
     }
 
     function _onlyTokenFactory() internal view {

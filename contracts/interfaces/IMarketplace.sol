@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.18;
 
 /**
  * This is the marketplace contract that stores information about
@@ -54,6 +54,7 @@ interface IMarketplace {
         address fundsRecipient;
         bool isNFTBuyable;
         bool isDisabled;
+        bool isVoucherBuyable;
     }
 
     /**
@@ -88,15 +89,15 @@ interface IMarketplace {
      * @notice Struct representing the buying parameters for purchasing an NFT
      * @param paymentDetails the payment details for purchasing an NFT
      * @param tokenContract the contract address of the token used for payment
+     * @param recipient the address of the recipient of the token
      * @param futureTokenId the ID of the future token
-     * @param endTimestamp the timestamp when the purchase ends
      * @param tokenURI the URI of the token to be purchased
      */
     struct BuyParams {
         PaymentDetails paymentDetails;
         address tokenContract;
+        address recipient;
         uint256 futureTokenId;
-        uint256 endTimestamp;
         string tokenURI;
     }
 
@@ -150,17 +151,18 @@ interface IMarketplace {
     struct RequestBuyParams {
         uint256 requestId;
         uint256 futureTokenId;
-        uint256 endTimestamp;
         string tokenURI;
     }
 
     /**
      * @notice Struct representing the signature for a transaction
+     * @param endTimestamp the timestamp when the signature expires
      * @param r the r value of the signature
      * @param s the s value of the signature
      * @param v the v value of the signature
      */
     struct Sig {
+        uint256 endTimestamp;
         bytes32 r;
         bytes32 s;
         uint8 v;
@@ -335,8 +337,13 @@ interface IMarketplace {
      *
      * @param buyParams_ the buying parameters used for purchasing the token
      * @param sig_ the signature for the purchasing
+     * @param permitSig_ the signature for the permit function
      */
-    function buyTokenWithVoucher(BuyParams memory buyParams_, Sig memory sig_) external;
+    function buyTokenWithVoucher(
+        BuyParams memory buyParams_,
+        Sig memory sig_,
+        Sig memory permitSig_
+    ) external;
 
     /**
      * @notice Function that allows users to buy an NFT token using an NFT

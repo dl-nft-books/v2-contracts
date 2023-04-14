@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -42,9 +43,13 @@ contract Marketplace is
         keccak256(
             "Buy(address tokenContract,uint256 futureTokenId,address paymentTokenAddress,uint256 paymentTokenPrice,uint256 discount,uint256 endTimestamp,bytes32 tokenURI)"
         );
-    bytes32 internal constant _BUY_WITH_REQUEST =
+    bytes32 internal constant _BUY_WITH_REQUEST_TYPEHASH =
         keccak256(
             "BuyWithRequest(uint256 requestId,uint256 futureTokenId,uint256 endTimestamp,bytes32 tokenURI)"
+        );
+    bytes32 internal constant _BUY_WITH_VOUCHER_TYPEHASH =
+        keccak256(
+            "BuyWithVoucher(address requester,address tokenContract,uint256 futureTokenId,address voucherTokenContract,uint256 voucherTokensAmount,uint256 endTimestamp,bytes32 tokenURI)"
         );
 
     IRoleManager internal _roleManager;
@@ -109,6 +114,19 @@ contract Marketplace is
 
         tokenProxy_ = _tokenFactory.deployToken(name_, symbol_);
 
+        if (tokenParams_.isVoucherBuyable && tokenParams_.voucherTokenContract == address(0)) {
+            tokenParams_.voucherTokenContract = _tokenFactory.deployVoucher(
+                string.concat(name_, "_Voucher"),
+                string.concat(symbol_, "_V")
+            );
+        }
+
+        _validateVoucherParams(
+            tokenParams_.isVoucherBuyable,
+            tokenParams_.voucherTokensAmount,
+            tokenParams_.voucherTokenContract
+        );
+
         _tokenParams[tokenProxy_] = tokenParams_;
 
         _tokenContracts.add(tokenProxy_);
@@ -125,6 +143,11 @@ contract Marketplace is
         _checkTokenContractExists(tokenContract_);
 
         _validateTokenParams(name_, symbol_);
+        _validateVoucherParams(
+            newTokenParams_.isVoucherBuyable,
+            newTokenParams_.voucherTokensAmount,
+            newTokenParams_.voucherTokenContract
+        );
 
         _tokenParams[tokenContract_] = newTokenParams_;
 
@@ -219,7 +242,7 @@ contract Marketplace is
         _sendERC20(
             IERC20Metadata(buyParams_.paymentDetails.paymentTokenAddress),
             msg.sender,
-            _currentTokenParams.fundsRecipient,
+            _getFundsRecipient(_currentTokenParams.fundsRecipient),
             amountToPay_
         );
 
@@ -233,14 +256,15 @@ contract Marketplace is
 
     function buyTokenWithVoucher(
         BuyParams memory buyParams_,
-        Sig memory sig_
+        Sig memory sig_,
+        Sig memory permitSig_
     ) external override whenNotPaused {
         _beforeBuyTokenCheck(buyParams_, sig_);
 
         TokenParams storage _currentTokenParams = _tokenParams[buyParams_.tokenContract];
 
         require(
-            _currentTokenParams.voucherTokenContract != address(0),
+            _currentTokenParams.isVoucherBuyable,
             "Marketplace: Unable to buy token with voucher"
         );
         require(
@@ -249,10 +273,20 @@ contract Marketplace is
             "Marketplace: Invalid payment token address"
         );
 
+        IERC20Permit(_currentTokenParams.voucherTokenContract).permit(
+            buyParams_.recipient,
+            address(this),
+            _currentTokenParams.voucherTokensAmount,
+            permitSig_.endTimestamp,
+            permitSig_.v,
+            permitSig_.r,
+            permitSig_.s
+        );
+
         _sendERC20(
-            IERC20Metadata(buyParams_.paymentDetails.paymentTokenAddress),
-            msg.sender,
-            _currentTokenParams.fundsRecipient,
+            IERC20Metadata(_currentTokenParams.voucherTokenContract),
+            buyParams_.recipient,
+            _getFundsRecipient(_currentTokenParams.fundsRecipient),
             _currentTokenParams.voucherTokensAmount
         );
 
@@ -476,11 +510,7 @@ contract Marketplace is
         address recipient_,
         uint256 amountToSend_
     ) internal {
-        token_.safeTransferFrom(
-            sender_,
-            _getFundsRecipient(recipient_),
-            amountToSend_.from18(token_.decimals())
-        );
+        token_.safeTransferFrom(sender_, recipient_, amountToSend_.from18(token_.decimals()));
     }
 
     function _mintToken(
@@ -538,7 +568,7 @@ contract Marketplace is
         require(!_currentTokenParams.isDisabled, "Marketplace: Unable to buy disabled token");
 
         _verifySignature(
-            buyParams_.endTimestamp,
+            sig_.endTimestamp,
             sig_,
             keccak256(
                 abi.encode(
@@ -548,7 +578,7 @@ contract Marketplace is
                     buyParams_.paymentDetails.paymentTokenAddress,
                     buyParams_.paymentDetails.paymentTokenPrice,
                     buyParams_.paymentDetails.discount,
-                    buyParams_.endTimestamp,
+                    sig_.endTimestamp,
                     keccak256(abi.encodePacked(buyParams_.tokenURI))
                 )
             )
@@ -565,14 +595,14 @@ contract Marketplace is
         );
 
         _verifySignature(
-            requestBuyParams_.endTimestamp,
+            sig_.endTimestamp,
             sig_,
             keccak256(
                 abi.encode(
-                    _BUY_WITH_REQUEST,
+                    _BUY_WITH_REQUEST_TYPEHASH,
                     requestBuyParams_.requestId,
                     requestBuyParams_.futureTokenId,
-                    requestBuyParams_.endTimestamp,
+                    sig_.endTimestamp,
                     keccak256(abi.encodePacked(requestBuyParams_.tokenURI))
                 )
             )
@@ -637,6 +667,17 @@ contract Marketplace is
         require(
             bytes(name_).length > 0 && bytes(symbol_).length > 0,
             "Marketplace: Token name or symbol is empty."
+        );
+    }
+
+    function _validateVoucherParams(
+        bool isVoucherBuyable,
+        uint256 voucherTokensAmount,
+        address voucherAddress
+    ) internal pure {
+        require(
+            !isVoucherBuyable || (voucherTokensAmount > 0 && voucherAddress != address(0)),
+            "Marketplace: Invalid voucher params."
         );
     }
 

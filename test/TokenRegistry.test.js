@@ -9,6 +9,7 @@ const Marketplace = artifacts.require("Marketplace");
 const RoleManager = artifacts.require("RoleManager");
 const ERC721MintableToken = artifacts.require("ERC721MintableToken");
 const Pool = artifacts.require("Pool");
+const Voucher = artifacts.require("Voucher");
 
 TokenRegistry.numberFormat = "BigNumber";
 
@@ -17,6 +18,7 @@ describe("TokenRegistry", () => {
   let FACTORY;
 
   let TOKEN_POOL;
+  let VOUCHER_POOL;
 
   let pool;
   let token;
@@ -31,6 +33,7 @@ describe("TokenRegistry", () => {
 
     token = await ERC721MintableToken.new();
     pool = await Pool.new();
+    voucher = await Voucher.new();
 
     contractsRegistry = await ContractsRegistry.new();
     const _tokenRegistry = await TokenRegistry.new();
@@ -53,13 +56,14 @@ describe("TokenRegistry", () => {
     await contractsRegistry.injectDependencies(await contractsRegistry.MARKETPLACE_NAME());
     await contractsRegistry.injectDependencies(await contractsRegistry.ROLE_MANAGER_NAME());
 
-    const poolName = [await tokenRegistry.TOKEN_POOL()];
+    TOKEN_POOL = await tokenRegistry.TOKEN_POOL();
+    VOUCHER_POOL = await tokenRegistry.VOUCHER_POOL();
 
-    const poolAddr = [token.address];
+    const poolName = [TOKEN_POOL, VOUCHER_POOL];
+
+    const poolAddr = [token.address, voucher.address];
 
     await tokenRegistry.setNewImplementations(poolName, poolAddr);
-
-    TOKEN_POOL = await tokenRegistry.TOKEN_POOL();
 
     await reverter.snapshot();
   });
@@ -80,12 +84,12 @@ describe("TokenRegistry", () => {
       );
 
       await truffleAssert.reverts(
-        tokenRegistry.injectDependenciesToExistingPools(0, 0, { from: FACTORY }),
+        tokenRegistry.injectDependenciesToExistingPools(TOKEN_POOL, 0, 0, { from: FACTORY }),
         "TokenRegistry: Caller is not a token registry manager"
       );
 
       await truffleAssert.reverts(
-        tokenRegistry.injectDependenciesToExistingPoolsWithData(0, 0, 0, { from: FACTORY }),
+        tokenRegistry.injectDependenciesToExistingPoolsWithData(TOKEN_POOL, 0, 0, 0, { from: FACTORY }),
         "TokenRegistry: Caller is not a token registry manager"
       );
     });
@@ -123,6 +127,21 @@ describe("TokenRegistry", () => {
       assert.isFalse(await tokenRegistry.isTokenPool(POOL_3));
     });
 
+    it("should successfully add new VOUCHER POOL with", async () => {
+      assert.isFalse(await tokenRegistry.isVoucherPool(POOL_1));
+      assert.isFalse(await tokenRegistry.isVoucherPool(POOL_2));
+      assert.isFalse(await tokenRegistry.isVoucherPool(POOL_3));
+
+      await tokenRegistry.addProxyPool(VOUCHER_POOL, POOL_1, { from: FACTORY });
+      await tokenRegistry.addProxyPool(VOUCHER_POOL, POOL_2, { from: FACTORY });
+
+      assert.equal((await tokenRegistry.countPools(VOUCHER_POOL)).toFixed(), "2");
+
+      assert.isTrue(await tokenRegistry.isVoucherPool(POOL_1));
+      assert.isTrue(await tokenRegistry.isVoucherPool(POOL_2));
+      assert.isFalse(await tokenRegistry.isVoucherPool(POOL_3));
+    });
+
     it("should list added pools", async () => {
       await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_1, { from: FACTORY });
       await tokenRegistry.addProxyPool(TOKEN_POOL, POOL_2, { from: FACTORY });
@@ -140,7 +159,7 @@ describe("TokenRegistry", () => {
 
       assert.equal(await pool.roleManager(), 0);
 
-      await tokenRegistry.injectDependenciesToExistingPools(0, 1);
+      await tokenRegistry.injectDependenciesToExistingPools(TOKEN_POOL, 0, 1);
 
       assert.equal(await pool.roleManager(), await contractsRegistry.getRoleManagerContract());
     });
@@ -151,7 +170,7 @@ describe("TokenRegistry", () => {
 
     assert.equal(await pool.roleManager(), 0);
 
-    await tokenRegistry.injectDependenciesToExistingPoolsWithData("0x", 0, 1);
+    await tokenRegistry.injectDependenciesToExistingPoolsWithData(TOKEN_POOL, "0x", 0, 1);
 
     assert.equal(await pool.roleManager(), await contractsRegistry.getRoleManagerContract());
   });

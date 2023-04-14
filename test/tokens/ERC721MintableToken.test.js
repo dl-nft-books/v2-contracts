@@ -55,7 +55,7 @@ describe("ERC721MintableToken", () => {
       from: FACTORY,
     });
 
-    await tokenRegistry.injectDependenciesToExistingPools(0, 10);
+    await tokenRegistry.injectDependenciesToExistingPools(TOKEN_POOL, 0, 10);
 
     await reverter.snapshot();
   });
@@ -124,12 +124,12 @@ describe("ERC721MintableToken", () => {
       marketplace2.__Marketplace_init("base/");
 
       await contractsRegistry.addContract(await contractsRegistry.MARKETPLACE_NAME(), marketplace1.address);
-      await tokenRegistry.injectDependenciesToExistingPools(0, 2);
+      await tokenRegistry.injectDependenciesToExistingPools(TOKEN_POOL, 0, 2);
       assert.equal(await token.tokenURI(0), "uri");
       assert.equal(await token.tokenURI(1), "");
 
       await contractsRegistry.addContract(await contractsRegistry.MARKETPLACE_NAME(), marketplace2.address);
-      await tokenRegistry.injectDependenciesToExistingPools(0, 2);
+      await tokenRegistry.injectDependenciesToExistingPools(TOKEN_POOL, 0, 2);
       assert.equal(await token.tokenURI(0), "base/uri");
       assert.equal(await token.tokenURI(1), "base/");
     });
@@ -137,7 +137,7 @@ describe("ERC721MintableToken", () => {
     it("should revert if token does not exist", async () => {
       const marketplace = await Marketplace.new();
       await contractsRegistry.addContract(await contractsRegistry.MARKETPLACE_NAME(), marketplace.address);
-      await tokenRegistry.injectDependenciesToExistingPools(0, 1);
+      await tokenRegistry.injectDependenciesToExistingPools(TOKEN_POOL, 0, 1);
 
       await truffleAssert.reverts(token.tokenURI(0), "ERC721MintableToken: URI query for nonexistent token.");
     });

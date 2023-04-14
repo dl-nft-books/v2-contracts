@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.18;
 
 import "@dlsl/dev-modules/contracts-registry/pools/pool-factory/AbstractPoolFactory.sol";
 
@@ -8,6 +8,7 @@ import "./interfaces/ITokenRegistry.sol";
 import "./interfaces/ITokenFactory.sol";
 import "./interfaces/IRoleManager.sol";
 import "./interfaces/tokens/IERC721MintableToken.sol";
+import "./interfaces/tokens/IVoucher.sol";
 
 contract TokenFactory is ITokenFactory, AbstractPoolFactory {
     address internal _tokenRegistry;
@@ -40,6 +41,19 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
 
         _register(_tokenRegistry, tokenPool_, tokenProxy_);
         _injectDependencies(_tokenRegistry, tokenProxy_);
+    }
+
+    function deployVoucher(
+        string calldata name_,
+        string calldata symbol_
+    ) external override onlyMarketplace returns (address voucherProxy_) {
+        string memory voucherPool_ = ITokenRegistry(_tokenRegistry).VOUCHER_POOL();
+        voucherProxy_ = _deploy(_tokenRegistry, voucherPool_);
+
+        IVoucher(voucherProxy_).__Voucher_init(name_, symbol_);
+
+        _register(_tokenRegistry, voucherPool_, voucherProxy_);
+        _injectDependencies(_tokenRegistry, voucherProxy_);
     }
 
     function _onlyMarketplace() internal view {

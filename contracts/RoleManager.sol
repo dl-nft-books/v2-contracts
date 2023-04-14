@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 
@@ -51,14 +51,22 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
     function revokeRole(
         bytes32 role_,
         address account_
-    ) public override onlyNotLastAdministratorMember(role_) {
+    )
+        public
+        override(AccessControlUpgradeable, IAccessControlUpgradeable)
+        onlyNotLastAdministratorMember(role_)
+    {
         super.revokeRole(role_, account_);
     }
 
     function renounceRole(
         bytes32 role_,
         address account_
-    ) public override onlyNotLastAdministratorMember(role_) {
+    )
+        public
+        override(AccessControlUpgradeable, IAccessControlUpgradeable)
+        onlyNotLastAdministratorMember(role_)
+    {
         super.renounceRole(role_, account_);
     }
 
@@ -130,7 +138,10 @@ contract RoleManager is IRoleManager, AccessControlEnumerableUpgradeable, Abstra
             hasRole(SIGNATURE_MANAGER, account_);
     }
 
-    function hasRole(bytes32 role_, address account_) public view override returns (bool) {
+    function hasRole(
+        bytes32 role_,
+        address account_
+    ) public view override(AccessControlUpgradeable, IAccessControlUpgradeable) returns (bool) {
         return super.hasRole(ADMINISTRATOR_ROLE, account_) || super.hasRole(role_, account_);
     }
 }
