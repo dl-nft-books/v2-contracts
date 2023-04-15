@@ -1,0 +1,53 @@
+{
+    "baseTokenContractsURI": "baseURI",
+    "roles": [
+        {
+            "roleKey": "ADMINISTRATOR_ROLE",
+            "roleAdminKey": "ADMINISTRATOR_ROLE",
+            "roleName": "Administrator",
+            "members": []
+        },
+        {
+            "roleKey": "ROLE_SUPERVISOR",
+            "roleAdminKey": "ADMINISTRATOR_ROLE",
+            "roleName": "Role Supervisor",
+            "members": ["0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"]
+        },
+        {
+            "roleKey": "TOKEN_FACTORY_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Token Factory Manager",
+            "members": []
+        },
+        {
+            "roleKey": "TOKEN_REGISTRY_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Token Registry Manager",
+            "members": []
+        },
+        {
+            "roleKey": "TOKEN_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Token Manager",
+            "members": []
+        },
+        {
+            "roleKey": "WITHDRAWAL_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Withdrawal Manager",
+            "members": ["0x976EA74026E726554dB657fA54763abd0C3a0aa9"]
+        },
+        {
+            "roleKey": "MARKETPLACE_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Marketplace Manager",
+            "members": ["0xa0Ee7A142d267C1f36714E4a8F75612F20a79720", "0x976EA74026E726554dB657fA54763abd0C3a0aa9"]
+        },
+        {
+            "roleKey": "SIGNATURE_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Signature Manager",
+            "members": ["0xBcd4042DE499D14e55001CcbB24a551F3b954096"]
+        }
+    ]
+}

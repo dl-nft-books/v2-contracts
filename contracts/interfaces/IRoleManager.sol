@@ -1,21 +1,41 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 /**
  * This is the RoleManager contract, that is responsible for managing the roles of the system.
  */
 interface IRoleManager {
+    struct StoredRoleInfo {
+        string roleName;
+        EnumerableSet.AddressSet roleMembers;
+    }
+
+    struct DetailedRoleInfo {
+        string roleName;
+        bytes32 role;
+        bytes32 roleAdmin;
+        address[] members;
+    }
+
+    struct RoleParams {
+        bytes32 role;
+        bytes32 roleAdmin;
+        string roleName;
+    }
+
     /**
      * @notice The init function for the RoleManager contract.
      */
-    function __RoleManager_init() external;
+    function __RoleManager_init(RoleParams[] memory roleInitParams_) external;
 
     /**
      * @notice The function to grant multiple roles to multiple accounts.
      * @param roles_ The array of roles to grant.
      * @param accounts_ The array of accounts to grant the roles to.
      */
-    function grantRoleBatch(bytes32[] calldata roles_, address[] calldata accounts_) external;
+    function grantRoleBatch(bytes32[] calldata roles_, address[][] calldata accounts_) external;
 
     /**
      * @notice The function to retrieve the ADMINISTRATOR_ROLE role.
@@ -127,7 +147,7 @@ interface IRoleManager {
      * @param account_ The account to check.
      * @return true if the account has the specific roles, false otherwise.
      */
-    function hasSpecificOrStrongerRoles(
+    function hasSpecificRoles(
         bytes32[] memory roles_,
         address account_
     ) external view returns (bool);

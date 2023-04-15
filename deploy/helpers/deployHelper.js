@@ -1,8 +1,8 @@
 const fs = require("fs");
-const { keccak256 } = require("@ethersproject/keccak256");
 const { toUtf8Bytes } = require("@ethersproject/strings");
 
 const { ZERO_ADDR } = require("../../scripts/utils/constants");
+const { web3 } = require("hardhat");
 
 function nonEmptyField(field, fieldName, onlyUndefined = false) {
   if (field != undefined && (onlyUndefined || (field !== "" && field.length !== 0))) {
@@ -40,6 +40,96 @@ function parseMarketplaceParams(path) {
   return {
     baseTokenContractsURI: marketplaceParams.baseTokenContractsURI,
   };
+}
+
+function parseConfig(path = "deploy/data/config.json") {
+  const configJson = JSON.parse(fs.readFileSync(path, "utf8"));
+
+  nonEmptyField(configJson.baseTokenContractsURI, "baseTokenContractsURI", true);
+  nonEmptyField(configJson.roles, "roles", true);
+
+  const allRoles = [];
+  const rolesMembers = [];
+  const roleInitParams = [
+    {
+      role: "0x0000000000000000000000000000000000000000000000000000000000000000",
+      roleAdmin: "0x0000000000000000000000000000000000000000000000000000000000000000",
+      roleName: "Default admin",
+    },
+  ];
+
+  configJson.roles.forEach((roleInfo) => {
+    const role = web3.utils.keccak256(nonEmptyField(roleInfo.roleKey, "role key"));
+    const roleAdmin = web3.utils.keccak256(nonEmptyField(roleInfo.roleAdminKey, "role admin key"));
+    const roleName = nonEmptyField(roleInfo.roleName, "role name");
+    const members = nonEmptyField(roleInfo.members, "role members", true);
+
+    allRoles.push(role);
+    rolesMembers.push(members);
+    roleInitParams.push({
+      role,
+      roleAdmin,
+      roleName,
+    });
+  });
+
+  return {
+    baseTokenContractsURI: configJson.baseTokenContractsURI,
+    allRoles,
+    rolesMembers,
+    roleInitParams,
+  };
+}
+
+function verifyRoleInfo(roleInfo) {
+  if (!roleInfo.roleKey) {
+    throw new Error(`Invalid role key`);
+  }
+
+  if (!roleInfo.roleAdminKey) {
+    throw new Error(`Invalid role admin key`);
+  }
+
+  if (!roleInfo.roleName) {
+    throw new Error(`Empty role name`);
+  }
+}
+
+function parseRoleInitParams(path = "deploy/data/roleInitParams.json") {
+  const roleInitParams = JSON.parse(fs.readFileSync(path, "utf8"));
+
+  const resultArr = [];
+
+  resultArr.push({
+    role: "0x0000000000000000000000000000000000000000000000000000000000000000",
+    roleAdmin: "0x0000000000000000000000000000000000000000000000000000000000000000",
+    roleName: "Default admin",
+  });
+
+  roleInitParams.forEach((initParams, index) => {
+    if (!initParams?.roleKey) {
+      throw new Error(`Invalid role key in struct by ${index} index`);
+    }
+
+    if (!initParams?.roleAdminKey) {
+      throw new Error(`Invalid role admin key in struct by ${index} index`);
+    }
+
+    if (!initParams?.roleName) {
+      throw new Error(`Empty role name in struct by ${index} index`);
+    }
+
+    const role = web3.utils.keccak256(initParams.roleKey);
+    const roleAdmin = web3.utils.keccak256(initParams.roleAdminKey);
+
+    resultArr.push({
+      role,
+      roleAdmin,
+      roleName: initParams.roleName,
+    });
+  });
+
+  return resultArr;
 }
 
 function parseRolesParams(path) {
@@ -93,6 +183,8 @@ function parseRolesParams(path) {
 }
 
 module.exports = {
+  parseConfig,
   parseMarketplaceParams,
+  parseRoleInitParams,
   parseRolesParams,
 };
