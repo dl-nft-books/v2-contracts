@@ -35,7 +35,7 @@ interface IRoleManager {
      * @param roles_ The array of roles to grant.
      * @param accounts_ The array of accounts to grant the roles to.
      */
-    function grantRoleBatch(bytes32[] calldata roles_, address[][] calldata accounts_) external;
+    function grantRolesBatch(bytes32[] calldata roles_, address[][] calldata accounts_) external;
 
     /**
      * @notice The function to retrieve the ADMINISTRATOR_ROLE role.

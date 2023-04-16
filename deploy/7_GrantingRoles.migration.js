@@ -11,7 +11,7 @@ module.exports = async (deployer, logger) => {
   const roleManager = await RoleManager.at(await contractsRegistry.getRoleManagerContract());
 
   logger.logTransaction(
-    await roleManager.grantRoleBatch(config.allRoles, config.rolesMembers),
+    await roleManager.grantRolesBatch(config.allRoles, config.rolesMembers),
     "Add initial role members"
   );
 };

@@ -52,20 +52,22 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
 
     function removeRoles(bytes32[] memory rolesToRemove_) external onlyRole(ADMINISTRATOR_ROLE) {
         for (uint256 i = 0; i < rolesToRemove_.length; i++) {
+            require(isRoleExists(rolesToRemove_[i]), "RoleManager: Role does not exists");
+
             delete _rolesInfo[rolesToRemove_[i]].roleName;
 
             _supportedRoles.remove(rolesToRemove_[i]);
         }
     }
 
-    function grantRoleBatch(
+    function grantRolesBatch(
         bytes32[] calldata roles_,
         address[][] calldata accounts_
     ) public override {
         _updateRolesMembersBatch(roles_, accounts_, _grantRole);
     }
 
-    function revokeRolesBatch(bytes32[] calldata roles_, address[][] calldata accounts_) public {
+    function revokeRolesBatch(bytes32[] calldata roles_, address[][] calldata accounts_) external {
         _updateRolesMembersBatch(roles_, accounts_, _revokeRole);
     }
 
