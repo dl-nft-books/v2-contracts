@@ -1,0 +1,53 @@
+{
+    "baseTokenContractsURI": "baseURI",
+    "roles": [
+        {
+            "roleKey": "ADMINISTRATOR_ROLE",
+            "roleAdminKey": "ADMINISTRATOR_ROLE",
+            "roleName": "Administrator",
+            "members": []
+        },
+        {
+            "roleKey": "ROLE_SUPERVISOR",
+            "roleAdminKey": "ADMINISTRATOR_ROLE",
+            "roleName": "Role Supervisor",
+            "members": []
+        },
+        {
+            "roleKey": "TOKEN_FACTORY_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Token Factory Manager",
+            "members": []
+        },
+        {
+            "roleKey": "TOKEN_REGISTRY_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Token Registry Manager",
+            "members": []
+        },
+        {
+            "roleKey": "TOKEN_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Token Manager",
+            "members": []
+        },
+        {
+            "roleKey": "WITHDRAWAL_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Withdrawal Manager",
+            "members": []
+        },
+        {
+            "roleKey": "MARKETPLACE_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Marketplace Manager",
+            "members": []
+        },
+        {
+            "roleKey": "SIGNATURE_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Signature Manager",
+            "members": []
+        }
+    ]
+}

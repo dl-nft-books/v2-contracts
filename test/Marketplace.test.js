@@ -2,6 +2,7 @@ const { assert } = require("chai");
 const { wei, accounts, toBN } = require("../scripts/utils/utils");
 const { ZERO_ADDR, PRECISION, PERCENTAGE_100 } = require("../scripts/utils/constants");
 const { signBuy, signBuyWithRequest } = require("./helpers/signatures");
+const { parseConfig } = require("../deploy/helpers/deployHelper");
 const { getCurrentBlockTime, setNextBlockTime } = require("./helpers/block-helper");
 const { web3 } = require("hardhat");
 
@@ -153,7 +154,8 @@ describe("Marketplace", () => {
     const roleManager = await RoleManager.at(await contractsRegistry.getRoleManagerContract());
     marketplace = await Marketplace.at(await contractsRegistry.getMarketplaceContract());
 
-    await roleManager.__RoleManager_init();
+    const config = parseConfig("./test/data/config.test.json");
+    await roleManager.__RoleManager_init(config.roleInitParams);
 
     await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_FACTORY_NAME());
     await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_REGISTRY_NAME());
