@@ -29,11 +29,11 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
     mapping(address => EnumerableSet.Bytes32Set) internal _userRoles;
 
     function __RoleManager_init(
-        RoleParams[] memory roleInitParams_
+        BaseRoleData[] memory rolesInitData_
     ) external override initializer {
         __AccessControl_init();
 
-        _updateRolesParams(roleInitParams_);
+        _updateRolesParams(rolesInitData_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMINISTRATOR_ROLE, msg.sender);
@@ -45,9 +45,9 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
     ) public override dependant {}
 
     function updateRolesParams(
-        RoleParams[] memory roleParams_
+        BaseRoleData[] memory rolesData_
     ) external onlyRole(ADMINISTRATOR_ROLE) {
-        _updateRolesParams(roleParams_);
+        _updateRolesParams(rolesData_);
     }
 
     function removeRoles(bytes32[] memory rolesToRemove_) external onlyRole(ADMINISTRATOR_ROLE) {
@@ -127,11 +127,22 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
         return getRolesDetailedInfo(getAllSupportedRoles());
     }
 
+    function getAllRolesBaseInfo() external view returns (BaseRoleData[] memory) {
+        return getRolesBaseInfo(getAllSupportedRoles());
+    }
+
     function getRolesDetailedInfoPart(
         uint256 offset_,
         uint256 limit_
     ) external view returns (DetailedRoleInfo[] memory) {
         return getRolesDetailedInfo(getSupportedRolesPart(offset_, limit_));
+    }
+
+    function getRolesBaseInfoPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (BaseRoleData[] memory) {
+        return getRolesBaseInfo(getSupportedRolesPart(offset_, limit_));
     }
 
     function getAllSupportedRoles() public view returns (bytes32[] memory) {
@@ -152,11 +163,19 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
 
         for (uint256 i = 0; i < roles_.length; i++) {
             rolesDetailedInfo_[i] = DetailedRoleInfo(
-                _rolesInfo[roles_[i]].roleName,
-                roles_[i],
-                getRoleAdmin(roles_[i]),
+                _getRoleBaseInfo(roles_[i]),
                 getRoleMembers(roles_[i])
             );
+        }
+    }
+
+    function getRolesBaseInfo(
+        bytes32[] memory roles_
+    ) public view returns (BaseRoleData[] memory rolesBaseInfo_) {
+        rolesBaseInfo_ = new BaseRoleData[](roles_.length);
+
+        for (uint256 i = 0; i < roles_.length; i++) {
+            rolesBaseInfo_[i] = _getRoleBaseInfo(roles_[i]);
         }
     }
 
@@ -209,18 +228,18 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
         _userRoles[account].remove(role_);
     }
 
-    function _updateRolesParams(RoleParams[] memory roleParams_) internal {
-        for (uint256 i = 0; i < roleParams_.length; i++) {
-            RoleParams memory currentParams_ = roleParams_[i];
+    function _updateRolesParams(BaseRoleData[] memory rolesData_) internal {
+        for (uint256 i = 0; i < rolesData_.length; i++) {
+            BaseRoleData memory currentData_ = rolesData_[i];
 
             require(
-                bytes(currentParams_.roleName).length > 0,
+                bytes(currentData_.roleName).length > 0,
                 "RoleManager: Role name cannot be an empty string"
             );
 
-            _setRoleAdmin(currentParams_.role, currentParams_.roleAdmin);
-            _rolesInfo[currentParams_.role].roleName = currentParams_.roleName;
-            _supportedRoles.add(currentParams_.role);
+            _setRoleAdmin(currentData_.role, currentData_.roleAdmin);
+            _rolesInfo[currentData_.role].roleName = currentData_.roleName;
+            _supportedRoles.add(currentData_.role);
         }
     }
 
@@ -247,6 +266,10 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
         for (uint256 i = 0; i < accounts_.length; i++) {
             _updateFunc(role_, accounts_[i]);
         }
+    }
+
+    function _getRoleBaseInfo(bytes32 role_) internal view returns (BaseRoleData memory) {
+        return BaseRoleData(role_, getRoleAdmin(role_), _rolesInfo[role_].roleName);
     }
 
     function _onlyNotLastAdministrator(bytes32 role_) internal view {

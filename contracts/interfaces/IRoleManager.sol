@@ -13,13 +13,11 @@ interface IRoleManager {
     }
 
     struct DetailedRoleInfo {
-        string roleName;
-        bytes32 role;
-        bytes32 roleAdmin;
+        BaseRoleData baseRoleData;
         address[] members;
     }
 
-    struct RoleParams {
+    struct BaseRoleData {
         bytes32 role;
         bytes32 roleAdmin;
         string roleName;
@@ -28,7 +26,7 @@ interface IRoleManager {
     /**
      * @notice The init function for the RoleManager contract.
      */
-    function __RoleManager_init(RoleParams[] memory roleInitParams_) external;
+    function __RoleManager_init(BaseRoleData[] memory roleInitParams_) external;
 
     /**
      * @notice The function to grant multiple roles to multiple accounts.
