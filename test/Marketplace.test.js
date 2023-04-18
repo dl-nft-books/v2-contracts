@@ -63,7 +63,7 @@ describe("Marketplace", () => {
   const NFTRequestStatus = {
     NONE: 0,
     PENDING: 1,
-    MINTED: 2,
+    ACCEPTED: 2,
     CANCELED: 3,
   };
 
@@ -1799,7 +1799,7 @@ describe("Marketplace", () => {
     it("should revert if status of request is not valid", async () => {
       const sig = signBuyWithRequestTest({});
 
-      await marketplace.buyTokenWithRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
+      await marketplace.acceptRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
         from: USER1,
       });
 
@@ -1810,7 +1810,7 @@ describe("Marketplace", () => {
     });
   });
 
-  describe("buyTokenWithRequest()", () => {
+  describe("acceptRequest()", () => {
     const tokenId = 13;
     let tokenContract;
     let requestId;
@@ -1846,7 +1846,7 @@ describe("Marketplace", () => {
     it("should buy token with NFT request", async () => {
       const sig = signBuyWithRequestTest({});
 
-      const tx = await marketplace.buyTokenWithRequest(
+      const tx = await marketplace.acceptRequest(
         [requestId, 0, defaultEndTime, defaultTokenURI],
         [sig.r, sig.s, sig.v],
         { from: USER1 }
@@ -1865,7 +1865,7 @@ describe("Marketplace", () => {
       assert.equal(tx.logs[0].args.nftRequestInfo.nftContract, nft.address);
       assert.equal(tx.logs[0].args.nftRequestInfo.nftId, tokenId);
       assert.equal(tx.logs[0].args.nftRequestInfo.requester, USER1);
-      assert.equal(tx.logs[0].args.nftRequestInfo.status, NFTRequestStatus.MINTED);
+      assert.equal(tx.logs[0].args.nftRequestInfo.status, NFTRequestStatus.ACCEPTED);
 
       const token = await ERC721MintableToken.at(tokenContract);
       assert.equal(await token.tokenURI(0), defaultBaseURI + defaultTokenURI);
@@ -1886,7 +1886,7 @@ describe("Marketplace", () => {
 
       const sig = signBuyWithRequestTest({});
 
-      const tx = await marketplace.buyTokenWithRequest(
+      const tx = await marketplace.acceptRequest(
         [requestId, 0, defaultEndTime, defaultTokenURI],
         [sig.r, sig.s, sig.v],
         { from: USER1 }
@@ -1905,7 +1905,7 @@ describe("Marketplace", () => {
       assert.equal(tx.logs[0].args.nftRequestInfo.nftContract, nft.address);
       assert.equal(tx.logs[0].args.nftRequestInfo.nftId, tokenId);
       assert.equal(tx.logs[0].args.nftRequestInfo.requester, USER1);
-      assert.equal(tx.logs[0].args.nftRequestInfo.status, NFTRequestStatus.MINTED);
+      assert.equal(tx.logs[0].args.nftRequestInfo.status, NFTRequestStatus.ACCEPTED);
 
       const token = await ERC721MintableToken.at(tokenContract);
       assert.equal(await token.tokenURI(0), defaultBaseURI + defaultTokenURI);
@@ -1925,7 +1925,7 @@ describe("Marketplace", () => {
 
       const sig = signBuyWithRequestTest({});
 
-      const tx = await marketplace.buyTokenWithRequest(
+      const tx = await marketplace.acceptRequest(
         [requestId, 0, defaultEndTime, defaultTokenURI],
         [sig.r, sig.s, sig.v],
         { from: USER1 }
@@ -1944,7 +1944,7 @@ describe("Marketplace", () => {
       assert.equal(tx.logs[0].args.nftRequestInfo.nftContract, nft.address);
       assert.equal(tx.logs[0].args.nftRequestInfo.nftId, tokenId);
       assert.equal(tx.logs[0].args.nftRequestInfo.requester, USER1);
-      assert.equal(tx.logs[0].args.nftRequestInfo.status, NFTRequestStatus.MINTED);
+      assert.equal(tx.logs[0].args.nftRequestInfo.status, NFTRequestStatus.ACCEPTED);
 
       const token = await ERC721MintableToken.at(tokenContract);
       assert.equal(await token.tokenURI(0), defaultBaseURI + defaultTokenURI);
@@ -1955,7 +1955,7 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       await truffleAssert.reverts(
-        marketplace.buyTokenWithRequest([requestId, 1, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
+        marketplace.acceptRequest([requestId, 1, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
           from: USER1,
         }),
         "Marketplace: Invalid signature."
@@ -1968,7 +1968,7 @@ describe("Marketplace", () => {
       await setNextBlockTime(defaultEndTime.plus(100).toNumber());
 
       await truffleAssert.reverts(
-        marketplace.buyTokenWithRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
+        marketplace.acceptRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
           from: USER1,
         }),
         "Marketplace: Signature expired."
@@ -1979,7 +1979,7 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       await truffleAssert.reverts(
-        marketplace.buyTokenWithRequest([requestId + 1, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
+        marketplace.acceptRequest([requestId + 1, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
           from: USER1,
         }),
         "Marketplace: Request ID is not valid."
@@ -1990,7 +1990,7 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       await truffleAssert.reverts(
-        marketplace.buyTokenWithRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
+        marketplace.acceptRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
           from: NOTHING,
         }),
         "Marketplace: Sender is not the requester."
@@ -2011,7 +2011,7 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       await truffleAssert.reverts(
-        marketplace.buyTokenWithRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
+        marketplace.acceptRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
           from: USER1,
         }),
         "Marketplace: Token is disabled."
@@ -2032,7 +2032,7 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       await truffleAssert.reverts(
-        marketplace.buyTokenWithRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
+        marketplace.acceptRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
           from: USER1,
         }),
         "Marketplace: This token cannot be purchased with NFT."
@@ -2085,10 +2085,10 @@ describe("Marketplace", () => {
         requestId = await marketplace.createNFTRequest.call(nft.address, (i + 1) * 1000, addr, { from: USER1 });
         await marketplace.createNFTRequest(nft.address, (i + 1) * 1000, addr, { from: USER1 });
         const sig = signBuyWithRequestTest({ requestId: requestId.toNumber() });
-        await marketplace.buyTokenWithRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
+        await marketplace.acceptRequest([requestId, 0, defaultEndTime, defaultTokenURI], [sig.r, sig.s, sig.v], {
           from: USER1,
         });
-        requests.push([addr, nft.address, ((i + 1) * 1000).toString(), USER1, NFTRequestStatus.MINTED.toString()]);
+        requests.push([addr, nft.address, ((i + 1) * 1000).toString(), USER1, NFTRequestStatus.ACCEPTED.toString()]);
       }
 
       assert.equal((await marketplace.getNFTRequestsCount()).toString(), "15");

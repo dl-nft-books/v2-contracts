@@ -7,11 +7,9 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgra
 import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
 
 import "../interfaces/IContractsRegistry.sol";
-import "../interfaces/IRoleManager.sol";
 import "../interfaces/IMarketplace.sol";
 import "../interfaces/tokens/IERC721MintableToken.sol";
 
-// ReentrancyGuardUpgradeable
 contract ERC721MintableToken is
     IERC721MintableToken,
     AbstractDependant,
@@ -20,51 +18,52 @@ contract ERC721MintableToken is
 {
     uint256 public nextTokenId;
 
-    string internal _tokenName;
-    string internal _tokenSymbol;
+    address internal _marketplace;
 
-    IRoleManager private _roleManager;
-    address private _marketplace;
-
-    mapping(uint256 => string) private _tokenURIs;
-    mapping(string => bool) private _existingTokenURIs;
+    mapping(uint256 => string) internal _tokenURIs;
+    mapping(string => bool) internal _existingTokenURIs;
 
     modifier onlyMarketplace() {
         _onlyMarketplace();
         _;
     }
 
-    modifier onlyTokenManager() {
-        _onlyTokenManager();
-        _;
+    function __ERC721MintableToken_init(
+        string calldata name_,
+        string calldata symbol_
+    ) external override initializer {
+        __ERC721_init(name_, symbol_);
     }
 
-    function mint(address to_, uint256 tokenId_, string memory uri_) public onlyMarketplace {
-        require(!_exists(tokenId_), "ERC721MintableToken: Token with such id already exists.");
+    function setDependencies(
+        address contractsRegistry_,
+        bytes calldata
+    ) external override dependant {
+        IContractsRegistry registry_ = IContractsRegistry(contractsRegistry_);
 
-        require(tokenId_ == nextTokenId++, "ERC721MintableToken: Token id is not valid.");
+        _marketplace = registry_.getMarketplaceContract();
+    }
+
+    function mint(address to_, TokenMintData memory tokenData_) public onlyMarketplace {
+        require(
+            !_exists(tokenData_.tokenId),
+            "ERC721MintableToken: Token with such id already exists."
+        );
 
         require(
-            !_existingTokenURIs[uri_],
+            tokenData_.tokenId == nextTokenId++,
+            "ERC721MintableToken: Token id is not valid."
+        );
+
+        require(
+            !_existingTokenURIs[tokenData_.tokenURI],
             "ERC721MintableToken: Token with such URI already exists."
         );
 
-        _mint(to_, tokenId_);
+        _mint(to_, tokenData_.tokenId);
 
-        _tokenURIs[tokenId_] = uri_;
-        _existingTokenURIs[uri_] = true;
-    }
-
-    function burn(uint256 tokenId_) public onlyTokenManager {
-        _burn(tokenId_);
-    }
-
-    function name() public view override returns (string memory) {
-        return _tokenName;
-    }
-
-    function symbol() public view override returns (string memory) {
-        return _tokenSymbol;
+        _tokenURIs[tokenData_.tokenId] = tokenData_.tokenURI;
+        _existingTokenURIs[tokenData_.tokenURI] = true;
     }
 
     function tokenURI(uint256 tokenId_) public view override returns (string memory) {
@@ -83,41 +82,6 @@ contract ERC721MintableToken is
         return base_;
     }
 
-    function __ERC721MintableToken_init(
-        string calldata name_,
-        string calldata symbol_
-    ) external override initializer {
-        __ERC721_init(name_, symbol_);
-
-        _tokenName = name_;
-        _tokenSymbol = symbol_;
-    }
-
-    function setDependencies(
-        address contractsRegistry_,
-        bytes calldata
-    ) external override dependant {
-        IContractsRegistry registry_ = IContractsRegistry(contractsRegistry_);
-
-        _roleManager = IRoleManager(registry_.getRoleManagerContract());
-        _marketplace = registry_.getMarketplaceContract();
-    }
-
-    function updateTokenParams(
-        string memory name_,
-        string memory symbol_
-    ) external onlyMarketplace {
-        _tokenName = name_;
-        _tokenSymbol = symbol_;
-    }
-
-    function _burn(uint256 tokenId_) internal override {
-        super._burn(tokenId_);
-
-        delete _existingTokenURIs[_tokenURIs[tokenId_]];
-        delete _tokenURIs[tokenId_];
-    }
-
     function getUserTokenIDs(
         address user_
     ) external view override returns (uint256[] memory tokens_) {
@@ -130,18 +94,18 @@ contract ERC721MintableToken is
         }
     }
 
+    function _burn(uint256 tokenId_) internal override {
+        super._burn(tokenId_);
+
+        delete _existingTokenURIs[_tokenURIs[tokenId_]];
+        delete _tokenURIs[tokenId_];
+    }
+
     function _baseURI() internal view override returns (string memory) {
         return IMarketplace(_marketplace).baseTokenContractsURI();
     }
 
     function _onlyMarketplace() internal view {
         require(_marketplace == msg.sender, "ERC721MintableToken: Caller is not a marketplace.");
-    }
-
-    function _onlyTokenManager() internal view {
-        require(
-            _roleManager.isTokenManager(msg.sender),
-            "ERC721MintableToken: Caller is not a token manager."
-        );
     }
 }
