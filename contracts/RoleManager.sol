@@ -14,14 +14,14 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
     using Paginator for EnumerableSet.Bytes32Set;
     using EnumerableSet for *;
 
-    bytes32 public constant override ADMINISTRATOR_ROLE = keccak256("ADMINISTRATOR_ROLE");
-    bytes32 public constant override TOKEN_FACTORY_MANAGER = keccak256("TOKEN_FACTORY_MANAGER");
-    bytes32 public constant override TOKEN_REGISTRY_MANAGER = keccak256("TOKEN_REGISTRY_MANAGER");
-    bytes32 public constant override TOKEN_MANAGER = keccak256("TOKEN_MANAGER");
-    bytes32 public constant override ROLE_SUPERVISOR = keccak256("ROLE_SUPERVISOR");
-    bytes32 public constant override WITHDRAWAL_MANAGER = keccak256("WITHDRAWAL_MANAGER");
-    bytes32 public constant override MARKETPLACE_MANAGER = keccak256("MARKETPLACE_MANAGER");
-    bytes32 public constant override SIGNATURE_MANAGER = keccak256("SIGNATURE_MANAGER");
+    bytes32 public constant ADMINISTRATOR_ROLE = keccak256("ADMINISTRATOR_ROLE");
+    bytes32 public constant TOKEN_FACTORY_MANAGER = keccak256("TOKEN_FACTORY_MANAGER");
+    bytes32 public constant TOKEN_REGISTRY_MANAGER = keccak256("TOKEN_REGISTRY_MANAGER");
+    bytes32 public constant TOKEN_MANAGER = keccak256("TOKEN_MANAGER");
+    bytes32 public constant ROLE_SUPERVISOR = keccak256("ROLE_SUPERVISOR");
+    bytes32 public constant WITHDRAWAL_MANAGER = keccak256("WITHDRAWAL_MANAGER");
+    bytes32 public constant MARKETPLACE_MANAGER = keccak256("MARKETPLACE_MANAGER");
+    bytes32 public constant SIGNATURE_MANAGER = keccak256("SIGNATURE_MANAGER");
 
     EnumerableSet.Bytes32Set internal _supportedRoles;
 
@@ -46,11 +46,13 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
 
     function updateRolesParams(
         BaseRoleData[] memory rolesData_
-    ) external onlyRole(ADMINISTRATOR_ROLE) {
+    ) external override onlyRole(ADMINISTRATOR_ROLE) {
         _updateRolesParams(rolesData_);
     }
 
-    function removeRoles(bytes32[] memory rolesToRemove_) external onlyRole(ADMINISTRATOR_ROLE) {
+    function removeRoles(
+        bytes32[] memory rolesToRemove_
+    ) external override onlyRole(ADMINISTRATOR_ROLE) {
         for (uint256 i = 0; i < rolesToRemove_.length; i++) {
             require(isRoleExists(rolesToRemove_[i]), "RoleManager: Role does not exists");
 
@@ -67,15 +69,18 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
         _updateRolesMembersBatch(roles_, accounts_, _grantRole);
     }
 
-    function revokeRolesBatch(bytes32[] calldata roles_, address[][] calldata accounts_) external {
+    function revokeRolesBatch(
+        bytes32[] calldata roles_,
+        address[][] calldata accounts_
+    ) external override {
         _updateRolesMembersBatch(roles_, accounts_, _revokeRole);
     }
 
-    function grantRoles(bytes32 role_, address[] calldata accounts_) external {
+    function grantRoles(bytes32 role_, address[] calldata accounts_) external override {
         _updateRolesMembers(role_, accounts_, _grantRole);
     }
 
-    function revokeRoles(bytes32 role_, address[] calldata accounts_) external {
+    function revokeRoles(bytes32 role_, address[] calldata accounts_) external override {
         _updateRolesMembers(role_, accounts_, _revokeRole);
     }
 
@@ -119,46 +124,46 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
         return _userRoles[account_].length() > 0;
     }
 
-    function getSupportedRolesCount() external view returns (uint256) {
+    function getSupportedRolesCount() external view override returns (uint256) {
         return _supportedRoles.length();
     }
 
-    function getAllRolesDetailedInfo() external view returns (DetailedRoleInfo[] memory) {
+    function getAllRolesDetailedInfo() external view override returns (DetailedRoleInfo[] memory) {
         return getRolesDetailedInfo(getAllSupportedRoles());
     }
 
-    function getAllRolesBaseInfo() external view returns (BaseRoleData[] memory) {
+    function getAllRolesBaseInfo() external view override returns (BaseRoleData[] memory) {
         return getRolesBaseInfo(getAllSupportedRoles());
     }
 
     function getRolesDetailedInfoPart(
         uint256 offset_,
         uint256 limit_
-    ) external view returns (DetailedRoleInfo[] memory) {
+    ) external view override returns (DetailedRoleInfo[] memory) {
         return getRolesDetailedInfo(getSupportedRolesPart(offset_, limit_));
     }
 
     function getRolesBaseInfoPart(
         uint256 offset_,
         uint256 limit_
-    ) external view returns (BaseRoleData[] memory) {
+    ) external view override returns (BaseRoleData[] memory) {
         return getRolesBaseInfo(getSupportedRolesPart(offset_, limit_));
     }
 
-    function getAllSupportedRoles() public view returns (bytes32[] memory) {
+    function getAllSupportedRoles() public view override returns (bytes32[] memory) {
         return _supportedRoles.values();
     }
 
     function getSupportedRolesPart(
         uint256 offset_,
         uint256 limit_
-    ) public view returns (bytes32[] memory) {
+    ) public view override returns (bytes32[] memory) {
         return _supportedRoles.part(offset_, limit_);
     }
 
     function getRolesDetailedInfo(
         bytes32[] memory roles_
-    ) public view returns (DetailedRoleInfo[] memory rolesDetailedInfo_) {
+    ) public view override returns (DetailedRoleInfo[] memory rolesDetailedInfo_) {
         rolesDetailedInfo_ = new DetailedRoleInfo[](roles_.length);
 
         for (uint256 i = 0; i < roles_.length; i++) {
@@ -171,7 +176,7 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
 
     function getRolesBaseInfo(
         bytes32[] memory roles_
-    ) public view returns (BaseRoleData[] memory rolesBaseInfo_) {
+    ) public view override returns (BaseRoleData[] memory rolesBaseInfo_) {
         rolesBaseInfo_ = new BaseRoleData[](roles_.length);
 
         for (uint256 i = 0; i < roles_.length; i++) {
@@ -179,15 +184,15 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
         }
     }
 
-    function getRoleMembersCount(bytes32 role_) public view returns (uint256) {
+    function getRoleMembersCount(bytes32 role_) public view override returns (uint256) {
         return _rolesInfo[role_].roleMembers.length();
     }
 
-    function getRoleMembers(bytes32 role_) public view returns (address[] memory) {
+    function getRoleMembers(bytes32 role_) public view override returns (address[] memory) {
         return _rolesInfo[role_].roleMembers.values();
     }
 
-    function isRoleExists(bytes32 role_) public view returns (bool) {
+    function isRoleExists(bytes32 role_) public view override returns (bool) {
         return _supportedRoles.contains(role_);
     }
 
@@ -204,6 +209,10 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
         return false;
     }
 
+    /**
+     * @dev Return false for an unsupported role
+     * @inheritdoc IAccessControlUpgradeable
+     */
     function hasRole(bytes32 role_, address account_) public view override returns (bool) {
         if (!isRoleExists(role_)) {
             return false;
