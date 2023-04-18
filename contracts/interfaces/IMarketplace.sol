@@ -236,6 +236,8 @@ interface IMarketplace {
      */
     event PaidTokensWithdrawn(address indexed tokenAddr, address recipient, uint256 amount);
 
+    event NFTTokensWithdrawn(address indexed nftAddr, address recipient, uint256[] tokenIDs);
+
     /**
      * @notice This event is emitted when the URI of the base token contracts has been updated
      * @param newBaseTokenContractsURI the new base token contracts URI string

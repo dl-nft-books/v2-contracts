@@ -169,6 +169,8 @@ contract Marketplace is
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             _tranferNFT(nft_, address(this), recipient_, tokenIds_[i]);
         }
+
+        emit NFTTokensWithdrawn(address(nft_), recipient_, tokenIds_);
     }
 
     function buyTokenWithETH(
