@@ -1,5 +1,7 @@
 const { assert } = require("chai");
 const { accounts } = require("../scripts/utils/utils");
+const { parseConfig } = require("../deploy/helpers/deployHelper");
+
 const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
 
@@ -38,7 +40,6 @@ describe("TokenRegistry", () => {
     const _roleManager = await RoleManager.new();
 
     await contractsRegistry.__OwnableContractsRegistry_init();
-    await _roleManager.__RoleManager_init();
 
     await contractsRegistry.addContract(await contractsRegistry.TOKEN_FACTORY_NAME(), FACTORY);
     await contractsRegistry.addContract(await contractsRegistry.TOKEN_REGISTRY_NAME(), _tokenRegistry.address);
@@ -46,9 +47,11 @@ describe("TokenRegistry", () => {
     await contractsRegistry.addContract(await contractsRegistry.ROLE_MANAGER_NAME(), _roleManager.address);
 
     tokenRegistry = await TokenRegistry.at(await contractsRegistry.getTokenRegistryContract());
-    // tokenFactory = await TokenFactory.at(await contractsRegistry.getTokenFactoryContract());
+    roleManager = await RoleManager.at(await contractsRegistry.getRoleManagerContract());
 
-    // await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_FACTORY_NAME());
+    const config = parseConfig("./test/data/config.test.json");
+    await roleManager.__RoleManager_init(config.roleInitParams);
+
     await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_REGISTRY_NAME());
     await contractsRegistry.injectDependencies(await contractsRegistry.MARKETPLACE_NAME());
     await contractsRegistry.injectDependencies(await contractsRegistry.ROLE_MANAGER_NAME());
