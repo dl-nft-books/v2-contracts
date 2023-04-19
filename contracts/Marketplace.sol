@@ -165,7 +165,7 @@ contract Marketplace is
         IERC721 nft_,
         address recipient_,
         uint256[] memory tokenIds_
-    ) external onlyWithdrawalManager {
+    ) external override onlyWithdrawalManager {
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             _tranferNFT(nft_, address(this), recipient_, tokenIds_[i]);
         }
@@ -386,11 +386,13 @@ contract Marketplace is
         }
     }
 
-    function getAllPendingRequestsCount() external view returns (uint256) {
+    function getAllPendingRequestsCount() external view override returns (uint256) {
         return _allPendingRequests.length();
     }
 
-    function getUserPendingRequestsCount(address userAddr_) external view returns (uint256) {
+    function getUserPendingRequestsCount(
+        address userAddr_
+    ) external view override returns (uint256) {
         return _userPendingRequests[userAddr_].length();
     }
 
@@ -456,7 +458,7 @@ contract Marketplace is
 
     function getNFTRequestsInfo(
         uint256[] memory requestsId_
-    ) public view returns (NFTRequestInfo[] memory nftRequestsInfo_) {
+    ) public view override returns (NFTRequestInfo[] memory nftRequestsInfo_) {
         nftRequestsInfo_ = new NFTRequestInfo[](requestsId_.length);
 
         for (uint256 i; i < requestsId_.length; i++) {
@@ -474,7 +476,7 @@ contract Marketplace is
     function getPendingRequestsPart(
         uint256 offset_,
         uint256 limit_
-    ) public view returns (uint256[] memory) {
+    ) public view override returns (uint256[] memory) {
         return _allPendingRequests.part(offset_, limit_);
     }
 
@@ -482,7 +484,7 @@ contract Marketplace is
         address userAddr_,
         uint256 offset_,
         uint256 limit_
-    ) public view returns (uint256[] memory) {
+    ) public view override returns (uint256[] memory) {
         return _userPendingRequests[userAddr_].part(offset_, limit_);
     }
 
