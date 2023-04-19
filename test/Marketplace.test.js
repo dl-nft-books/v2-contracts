@@ -45,10 +45,12 @@ describe("Marketplace", () => {
 
   let OWNER;
   let USER1;
+  let USER2;
   let NOTHING;
 
   let marketplace;
   let contractsRegistry;
+  let tokenRegistry;
   let paymentToken;
   let nft;
 
@@ -71,6 +73,7 @@ describe("Marketplace", () => {
 
   function signBuyTest({
     privateKey = OWNER_PK,
+    tokenRecipient = USER1,
     tokenContract = "",
     futureTokenId = 0,
     paymentTokenAddress = paymentToken.address,
@@ -87,6 +90,7 @@ describe("Marketplace", () => {
     };
 
     const buy = {
+      tokenRecipient: tokenRecipient,
       tokenContract: tokenContract,
       futureTokenId: futureTokenId,
       paymentTokenAddress: paymentTokenAddress,
@@ -112,6 +116,7 @@ describe("Marketplace", () => {
 
   function signBuyWithRequestTest({
     privateKey = OWNER_PK,
+    tokenRecipient = USER1,
     requestId = 0,
     futureTokenId = 0,
     endTimestamp = defaultEndTime.toFixed(),
@@ -125,6 +130,7 @@ describe("Marketplace", () => {
     };
 
     const buyWithRequest = {
+      tokenRecipient: tokenRecipient,
       requestId: requestId,
       futureTokenId: futureTokenId,
       endTimestamp: endTimestamp,
@@ -164,6 +170,7 @@ describe("Marketplace", () => {
   before("setup", async () => {
     OWNER = await accounts(0);
     USER1 = await accounts(1);
+    USER2 = await accounts(2);
     NOTHING = await accounts(3);
 
     contractsRegistry = await ContractsRegistry.new();
@@ -179,8 +186,8 @@ describe("Marketplace", () => {
     await contractsRegistry.addProxyContract(await contractsRegistry.MARKETPLACE_NAME(), _marketplace.address);
     await contractsRegistry.addProxyContract(await contractsRegistry.ROLE_MANAGER_NAME(), _roleManager.address);
 
-    const tokenRegistry = await TokenRegistry.at(await contractsRegistry.getTokenRegistryContract());
     const roleManager = await RoleManager.at(await contractsRegistry.getRoleManagerContract());
+    tokenRegistry = await TokenRegistry.at(await contractsRegistry.getTokenRegistryContract());
     marketplace = await Marketplace.at(await contractsRegistry.getMarketplaceContract());
 
     const config = parseConfig("./test/data/config.test.json");
@@ -191,7 +198,7 @@ describe("Marketplace", () => {
     await contractsRegistry.injectDependencies(await contractsRegistry.MARKETPLACE_NAME());
     await contractsRegistry.injectDependencies(await contractsRegistry.ROLE_MANAGER_NAME());
 
-    const tokenName = [await _tokenRegistry.TOKEN_POOL(), await _tokenRegistry.VOUCHER_POOL()];
+    const tokenName = [await _tokenRegistry.TOKEN_CONTRACT(), await _tokenRegistry.VOUCHER_TOKEN()];
     const tokenAddr = [(await ERC721MintableToken.new()).address, (await Voucher.new()).address];
     await tokenRegistry.setNewImplementations(tokenName, tokenAddr);
 
@@ -269,6 +276,31 @@ describe("Marketplace", () => {
       const token = await ERC721MintableToken.at(tx.logs[0].args.tokenContract);
       assert.equal(await token.name(), name);
       assert.equal(await token.symbol(), symbol);
+    });
+
+    it("should correctly add token with voucher", async () => {
+      const newVoucherTokensAmount = wei(1);
+
+      await marketplace.addToken(name, symbol, [
+        pricePerOneToken,
+        minNFTFloorPrice,
+        newVoucherTokensAmount,
+        voucherTokenContract,
+        fundsRecipient,
+        isNFTBuyable,
+        isDisabled,
+        true,
+      ]);
+
+      const voucherContract = await Voucher.at(
+        (
+          await marketplace.getDetailedTokenInfoPart(0, 10)
+        )[0].tokenParams.voucherTokenContract
+      );
+
+      assert.equal(await voucherContract.name(), name + "_Voucher");
+      assert.equal(await voucherContract.symbol(), symbol + "_V");
+      assert.isTrue(await tokenRegistry.isVoucherToken(voucherContract.address));
     });
 
     it("should revert if caller is not a marketplace manager", async () => {
@@ -493,7 +525,12 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithERC20(
-          [tokenContract.address, [paymentToken.address, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+          [
+            tokenContract.address,
+            USER1,
+            [paymentToken.address, tokenPrice, defaultDiscountValue, 0],
+            [0, defaultTokenURI],
+          ],
           [defaultEndTime, sig.r, sig.s, sig.v],
           {
             from: USER1,
@@ -513,7 +550,7 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithNFT(
-          [tokenContract.address, [nft.address, nftFloorPrice, defaultDiscountValue, tokenId], [0, newTokenURI]],
+          [tokenContract.address, USER1, [nft.address, nftFloorPrice, defaultDiscountValue, tokenId], [0, newTokenURI]],
           [defaultEndTime, sigNft.r, sigNft.s, sigNft.v],
           { from: USER1 }
         ),
@@ -523,7 +560,12 @@ describe("Marketplace", () => {
       await marketplace.unpause();
 
       await marketplace.buyTokenWithERC20(
-        [tokenContract.address, [paymentToken.address, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+        [
+          tokenContract.address,
+          USER1,
+          [paymentToken.address, tokenPrice, defaultDiscountValue, 0],
+          [0, defaultTokenURI],
+        ],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
@@ -531,7 +573,7 @@ describe("Marketplace", () => {
       );
 
       await marketplace.buyTokenWithNFT(
-        [tokenContract.address, [nft.address, nftFloorPrice, defaultDiscountValue, tokenId], [1, newTokenURI]],
+        [tokenContract.address, USER1, [nft.address, nftFloorPrice, defaultDiscountValue, tokenId], [1, newTokenURI]],
         [defaultEndTime, sigNft.r, sigNft.s, sigNft.v],
         { from: USER1 }
       );
@@ -586,7 +628,12 @@ describe("Marketplace", () => {
       const expectedTokensAmount = expectedPaymentAmount.idiv(wei(1, 10));
 
       await marketplace.buyTokenWithERC20(
-        [tokenContract.address, [paymentToken.address, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+        [
+          tokenContract.address,
+          USER1,
+          [paymentToken.address, tokenPrice, defaultDiscountValue, 0],
+          [0, defaultTokenURI],
+        ],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
@@ -621,7 +668,12 @@ describe("Marketplace", () => {
       const desiredWithdrawalAmount = expectedTokensAmount.idiv(2);
 
       await marketplace.buyTokenWithERC20(
-        [tokenContract.address, [paymentToken.address, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+        [
+          tokenContract.address,
+          USER1,
+          [paymentToken.address, tokenPrice, defaultDiscountValue, 0],
+          [0, defaultTokenURI],
+        ],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
@@ -679,7 +731,7 @@ describe("Marketplace", () => {
       const expectedCurrencyAmount = defaultPricePerOneToken.times(wei(1)).idiv(tokenPrice);
 
       await marketplace.buyTokenWithETH(
-        [tokenContract.address, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+        [tokenContract.address, USER1, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
@@ -712,7 +764,7 @@ describe("Marketplace", () => {
       const expectedCurrencyAmount = defaultPricePerOneToken.times(wei(1)).idiv(tokenPrice);
 
       await marketplace.buyTokenWithETH(
-        [tokenContract.address, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+        [tokenContract.address, USER1, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
@@ -761,7 +813,7 @@ describe("Marketplace", () => {
       const expectedCurrencyAmount = defaultPricePerOneToken.times(wei(1)).idiv(tokenPrice);
 
       await marketplace.buyTokenWithETH(
-        [tokenContract.address, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+        [tokenContract.address, USER1, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
@@ -791,6 +843,7 @@ describe("Marketplace", () => {
         ZERO_ADDR,
         true,
         false,
+        true,
       ]);
 
       tokenContract = await ERC721MintableToken.at((await marketplace.getTokenContractsPart(0, 10))[0]);
@@ -804,7 +857,12 @@ describe("Marketplace", () => {
       });
 
       await marketplace.buyTokenWithNFT(
-        [tokenContract.address, [nft.address, nftFloorPrice, defaultDiscountValue, tokenId], [0, defaultTokenURI]],
+        [
+          tokenContract.address,
+          USER1,
+          [nft.address, nftFloorPrice, defaultDiscountValue, tokenId],
+          [0, defaultTokenURI],
+        ],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
@@ -857,7 +915,7 @@ describe("Marketplace", () => {
       const balanceBefore = toBN(await web3.eth.getBalance(USER1));
 
       const tx = await marketplace.buyTokenWithETH(
-        [tokenContract.address, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+        [tokenContract.address, USER1, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
@@ -878,11 +936,11 @@ describe("Marketplace", () => {
 
       assert.equal(log.event, "TokenSuccessfullyPurchased");
 
-      assert.equal(log.args.recipient, USER1);
       assert.equal(toBN(log.args.mintedTokenPrice).toFixed(), defaultPricePerOneToken.toFixed());
       assert.equal(toBN(log.args.paidTokensAmount).toFixed(), expectedValueAmount.toFixed());
       assert.equal(toBN(log.args.paymentType).toFixed(), PaymentType.NATIVE);
 
+      assert.equal(log.args.buyParams.recipient, USER1);
       assert.equal(log.args.buyParams.tokenContract, tokenContract.address);
 
       assert.equal(log.args.buyParams.paymentDetails.paymentTokenAddress, ZERO_ADDR);
@@ -912,7 +970,7 @@ describe("Marketplace", () => {
       const balanceBefore = await web3.eth.getBalance(OWNER);
 
       await marketplace.buyTokenWithETH(
-        [tokenContract.address, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+        [tokenContract.address, USER1, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
@@ -932,7 +990,7 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithETH(
-          [ZERO_ADDR, [ZERO_ADDR, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
+          [ZERO_ADDR, USER1, [ZERO_ADDR, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
           [defaultEndTime, sig.r, sig.s, sig.v],
           {
             from: USER1,
@@ -964,7 +1022,7 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithETH(
-          [tokenContract.address, [tokenContract.address, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
+          [tokenContract.address, USER1, [tokenContract.address, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
           [defaultEndTime, sig.r, sig.s, sig.v],
           {
             from: USER1,
@@ -986,7 +1044,7 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithETH(
-          [tokenContract.address, [tokenContract.address, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
+          [tokenContract.address, USER1, [tokenContract.address, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
           [defaultEndTime, sig.r, sig.s, sig.v],
           {
             from: USER1,
@@ -1009,7 +1067,7 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithETH(
-          [tokenContract.address, [ZERO_ADDR, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
+          [tokenContract.address, USER1, [ZERO_ADDR, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
           [defaultEndTime, sig.r, sig.s, sig.v],
           {
             from: USER1,
@@ -1030,7 +1088,7 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithETH(
-          [tokenContract.address, [paymentToken.address, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
+          [tokenContract.address, USER1, [paymentToken.address, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
           [defaultEndTime, sig.r, sig.s, sig.v],
           {
             from: USER1,
@@ -1049,7 +1107,7 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithETH(
-          [tokenContract.address, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+          [tokenContract.address, USER1, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
           [defaultEndTime, sig.r, sig.s, sig.v],
           {
             from: USER1,
@@ -1080,19 +1138,24 @@ describe("Marketplace", () => {
     });
 
     it("should correctly buy token with ERC20", async () => {
-      const sig = signBuyTest({ tokenContract: tokenContract.address });
+      const sig = signBuyTest({ tokenRecipient: USER2, tokenContract: tokenContract.address });
 
       const expectedTokensAmount = defaultPricePerOneToken.times(wei(1)).idiv(tokenPrice);
 
       const tx = await marketplace.buyTokenWithERC20(
-        [tokenContract.address, [paymentToken.address, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+        [
+          tokenContract.address,
+          USER2,
+          [paymentToken.address, tokenPrice, defaultDiscountValue, 0],
+          [0, defaultTokenURI],
+        ],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
         }
       );
 
-      assert.equal(await tokenContract.ownerOf(0), USER1);
+      assert.equal(await tokenContract.ownerOf(0), USER2);
       assert.equal(
         (await paymentToken.balanceOf(USER1)).toFixed(),
         mintTokensAmount.minus(expectedTokensAmount).toFixed()
@@ -1102,11 +1165,11 @@ describe("Marketplace", () => {
 
       assert.equal(log.event, "TokenSuccessfullyPurchased");
 
-      assert.equal(log.args.recipient, USER1);
       assert.equal(toBN(log.args.mintedTokenPrice).toFixed(), defaultPricePerOneToken.toFixed());
       assert.equal(toBN(log.args.paidTokensAmount).toFixed(), expectedTokensAmount.toFixed());
       assert.equal(toBN(log.args.paymentType).toFixed(), PaymentType.ERC20);
 
+      assert.equal(log.args.buyParams.recipient, USER2);
       assert.equal(log.args.buyParams.tokenContract, tokenContract.address);
 
       assert.equal(log.args.buyParams.paymentDetails.paymentTokenAddress, paymentToken.address);
@@ -1130,7 +1193,7 @@ describe("Marketplace", () => {
         .idiv(PERCENTAGE_100);
 
       const tx = await marketplace.buyTokenWithERC20(
-        [tokenContract.address, [paymentToken.address, tokenPrice, discount, 0], [0, defaultTokenURI]],
+        [tokenContract.address, USER1, [paymentToken.address, tokenPrice, discount, 0], [0, defaultTokenURI]],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
@@ -1147,7 +1210,7 @@ describe("Marketplace", () => {
 
       assert.equal(log.event, "TokenSuccessfullyPurchased");
 
-      assert.equal(log.args.recipient, USER1);
+      assert.equal(log.args.buyParams.recipient, USER1);
       assert.equal(toBN(log.args.paidTokensAmount).toFixed(), expectedTokensAmount.toFixed());
       assert.equal(toBN(log.args.paymentType).toFixed(), PaymentType.ERC20);
     });
@@ -1172,7 +1235,7 @@ describe("Marketplace", () => {
       tokenContract = await ERC721MintableToken.at((await marketplace.getTokenContractsPart(0, 10))[0]);
       voucherContract = await Voucher.at(
         (
-          await marketplace.getDetailedTokenParamsPart(0, 10)
+          await marketplace.getDetailedTokenInfoPart(0, 10)
         )[0].tokenParams.voucherTokenContract
       );
 
@@ -1189,8 +1252,9 @@ describe("Marketplace", () => {
       const permitSig = signPermitTest({ verifyingContract: voucherContract.address });
 
       const tx = await marketplace.buyTokenWithVoucher(
-        [tokenContract.address, [defaultVoucherContract.address, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
+        [tokenContract.address, USER1, [voucherContract.address, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
         [defaultEndTime, sig.r, sig.s, sig.v],
+        [defaultEndTime, permitSig.r, permitSig.s, permitSig.v],
         {
           from: USER1,
         }
@@ -1206,14 +1270,14 @@ describe("Marketplace", () => {
 
       assert.equal(log.event, "TokenSuccessfullyPurchased");
 
-      assert.equal(log.args.recipient, USER1);
       assert.equal(toBN(log.args.mintedTokenPrice).toFixed(), defaultPricePerOneToken.toFixed());
       assert.equal(toBN(log.args.paidTokensAmount).toFixed(), defaultVoucherTokensAmount.toFixed());
       assert.equal(toBN(log.args.paymentType).toFixed(), PaymentType.VOUCHER);
 
+      assert.equal(log.args.buyParams.recipient, USER1);
       assert.equal(log.args.buyParams.tokenContract, tokenContract.address);
 
-      assert.equal(log.args.buyParams.paymentDetails.paymentTokenAddress, defaultVoucherContract.address);
+      assert.equal(log.args.buyParams.paymentDetails.paymentTokenAddress, voucherContract.address);
       assert.equal(toBN(log.args.buyParams.paymentDetails.paymentTokenPrice).toFixed(), 0);
       assert.equal(toBN(log.args.buyParams.paymentDetails.discount).toFixed(), defaultDiscountValue.toFixed());
       assert.equal(toBN(log.args.buyParams.paymentDetails.nftTokenId).toFixed(), 0);
@@ -1247,10 +1311,12 @@ describe("Marketplace", () => {
         marketplace.buyTokenWithVoucher(
           [
             tokenContract.address,
+            USER1,
             [defaultVoucherContract.address, tokenPrice, defaultDiscountValue, 0],
             [0, defaultTokenURI],
           ],
           [defaultEndTime, sig.r, sig.s, sig.v],
+          [defaultEndTime, permitSig.r, permitSig.s, permitSig.v],
           {
             from: USER1,
           }
@@ -1267,8 +1333,14 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithVoucher(
-          [tokenContract.address, [tokenContract.address, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+          [
+            tokenContract.address,
+            USER1,
+            [tokenContract.address, tokenPrice, defaultDiscountValue, 0],
+            [0, defaultTokenURI],
+          ],
           [defaultEndTime, sig.r, sig.s, sig.v],
+          [defaultEndTime, permitSig.r, permitSig.s, permitSig.v],
           {
             from: USER1,
           }
@@ -1304,31 +1376,37 @@ describe("Marketplace", () => {
 
     it("should correctly buy token with NFT", async () => {
       const sig = signBuyTest({
+        tokenRecipient: USER2,
         tokenContract: tokenContract.address,
         paymentTokenAddress: nft.address,
         paymentTokenPrice: nftFloorPrice.toFixed(),
       });
 
       const tx = await marketplace.buyTokenWithNFT(
-        [tokenContract.address, [nft.address, nftFloorPrice, defaultDiscountValue, tokenId], [0, defaultTokenURI]],
+        [
+          tokenContract.address,
+          USER2,
+          [nft.address, nftFloorPrice, defaultDiscountValue, tokenId],
+          [0, defaultTokenURI],
+        ],
         [defaultEndTime, sig.r, sig.s, sig.v],
         {
           from: USER1,
         }
       );
 
-      assert.equal(await tokenContract.ownerOf(0), USER1);
+      assert.equal(await tokenContract.ownerOf(0), USER2);
       assert.equal(await nft.ownerOf(tokenId), marketplace.address);
 
       const log = tx.receipt.logs[0];
 
       assert.equal(log.event, "TokenSuccessfullyPurchased");
 
-      assert.equal(log.args.recipient, USER1);
       assert.equal(toBN(log.args.mintedTokenPrice).toFixed(), defaultMinNFTFloorPrice.toFixed());
       assert.equal(toBN(log.args.paidTokensAmount).toFixed(), 1);
       assert.equal(toBN(log.args.paymentType).toFixed(), PaymentType.NFT);
 
+      assert.equal(log.args.buyParams.recipient, USER2);
       assert.equal(log.args.buyParams.tokenContract, tokenContract.address);
 
       assert.equal(log.args.buyParams.paymentDetails.paymentTokenAddress, nft.address);
@@ -1362,7 +1440,12 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithNFT(
-          [tokenContract.address, [nft.address, nftFloorPrice, defaultDiscountValue, tokenId], [0, defaultTokenURI]],
+          [
+            tokenContract.address,
+            USER1,
+            [nft.address, nftFloorPrice, defaultDiscountValue, tokenId],
+            [0, defaultTokenURI],
+          ],
           [defaultEndTime, sig.r, sig.s, sig.v],
           {
             from: USER1,
@@ -1385,7 +1468,12 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithNFT(
-          [tokenContract.address, [nft.address, newNFTFloorPrice, defaultDiscountValue, tokenId], [0, defaultTokenURI]],
+          [
+            tokenContract.address,
+            USER1,
+            [nft.address, newNFTFloorPrice, defaultDiscountValue, tokenId],
+            [0, defaultTokenURI],
+          ],
           [defaultEndTime, sig.r, sig.s, sig.v],
           {
             from: USER1,
@@ -1406,7 +1494,12 @@ describe("Marketplace", () => {
 
       await truffleAssert.reverts(
         marketplace.buyTokenWithNFT(
-          [tokenContract.address, [nft.address, nftFloorPrice, defaultDiscountValue, tokenId], [0, defaultTokenURI]],
+          [
+            tokenContract.address,
+            USER1,
+            [nft.address, nftFloorPrice, defaultDiscountValue, tokenId],
+            [0, defaultTokenURI],
+          ],
           [defaultEndTime, sig.r, sig.s, sig.v],
           {
             from: OWNER,
@@ -1433,133 +1526,6 @@ describe("Marketplace", () => {
       const reason = "Marketplace: Caller is not a marketplace manager.";
 
       await truffleAssert.reverts(marketplace.setBaseTokenContractsURI("", { from: NOTHING }), reason);
-    });
-  });
-
-  describe("getTokenContractsPart", () => {
-    it("should return correct token contracts arr", async () => {
-      const addressesArr = [];
-
-      for (let i = 0; i < 5; i++) {
-        const tx = await marketplace.addToken("Test" + i, "TST" + i, [
-          defaultPricePerOneToken,
-          defaultMinNFTFloorPrice,
-          defaultVoucherTokensAmount,
-          defaultVoucherContract.address,
-          ZERO_ADDR,
-          false,
-          false,
-          false,
-        ]);
-
-        addressesArr.push(tx.receipt.logs[0].args.tokenContract);
-      }
-
-      assert.equal((await marketplace.getTokenContractsCount()).toString(), 5);
-
-      assert.deepEqual(await marketplace.getTokenContractsPart(0, 10), addressesArr);
-      assert.deepEqual(await marketplace.getTokenContractsPart(0, 3), addressesArr.slice(0, 3));
-      assert.deepEqual(await marketplace.getTokenContractsPart(3, 10), addressesArr.slice(3));
-    });
-  });
-
-  describe("getBriefTokenInfoPart", () => {
-    it("should return correct token params", async () => {
-      const baseTokenParams = [];
-
-      for (let i = 0; i < 5; i++) {
-        const tokenParam = [
-          i.toString(),
-          defaultMinNFTFloorPrice,
-          defaultVoucherTokensAmount,
-          defaultVoucherContract.address,
-          ZERO_ADDR,
-          false,
-          false,
-          false,
-        ];
-
-        const tx = await marketplace.addToken("Test" + i, "TST" + i, tokenParam);
-        baseTokenParams.push([[tx.receipt.logs[0].args.tokenContract, "Test" + i, "TST" + i], i.toString(), false]);
-      }
-
-      assert.equal((await marketplace.getTokenContractsCount()).toString(), 5);
-
-      assert.deepEqual(await marketplace.getBriefTokenInfoPart(0, 10), baseTokenParams);
-      assert.deepEqual(await marketplace.getBriefTokenInfoPart(0, 3), baseTokenParams.slice(0, 3));
-      assert.deepEqual(await marketplace.getBriefTokenInfoPart(3, 10), baseTokenParams.slice(3));
-    });
-  });
-
-  describe("getDetailedTokenInfoPart", () => {
-    it("should return correct detailed token info", async () => {
-      const detailedTokenInfo = [];
-
-      for (let i = 0; i < 5; i++) {
-        const tx = await marketplace.addToken("Test" + i, "TST" + i, [
-          i,
-          defaultMinNFTFloorPrice,
-          defaultVoucherTokensAmount,
-          defaultVoucherContract.address,
-          ZERO_ADDR,
-          false,
-          false,
-          false,
-        ]);
-
-        detailedTokenInfo.push([
-          [tx.receipt.logs[0].args.tokenContract, "Test" + i, "TST" + i],
-          [
-            i.toString(),
-            defaultMinNFTFloorPrice.toString(),
-            defaultVoucherTokensAmount.toString(),
-            defaultVoucherContract.address,
-            ZERO_ADDR,
-            false,
-            false,
-            false,
-          ],
-        ]);
-      }
-
-      assert.equal((await marketplace.getTokenContractsCount()).toString(), 5);
-
-      assert.deepEqual(await marketplace.getDetailedTokenInfoPart(0, 10), detailedTokenInfo);
-      assert.deepEqual(await marketplace.getDetailedTokenInfoPart(0, 3), detailedTokenInfo.slice(0, 3));
-      assert.deepEqual(await marketplace.getDetailedTokenInfoPart(3, 10), detailedTokenInfo.slice(3));
-    });
-  });
-
-  describe("getActiveTokenContractsCount", () => {
-    it("should return correct active token contracts count", async () => {
-      for (let i = 0; i < 5; i++) {
-        const tx = await marketplace.addToken("Test" + i, "TST" + i, [
-          defaultPricePerOneToken,
-          defaultMinNFTFloorPrice,
-          defaultVoucherTokensAmount,
-          defaultVoucherContract.address,
-          ZERO_ADDR,
-          false,
-          false,
-          false,
-        ]);
-
-        assert.equal((await marketplace.getTokenContractsCount()).toString(), i + 1);
-        assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), 1);
-
-        await marketplace.updateTokenParams(tx.receipt.logs[0].args.tokenContract, [
-          defaultPricePerOneToken,
-          defaultMinNFTFloorPrice,
-          defaultVoucherTokensAmount,
-          defaultVoucherContract.address,
-          ZERO_ADDR,
-          false,
-          true,
-          false,
-        ]);
-
-        assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), 0);
-      }
     });
   });
 
@@ -1697,7 +1663,7 @@ describe("Marketplace", () => {
     it("should revert if status of request is not valid", async () => {
       const sig = signBuyWithRequestTest({});
 
-      await marketplace.acceptRequest(requestId, [0, defaultTokenURI], [defaultEndTime, sig.r, sig.s, sig.v], {
+      await marketplace.acceptRequest([requestId, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
         from: USER1,
       });
 
@@ -1736,11 +1702,10 @@ describe("Marketplace", () => {
     });
 
     it("should buy token with NFT request", async () => {
-      const sig = signBuyWithRequestTest({});
+      const sig = signBuyWithRequestTest({ tokenRecipient: USER2 });
 
       const tx = await marketplace.acceptRequest(
-        requestId,
-        [0, defaultTokenURI],
+        [requestId, USER2, [0, defaultTokenURI]],
         [defaultEndTime, sig.r, sig.s, sig.v],
         { from: USER1 }
       );
@@ -1749,11 +1714,11 @@ describe("Marketplace", () => {
 
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[0].event, "TokenSuccessfullyExchanged");
-      assert.equal(tx.logs[0].args.recipient, USER1);
-      assert.equal(tx.logs[0].args.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.acceptRequestParams.recipient, USER2);
+      assert.equal(tx.logs[0].args.acceptRequestParams.requestId.toString(), "0");
 
-      assert.equal(tx.logs[0].args.tokenData.tokenId.toString(), 0);
-      assert.equal(tx.logs[0].args.tokenData.tokenURI, defaultTokenURI);
+      assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenId.toString(), 0);
+      assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenURI, defaultTokenURI);
 
       assert.equal(tx.logs[0].args.nftRequestInfo.tokenContract, tokenContract.address);
       assert.equal(tx.logs[0].args.nftRequestInfo.nftContract, nft.address);
@@ -1762,7 +1727,7 @@ describe("Marketplace", () => {
       assert.equal(tx.logs[0].args.nftRequestInfo.status, NFTRequestStatus.ACCEPTED);
 
       assert.equal(await tokenContract.tokenURI(0), defaultBaseURI + defaultTokenURI);
-      assert.equal(await tokenContract.ownerOf(0), USER1);
+      assert.equal(await tokenContract.ownerOf(0), USER2);
     });
 
     it("should buy token with NFT request and send funds to recipient contract", async () => {
@@ -1781,8 +1746,7 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       const tx = await marketplace.acceptRequest(
-        requestId,
-        [0, defaultTokenURI],
+        [requestId, USER1, [0, defaultTokenURI]],
         [defaultEndTime, sig.r, sig.s, sig.v],
         { from: USER1 }
       );
@@ -1791,11 +1755,11 @@ describe("Marketplace", () => {
 
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[0].event, "TokenSuccessfullyExchanged");
-      assert.equal(tx.logs[0].args.recipient, USER1);
-      assert.equal(tx.logs[0].args.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.acceptRequestParams.recipient, USER1);
+      assert.equal(tx.logs[0].args.acceptRequestParams.requestId.toString(), "0");
 
-      assert.equal(tx.logs[0].args.tokenData.tokenId.toString(), 0);
-      assert.equal(tx.logs[0].args.tokenData.tokenURI, defaultTokenURI);
+      assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenId.toString(), 0);
+      assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenURI, defaultTokenURI);
 
       assert.equal(tx.logs[0].args.nftRequestInfo.tokenContract, tokenContract.address);
       assert.equal(tx.logs[0].args.nftRequestInfo.nftContract, nft.address);
@@ -1822,8 +1786,7 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       const tx = await marketplace.acceptRequest(
-        requestId,
-        [0, defaultTokenURI],
+        [requestId, USER1, [0, defaultTokenURI]],
         [defaultEndTime, sig.r, sig.s, sig.v],
         { from: USER1 }
       );
@@ -1832,11 +1795,11 @@ describe("Marketplace", () => {
 
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[0].event, "TokenSuccessfullyExchanged");
-      assert.equal(tx.logs[0].args.recipient, USER1);
-      assert.equal(tx.logs[0].args.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.acceptRequestParams.recipient, USER1);
+      assert.equal(tx.logs[0].args.acceptRequestParams.requestId.toString(), "0");
 
-      assert.equal(tx.logs[0].args.tokenData.tokenId.toString(), 0);
-      assert.equal(tx.logs[0].args.tokenData.tokenURI, defaultTokenURI);
+      assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenId.toString(), 0);
+      assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenURI, defaultTokenURI);
 
       assert.equal(tx.logs[0].args.nftRequestInfo.tokenContract, tokenContract.address);
       assert.equal(tx.logs[0].args.nftRequestInfo.nftContract, nft.address);
@@ -1852,7 +1815,7 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       await truffleAssert.reverts(
-        marketplace.acceptRequest(requestId, [1, defaultTokenURI], [defaultEndTime, sig.r, sig.s, sig.v], {
+        marketplace.acceptRequest([requestId, USER1, [1, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
           from: USER1,
         }),
         "Marketplace: Invalid signature."
@@ -1865,7 +1828,7 @@ describe("Marketplace", () => {
       await setNextBlockTime(defaultEndTime.plus(100).toNumber());
 
       await truffleAssert.reverts(
-        marketplace.acceptRequest(requestId, [0, defaultTokenURI], [defaultEndTime, sig.r, sig.s, sig.v], {
+        marketplace.acceptRequest([requestId, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
           from: USER1,
         }),
         "Marketplace: Signature expired."
@@ -1876,7 +1839,7 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       await truffleAssert.reverts(
-        marketplace.acceptRequest(requestId, [0, defaultTokenURI], [defaultEndTime, sig.r, sig.s, sig.v], {
+        marketplace.acceptRequest([requestId, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
           from: NOTHING,
         }),
         "Marketplace: Sender is not the requester."
@@ -1898,7 +1861,7 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       await truffleAssert.reverts(
-        marketplace.acceptRequest(requestId, [0, defaultTokenURI], [defaultEndTime, sig.r, sig.s, sig.v], {
+        marketplace.acceptRequest([requestId, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
           from: USER1,
         }),
         "Marketplace: Token is disabled."
@@ -1920,11 +1883,138 @@ describe("Marketplace", () => {
       const sig = signBuyWithRequestTest({});
 
       await truffleAssert.reverts(
-        marketplace.acceptRequest(requestId, [0, defaultTokenURI], [defaultEndTime, sig.r, sig.s, sig.v], {
+        marketplace.acceptRequest([requestId, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
           from: USER1,
         }),
         "Marketplace: This token cannot be purchased with NFT."
       );
+    });
+  });
+
+  describe("getTokenContractsPart", () => {
+    it("should return correct token contracts arr", async () => {
+      const addressesArr = [];
+
+      for (let i = 0; i < 5; i++) {
+        const tx = await marketplace.addToken("Test" + i, "TST" + i, [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          false,
+          false,
+        ]);
+
+        addressesArr.push(tx.receipt.logs[0].args.tokenContract);
+      }
+
+      assert.equal((await marketplace.getTokenContractsCount()).toString(), 5);
+
+      assert.deepEqual(await marketplace.getTokenContractsPart(0, 10), addressesArr);
+      assert.deepEqual(await marketplace.getTokenContractsPart(0, 3), addressesArr.slice(0, 3));
+      assert.deepEqual(await marketplace.getTokenContractsPart(3, 10), addressesArr.slice(3));
+    });
+  });
+
+  describe("getBriefTokenInfoPart", () => {
+    it("should return correct token params", async () => {
+      const baseTokenParams = [];
+
+      for (let i = 0; i < 5; i++) {
+        const tokenParam = [
+          i.toString(),
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          false,
+          false,
+        ];
+
+        const tx = await marketplace.addToken("Test" + i, "TST" + i, tokenParam);
+        baseTokenParams.push([[tx.receipt.logs[0].args.tokenContract, "Test" + i, "TST" + i], i.toString(), false]);
+      }
+
+      assert.equal((await marketplace.getTokenContractsCount()).toString(), 5);
+
+      assert.deepEqual(await marketplace.getBriefTokenInfoPart(0, 10), baseTokenParams);
+      assert.deepEqual(await marketplace.getBriefTokenInfoPart(0, 3), baseTokenParams.slice(0, 3));
+      assert.deepEqual(await marketplace.getBriefTokenInfoPart(3, 10), baseTokenParams.slice(3));
+    });
+  });
+
+  describe("getDetailedTokenInfoPart", () => {
+    it("should return correct detailed token info", async () => {
+      const detailedTokenInfo = [];
+
+      for (let i = 0; i < 5; i++) {
+        const tx = await marketplace.addToken("Test" + i, "TST" + i, [
+          i,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          false,
+          false,
+        ]);
+
+        detailedTokenInfo.push([
+          [tx.receipt.logs[0].args.tokenContract, "Test" + i, "TST" + i],
+          [
+            i.toString(),
+            defaultMinNFTFloorPrice.toString(),
+            defaultVoucherTokensAmount.toString(),
+            defaultVoucherContract.address,
+            ZERO_ADDR,
+            false,
+            false,
+            false,
+          ],
+        ]);
+      }
+
+      assert.equal((await marketplace.getTokenContractsCount()).toString(), 5);
+
+      assert.deepEqual(await marketplace.getDetailedTokenInfoPart(0, 10), detailedTokenInfo);
+      assert.deepEqual(await marketplace.getDetailedTokenInfoPart(0, 3), detailedTokenInfo.slice(0, 3));
+      assert.deepEqual(await marketplace.getDetailedTokenInfoPart(3, 10), detailedTokenInfo.slice(3));
+    });
+  });
+
+  describe("getActiveTokenContractsCount", () => {
+    it("should return correct active token contracts count", async () => {
+      for (let i = 0; i < 5; i++) {
+        const tx = await marketplace.addToken("Test" + i, "TST" + i, [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          false,
+          false,
+        ]);
+
+        assert.equal((await marketplace.getTokenContractsCount()).toString(), i + 1);
+        assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), 1);
+
+        await marketplace.updateTokenParams(tx.receipt.logs[0].args.tokenContract, [
+          defaultPricePerOneToken,
+          defaultMinNFTFloorPrice,
+          defaultVoucherTokensAmount,
+          defaultVoucherContract.address,
+          ZERO_ADDR,
+          false,
+          true,
+          false,
+        ]);
+
+        assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), 0);
+      }
     });
   });
 
@@ -1975,7 +2065,7 @@ describe("Marketplace", () => {
         const expectedValueAmount = defaultPricePerOneToken.times(wei(1)).idiv(tokenPrice);
 
         await marketplace.buyTokenWithETH(
-          [tokenContract.address, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [i, defaultTokenURI + i]],
+          [tokenContract.address, USER1, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [i, defaultTokenURI + i]],
           [defaultEndTime, sig.r, sig.s, sig.v],
           {
             from: USER1,
@@ -2017,6 +2107,7 @@ describe("Marketplace", () => {
         ZERO_ADDR,
         true,
         false,
+        true,
       ]);
 
       tokenContract = await ERC721MintableToken.at((await marketplace.getTokenContractsPart(0, 10))[0]);
@@ -2057,7 +2148,9 @@ describe("Marketplace", () => {
 
       const sig = signBuyWithRequestTest({ requestId: 4 });
 
-      await marketplace.acceptRequest(4, [0, defaultTokenURI], [defaultEndTime, sig.r, sig.s, sig.v], { from: USER1 });
+      await marketplace.acceptRequest([4, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
+        from: USER1,
+      });
 
       expectedRequestIDs.pop();
 
@@ -2083,6 +2176,7 @@ describe("Marketplace", () => {
         ZERO_ADDR,
         true,
         false,
+        true,
       ]);
 
       tokenContract = await ERC721MintableToken.at((await marketplace.getTokenContractsPart(0, 10))[0]);
@@ -2136,7 +2230,9 @@ describe("Marketplace", () => {
 
       const sig = signBuyWithRequestTest({});
 
-      await marketplace.acceptRequest(0, [0, defaultTokenURI], [defaultEndTime, sig.r, sig.s, sig.v], { from: USER1 });
+      await marketplace.acceptRequest([0, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
+        from: USER1,
+      });
 
       assert.equal((await marketplace.getUserPendingRequestsCount(USER1)).toFixed(), 4);
 
@@ -2168,6 +2264,7 @@ describe("Marketplace", () => {
         ZERO_ADDR,
         true,
         false,
+        true,
       ]);
 
       tokenContract = await ERC721MintableToken.at((await marketplace.getTokenContractsPart(0, 10))[0]);

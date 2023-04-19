@@ -38,15 +38,11 @@ contract Marketplace is
 
     bytes32 internal constant _BUY_TYPEHASH =
         keccak256(
-            "Buy(address tokenContract,uint256 futureTokenId,address paymentTokenAddress,uint256 paymentTokenPrice,uint256 discount,uint256 endTimestamp,bytes32 tokenURI)"
+            "Buy(address tokenRecipient,address tokenContract,uint256 futureTokenId,address paymentTokenAddress,uint256 paymentTokenPrice,uint256 discount,uint256 endTimestamp,bytes32 tokenURI)"
         );
     bytes32 internal constant _BUY_WITH_REQUEST_TYPEHASH =
         keccak256(
-            "BuyWithRequest(uint256 requestId,uint256 futureTokenId,uint256 endTimestamp,bytes32 tokenURI)"
-        );
-    bytes32 internal constant _BUY_WITH_VOUCHER_TYPEHASH =
-        keccak256(
-            "BuyWithVoucher(address requester,address tokenContract,uint256 futureTokenId,address voucherTokenContract,uint256 voucherTokensAmount,uint256 endTimestamp,bytes32 tokenURI)"
+            "BuyWithRequest(address tokenRecipient,uint256 requestId,uint256 futureTokenId,uint256 endTimestamp,bytes32 tokenURI)"
         );
 
     uint256 public nextRequestId;
@@ -332,11 +328,10 @@ contract Marketplace is
     }
 
     function acceptRequest(
-        uint256 requestId_,
-        IERC721MintableToken.TokenMintData memory tokenData_,
+        AcceptRequestParams memory requestParams_,
         SigData memory sig_
     ) external override whenNotPaused {
-        NFTRequestInfo storage _nftRequest = _nftRequests[requestId_];
+        NFTRequestInfo storage _nftRequest = _nftRequests[requestParams_.requestId];
 
         _checkTokenAvailability(_nftRequest.tokenContract, true);
 
@@ -345,15 +340,16 @@ contract Marketplace is
             keccak256(
                 abi.encode(
                     _BUY_WITH_REQUEST_TYPEHASH,
-                    requestId_,
-                    tokenData_.tokenId,
+                    requestParams_.recipient,
+                    requestParams_.requestId,
+                    requestParams_.tokenData.tokenId,
                     sig_.endSigTimestamp,
-                    keccak256(abi.encodePacked(tokenData_.tokenURI))
+                    keccak256(abi.encodePacked(requestParams_.tokenData.tokenURI))
                 )
             )
         );
 
-        _updateNFTRequestStatus(requestId_, NFTRequestStatus.ACCEPTED);
+        _updateNFTRequestStatus(requestParams_.requestId, NFTRequestStatus.ACCEPTED);
 
         _tranferNFT(
             IERC721(_nftRequest.nftContract),
@@ -362,9 +358,12 @@ contract Marketplace is
             _nftRequest.nftId
         );
 
-        IERC721MintableToken(_nftRequest.tokenContract).mint(msg.sender, tokenData_);
+        IERC721MintableToken(_nftRequest.tokenContract).mint(
+            requestParams_.recipient,
+            requestParams_.tokenData
+        );
 
-        emit TokenSuccessfullyExchanged(msg.sender, requestId_, tokenData_, _nftRequest);
+        emit TokenSuccessfullyExchanged(requestParams_, _nftRequest);
     }
 
     function createNFTRequest(
@@ -558,10 +557,12 @@ contract Marketplace is
         uint256 pricePerOneToken_,
         uint256 paidTokensAmount_
     ) internal {
-        IERC721MintableToken(buyParams_.tokenContract).mint(msg.sender, buyParams_.tokenData);
+        IERC721MintableToken(buyParams_.tokenContract).mint(
+            buyParams_.recipient,
+            buyParams_.tokenData
+        );
 
         emit TokenSuccessfullyPurchased(
-            msg.sender,
             pricePerOneToken_,
             paidTokensAmount_,
             buyParams_,
@@ -597,6 +598,7 @@ contract Marketplace is
             keccak256(
                 abi.encode(
                     _BUY_TYPEHASH,
+                    buyParams_.recipient,
                     buyParams_.tokenContract,
                     buyParams_.tokenData.tokenId,
                     buyParams_.paymentDetails.paymentTokenAddress,
@@ -610,12 +612,7 @@ contract Marketplace is
     }
 
     function _verifySignature(SigData memory sig_, bytes32 structHash_) internal view {
-        address signer_ = ECDSAUpgradeable.recover(
-            _hashTypedDataV4(structHash_),
-            sig_.v,
-            sig_.r,
-            sig_.s
-        );
+        address signer_ = ECDSA.recover(_hashTypedDataV4(structHash_), sig_.v, sig_.r, sig_.s);
 
         require(_roleManager.isSignatureManager(signer_), "Marketplace: Invalid signature.");
         require(block.timestamp <= sig_.endSigTimestamp, "Marketplace: Signature expired.");

@@ -5,6 +5,8 @@ pragma solidity ^0.8.18;
  * This is the TokenFactory contract, that is responsible for deploying new tokens.
  */
 interface ITokenFactory {
+    event TokenDeployed(address indexed tokenProxyAddr);
+
     /**
      * @notice The function to deploy a new token.
      * @param name_ The name of the token.

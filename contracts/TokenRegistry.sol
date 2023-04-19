@@ -10,8 +10,8 @@ import "./interfaces/IRoleManager.sol";
 contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    string public constant override TOKEN_POOL = "TOKEN_POOL";
-    string public constant override VOUCHER_POOL = "VOUCHER_POOL";
+    string public constant override TOKEN_CONTRACT = "TOKEN_CONTRACT";
+    string public constant override VOUCHER_TOKEN = "VOUCHER_TOKEN";
 
     address internal _tokenFactory;
     IRoleManager internal _roleManager;
@@ -29,10 +29,10 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
     function setDependencies(address contractsRegistry_, bytes calldata data_) public override {
         super.setDependencies(contractsRegistry_, data_);
 
-        _tokenFactory = IContractsRegistry(contractsRegistry_).getTokenFactoryContract();
-        _roleManager = IRoleManager(
-            IContractsRegistry(contractsRegistry_).getRoleManagerContract()
-        );
+        IContractsRegistry registry_ = IContractsRegistry(contractsRegistry_);
+
+        _tokenFactory = registry_.getTokenFactoryContract();
+        _roleManager = IRoleManager(registry_.getRoleManagerContract());
     }
 
     function setNewImplementations(
@@ -66,12 +66,12 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
         _addProxyPool(poolName_, tokenAddress_);
     }
 
-    function isTokenPool(address potentialPool_) public view override returns (bool) {
-        return _pools[TOKEN_POOL].contains(potentialPool_);
+    function isTokenContract(address potentialContract_) external view override returns (bool) {
+        return _pools[TOKEN_CONTRACT].contains(potentialContract_);
     }
 
-    function isVoucherPool(address potentialPool_) public view override returns (bool) {
-        return _pools[VOUCHER_POOL].contains(potentialPool_);
+    function isVoucherToken(address potentialContract_) external view override returns (bool) {
+        return _pools[VOUCHER_TOKEN].contains(potentialContract_);
     }
 
     function _onlyTokenFactory() internal view {

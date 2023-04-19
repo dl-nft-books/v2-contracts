@@ -20,6 +20,11 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         _;
     }
 
+    modifier onlyEligibleAddresses() {
+        _onlyEligibleAddresses();
+        _;
+    }
+
     function setDependencies(address contractsRegistry_, bytes calldata data_) public override {
         super.setDependencies(contractsRegistry_, data_);
 
@@ -34,29 +39,37 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         string calldata name_,
         string calldata symbol_
     ) external override onlyMarketplace returns (address tokenProxy_) {
-        string memory tokenPool_ = ITokenRegistry(_tokenRegistry).TOKEN_POOL();
-        tokenProxy_ = _deploy(_tokenRegistry, tokenPool_);
+        tokenProxy_ = _deployToken(ITokenRegistry(_tokenRegistry).TOKEN_CONTRACT());
 
         IERC721MintableToken(tokenProxy_).__ERC721MintableToken_init(name_, symbol_);
-
-        _register(_tokenRegistry, tokenPool_, tokenProxy_);
-        _injectDependencies(_tokenRegistry, tokenProxy_);
     }
 
     function deployVoucher(
         string calldata name_,
         string calldata symbol_
-    ) external override onlyMarketplace returns (address voucherProxy_) {
-        string memory voucherPool_ = ITokenRegistry(_tokenRegistry).VOUCHER_POOL();
-        voucherProxy_ = _deploy(_tokenRegistry, voucherPool_);
+    ) external override onlyEligibleAddresses returns (address voucherProxy_) {
+        voucherProxy_ = _deployToken(ITokenRegistry(_tokenRegistry).VOUCHER_TOKEN());
 
         IVoucher(voucherProxy_).__Voucher_init(name_, symbol_);
+    }
 
-        _register(_tokenRegistry, voucherPool_, voucherProxy_);
-        _injectDependencies(_tokenRegistry, voucherProxy_);
+    function _deployToken(string memory tokenType_) internal returns (address tokenProxy_) {
+        tokenProxy_ = _deploy(_tokenRegistry, tokenType_);
+
+        _register(_tokenRegistry, tokenType_, tokenProxy_);
+        _injectDependencies(_tokenRegistry, tokenProxy_);
+
+        emit TokenDeployed(tokenProxy_);
     }
 
     function _onlyMarketplace() internal view {
         require(_marketplace == msg.sender, "TokenFactory: Caller is not a marketplace");
+    }
+
+    function _onlyEligibleAddresses() internal view {
+        require(
+            _marketplace == msg.sender || _roleManager.isTokenFactoryManager(msg.sender),
+            "TokenFactory: Caller is not a marketplace or token factory manager"
+        );
     }
 }

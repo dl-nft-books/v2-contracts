@@ -91,6 +91,12 @@ interface IMarketplace {
         IERC721MintableToken.TokenMintData tokenData;
     }
 
+    struct AcceptRequestParams {
+        uint256 requestId;
+        address recipient;
+        IERC721MintableToken.TokenMintData tokenData;
+    }
+
     /**
      * @notice The structure that stores information about the user tokens
      * @param tokenContract the address of the token contract
@@ -179,14 +185,12 @@ interface IMarketplace {
 
     /**
      * @notice This event is emitted when a token has been successfully purchased
-     * @param recipient the address of the recipient of the purchased token
      * @param mintedTokenPrice the price of the minted token
      * @param paidTokensAmount the amount of tokens paid
      * @param buyParams the buying parameters used for purchasing the token
      * @param paymentType the type of payment used for purchasing the token
      */
     event TokenSuccessfullyPurchased(
-        address indexed recipient,
         uint256 mintedTokenPrice,
         uint256 paidTokensAmount,
         BuyParams buyParams,
@@ -195,15 +199,10 @@ interface IMarketplace {
 
     /**
      * @notice This event is emitted when a token has been successfully exchanged
-     * @param recipient the address of the recipient of the purchased token
-     * @param requestId the ID of the request
-     * @param tokenData the init data for minted token
      * @param nftRequestInfo the NFTRequestInfo struct with the NFT request info
      */
     event TokenSuccessfullyExchanged(
-        address indexed recipient,
-        uint256 requestId,
-        IERC721MintableToken.TokenMintData tokenData,
+        AcceptRequestParams acceptRequestParams,
         NFTRequestInfo nftRequestInfo
     );
 
@@ -363,13 +362,12 @@ interface IMarketplace {
 
     /**
      * @notice The function to accept an NFT request
-     * @param requestId_ the ID of the pending NFT request
-     * @param tokenData_ the data required to the new NFT token
+     *  requestId_ the ID of the pending NFT request
+     *  tokenData_ the data required to the new NFT token
      * @param sig_ the signature, which is needed to confirm the request
      */
     function acceptRequest(
-        uint256 requestId_,
-        IERC721MintableToken.TokenMintData memory tokenData_,
+        AcceptRequestParams memory requestParams_,
         SigData memory sig_
     ) external;
 

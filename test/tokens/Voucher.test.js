@@ -1,9 +1,9 @@
 const { assert } = require("chai");
-const { wei, accounts, toBN } = require("../../scripts/utils/utils");
-const { ZERO_ADDR, PRECISION, PERCENTAGE_100 } = require("../../scripts/utils/constants");
+const { accounts } = require("../../scripts/utils/utils");
+const { parseConfig } = require("../../deploy/helpers/deployHelper");
+
 const Reverter = require("../helpers/reverter");
 const truffleAssert = require("truffle-assertions");
-const { signPermit } = require("../helpers/signatures");
 
 const ContractsRegistry = artifacts.require("ContractsRegistry");
 const TokenRegistry = artifacts.require("TokenRegistry");
@@ -18,7 +18,7 @@ describe("Voucher", () => {
   let voucher;
   let contractsRegistry;
   let tokenRegistry;
-  let VOUCHER_POOL;
+  let VOUCHER_TOKEN;
 
   const reverter = new Reverter();
 
@@ -37,19 +37,23 @@ describe("Voucher", () => {
     await contractsRegistry.addProxyContract(await contractsRegistry.TOKEN_REGISTRY_NAME(), _tokenRegistry.address);
     await contractsRegistry.addContract(await contractsRegistry.TOKEN_FACTORY_NAME(), FACTORY);
 
+    const roleManager = await RoleManager.at(await contractsRegistry.getRoleManagerContract());
     tokenRegistry = await TokenRegistry.at(await contractsRegistry.getTokenRegistryContract());
-    await (await RoleManager.at(await contractsRegistry.getRoleManagerContract())).__RoleManager_init();
+
+    const config = parseConfig("./test/data/config.test.json");
+    await roleManager.__RoleManager_init(config.roleInitParams);
 
     await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_REGISTRY_NAME());
 
     voucher = await Voucher.new();
     await voucher.__Voucher_init("name", "symbol");
 
-    VOUCHER_POOL = await tokenRegistry.VOUCHER_POOL();
-    await tokenRegistry.addProxyPool(VOUCHER_POOL, voucher.address, {
+    VOUCHER_TOKEN = await tokenRegistry.VOUCHER_TOKEN();
+
+    await tokenRegistry.addProxyPool(VOUCHER_TOKEN, voucher.address, {
       from: FACTORY,
     });
-    await tokenRegistry.injectDependenciesToExistingPools(VOUCHER_POOL, 0, 10);
+    await tokenRegistry.injectDependenciesToExistingPools(VOUCHER_TOKEN, 0, 10);
 
     await reverter.snapshot();
   });
@@ -57,11 +61,8 @@ describe("Voucher", () => {
   afterEach(reverter.revert);
 
   describe("initialization", () => {
-    it("should set name", async () => {
+    it("should set correct metadata", async () => {
       assert.equal(await voucher.name(), "name");
-    });
-
-    it("should set symbol", async () => {
       assert.equal(await voucher.symbol(), "symbol");
     });
 
@@ -82,7 +83,7 @@ describe("Voucher", () => {
     });
   });
 
-  describe("mint()", () => {
+  describe("mint", () => {
     it("should mint correctly", async () => {
       await voucher.mint(SECOND, 1, { from: OWNER });
       assert.equal(await voucher.balanceOf(SECOND), 1);
@@ -96,7 +97,7 @@ describe("Voucher", () => {
     });
   });
 
-  describe("burn()", () => {
+  describe("burn", () => {
     it("should burn correctly", async () => {
       await voucher.mint(SECOND, 1, { from: OWNER });
       await voucher.burn(SECOND, 1, { from: OWNER });

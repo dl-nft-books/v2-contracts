@@ -12,6 +12,7 @@ const signBuy = (domain, message, privateKey) => {
   ];
 
   const Buy = [
+    { name: "tokenRecipient", type: "address" },
     { name: "tokenContract", type: "address" },
     { name: "futureTokenId", type: "uint256" },
     { name: "paymentTokenAddress", type: "address" },
@@ -42,6 +43,7 @@ const signBuyWithRequest = (domain, message, privateKey) => {
   ];
 
   const BuyWithRequest = [
+    { name: "tokenRecipient", type: "address" },
     { name: "requestId", type: "uint256" },
     { name: "futureTokenId", type: "uint256" },
     { name: "endTimestamp", type: "uint256" },

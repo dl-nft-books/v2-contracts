@@ -9,7 +9,7 @@ module.exports = async (deployer, logger) => {
 
   const erc721TokenImpl = await deployer.deploy(ERC721MintableToken);
 
-  const tokenPool = await tokenRegistry.TOKEN_POOL();
+  const tokenPool = await tokenRegistry.TOKEN_CONTRACT();
 
   logger.logTransaction(
     await tokenRegistry.setNewImplementations([tokenPool], [erc721TokenImpl.address]),
