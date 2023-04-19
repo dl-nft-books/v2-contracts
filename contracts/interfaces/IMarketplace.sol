@@ -80,7 +80,7 @@ interface IMarketplace {
     /**
      * @notice Struct representing the buying parameters for purchasing an NFT
      * @param tokenContract the contract address of the token used for payment
-     * @param recipient the address of the recipient of the token
+     * @param recipient the address that will receive the minted token
      * @param paymentDetails the payment details for purchasing an NFT
      * @param tokenData the init data for new token
      */
@@ -91,6 +91,12 @@ interface IMarketplace {
         IERC721MintableToken.TokenMintData tokenData;
     }
 
+    /**
+     * @notice Struct representing the parameters for accepting a request
+     * @param requestId the ID of the request being accepted
+     * @param recipient the address that will receive the minted token
+     * @param tokenData the token data that will be used to mint the token
+     */
     struct AcceptRequestParams {
         uint256 requestId;
         address recipient;
@@ -199,7 +205,8 @@ interface IMarketplace {
 
     /**
      * @notice This event is emitted when a token has been successfully exchanged
-     * @param nftRequestInfo the NFTRequestInfo struct with the NFT request info
+     * @param acceptRequestParams the AcceptRequestParams struct containing the parameters used to accept the token request
+     * @param nftRequestInfo the NFTRequestInfo struct containing the details of the NFT request
      */
     event TokenSuccessfullyExchanged(
         AcceptRequestParams acceptRequestParams,
@@ -361,9 +368,8 @@ interface IMarketplace {
     function buyTokenWithNFT(BuyParams memory buyParams_, SigData memory sig_) external;
 
     /**
-     * @notice The function to accept an NFT request
-     *  requestId_ the ID of the pending NFT request
-     *  tokenData_ the data required to the new NFT token
+     * @notice Function that accepts an NFT request
+     * @param requestParams_ the AcceptRequestParams struct with the NFT request info
      * @param sig_ the signature, which is needed to confirm the request
      */
     function acceptRequest(

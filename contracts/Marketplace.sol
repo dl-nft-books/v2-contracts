@@ -248,7 +248,7 @@ contract Marketplace is
         _transferERC20(
             buyParams_.paymentDetails.paymentTokenAddress,
             msg.sender,
-            _getFundsRecipient(_currentTokenParams.fundsRecipient),
+            _currentTokenParams.fundsRecipient,
             amountToPay_
         );
 
