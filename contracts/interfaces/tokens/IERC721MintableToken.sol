@@ -5,6 +5,11 @@ pragma solidity ^0.8.18;
  * This is the ERC721MintableToken contract. Which is an ERC721 token with minting and burning functionality.
  */
 interface IERC721MintableToken {
+    struct TokenMintData {
+        uint256 tokenId;
+        string tokenURI;
+    }
+
     /**
      * @notice The function for initializing contract with init params.
      * @param name_ The name of the token.
@@ -14,24 +19,9 @@ interface IERC721MintableToken {
 
     /**
      * @notice The function to mint a new token.
-     * @param to_ The address of the token owner.
-     * @param tokenId_ The id of the token.
-     * @param uri_ The URI of the token.
+     * @param to_ The address of the token owner
      */
-    function mint(address to_, uint256 tokenId_, string memory uri_) external;
-
-    /**
-     * @notice The function to burn a token.
-     * @param tokenId_ The id of the token.
-     */
-    function burn(uint256 tokenId_) external;
-
-    /**
-     * @notice The function to update the token params.
-     * @param name_ The name of the token.
-     * @param symbol_ The symbol of the token.
-     */
-    function updateTokenParams(string memory name_, string memory symbol_) external;
+    function mint(address to_, TokenMintData memory) external;
 
     /**
      * @notice The function to get the futute token id.

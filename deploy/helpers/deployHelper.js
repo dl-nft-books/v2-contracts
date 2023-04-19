@@ -1,8 +1,6 @@
 const fs = require("fs");
-const { keccak256 } = require("@ethersproject/keccak256");
-const { toUtf8Bytes } = require("@ethersproject/strings");
 
-const { ZERO_ADDR } = require("../../scripts/utils/constants");
+const { web3 } = require("hardhat");
 
 function nonEmptyField(field, fieldName, onlyUndefined = false) {
   if (field != undefined && (onlyUndefined || (field !== "" && field.length !== 0))) {
@@ -12,87 +10,45 @@ function nonEmptyField(field, fieldName, onlyUndefined = false) {
   throw new Error(`Empty ${fieldName} field.`);
 }
 
-function nonEmptyAddress(addr, arrName, onlyUndefined = false) {
-  nonEmptyField(addr, arrName, onlyUndefined);
+function parseConfig(path = "deploy/data/config.json") {
+  const configJson = JSON.parse(fs.readFileSync(path, "utf8"));
 
-  if (addr !== ZERO_ADDR) {
-    return addr;
-  }
+  nonEmptyField(configJson.baseTokenContractsURI, "baseTokenContractsURI", true);
+  nonEmptyField(configJson.roles, "roles", true);
 
-  throw new Error(`Zero address in ${arrName} array.`);
-}
+  const allRoles = [];
+  const rolesMembers = [];
+  const roleInitParams = [
+    {
+      role: "0x0000000000000000000000000000000000000000000000000000000000000000",
+      roleAdmin: "0x0000000000000000000000000000000000000000000000000000000000000000",
+      roleName: "Default admin",
+    },
+  ];
 
-function validOrEmptyAddressesArr(arr, arrName, onlyUndefined = false) {
-  console.log(arr);
-  console.log(arrName);
-  for (let i = 0; i < arr.length; i++) {
-    nonEmptyAddress(arr[i], arrName, onlyUndefined);
-  }
+  configJson.roles.forEach((roleInfo) => {
+    const role = web3.utils.keccak256(nonEmptyField(roleInfo.roleKey, "role key"));
+    const roleAdmin = web3.utils.keccak256(nonEmptyField(roleInfo.roleAdminKey, "role admin key"));
+    const roleName = nonEmptyField(roleInfo.roleName, "role name");
+    const members = nonEmptyField(roleInfo.members, "role members", true);
 
-  return arr;
-}
-
-function parseMarketplaceParams(path) {
-  const marketplaceParams = JSON.parse(fs.readFileSync(path, "utf8"));
-
-  nonEmptyField(marketplaceParams.baseTokenContractsURI, "baseTokenContractsURI", true);
-
-  return {
-    baseTokenContractsURI: marketplaceParams.baseTokenContractsURI,
-  };
-}
-
-function parseRolesParams(path) {
-  const rolesParams = JSON.parse(fs.readFileSync(path, "utf8"));
-
-  validOrEmptyAddressesArr(rolesParams.ADMINISTRATOR_ROLE, "ADMINISTRATOR_ROLE");
-  validOrEmptyAddressesArr(rolesParams.TOKEN_FACTORY_MANAGER, "TOKEN_FACTORY_MANAGER");
-  validOrEmptyAddressesArr(rolesParams.TOKEN_REGISTRY_MANAGER, "TOKEN_REGISTRY_MANAGER");
-  validOrEmptyAddressesArr(rolesParams.TOKEN_MANAGER, "TOKEN_MANAGER");
-  validOrEmptyAddressesArr(rolesParams.ROLE_SUPERVISOR, "ROLE_SUPERVISOR");
-  validOrEmptyAddressesArr(rolesParams.WITHDRAWAL_MANAGER, "WITHDRAWAL_MANAGER");
-  validOrEmptyAddressesArr(rolesParams.MARKETPLACE_MANAGER, "MARKETPLACE_MANAGER");
-
-  const roles = [];
-  const users = [];
-
-  for (let i = 0; i < rolesParams.ADMINISTRATOR_ROLE.length; i++) {
-    roles.push(keccak256(toUtf8Bytes("ADMINISTRATOR_ROLE")));
-    users.push(rolesParams.ADMINISTRATOR_ROLE[i]);
-  }
-  console.log("!!!!!");
-  for (let i = 0; i < rolesParams.TOKEN_FACTORY_MANAGER.length; i++) {
-    roles.push(keccak256(toUtf8Bytes("TOKEN_FACTORY_MANAGER")));
-    users.push(rolesParams.TOKEN_FACTORY_MANAGER[i]);
-  }
-  for (let i = 0; i < rolesParams.TOKEN_REGISTRY_MANAGER.length; i++) {
-    roles.push(keccak256(toUtf8Bytes("TOKEN_REGISTRY_MANAGER")));
-    users.push(rolesParams.TOKEN_REGISTRY_MANAGER[i]);
-  }
-  for (let i = 0; i < rolesParams.TOKEN_MANAGER.length; i++) {
-    roles.push(keccak256(toUtf8Bytes("TOKEN_MANAGER")));
-    users.push(rolesParams.TOKEN_MANAGER[i]);
-  }
-  for (let i = 0; i < rolesParams.ROLE_SUPERVISOR.length; i++) {
-    roles.push(keccak256(toUtf8Bytes("ROLE_SUPERVISOR")));
-    users.push(rolesParams.ROLE_SUPERVISOR[i]);
-  }
-  for (let i = 0; i < rolesParams.WITHDRAWAL_MANAGER.length; i++) {
-    roles.push(keccak256(toUtf8Bytes("WITHDRAWAL_MANAGER")));
-    users.push(rolesParams.WITHDRAWAL_MANAGER[i]);
-  }
-  for (let i = 0; i < rolesParams.MARKETPLACE_MANAGER.length; i++) {
-    roles.push(keccak256(toUtf8Bytes("MARKETPLACE_MANAGER")));
-    users.push(rolesParams.MARKETPLACE_MANAGER[i]);
-  }
+    allRoles.push(role);
+    rolesMembers.push(members);
+    roleInitParams.push({
+      role,
+      roleAdmin,
+      roleName,
+    });
+  });
 
   return {
-    roles: roles,
-    users: users,
+    baseTokenContractsURI: configJson.baseTokenContractsURI,
+    allRoles,
+    rolesMembers,
+    roleInitParams,
   };
 }
 
 module.exports = {
-  parseMarketplaceParams,
-  parseRolesParams,
+  parseConfig,
 };
