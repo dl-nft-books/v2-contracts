@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.18;
 
 /**
  * This is the ERC721MintableToken contract. Which is an ERC721 token with minting and burning functionality.

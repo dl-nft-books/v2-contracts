@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
@@ -58,6 +58,7 @@ interface IMarketplace {
         address fundsRecipient;
         bool isNFTBuyable;
         bool isDisabled;
+        bool isVoucherBuyable;
     }
 
     /**
@@ -79,13 +80,37 @@ interface IMarketplace {
     /**
      * @notice Struct representing the buying parameters for purchasing an NFT
      * @param tokenContract the contract address of the token used for payment
+     * @param recipient the address that will receive the minted token
      * @param paymentDetails the payment details for purchasing an NFT
      * @param tokenData the init data for new token
      */
     struct BuyParams {
         address tokenContract;
+        address recipient;
         PaymentDetails paymentDetails;
         IERC721MintableToken.TokenMintData tokenData;
+    }
+
+    /**
+     * @notice Struct representing the parameters for accepting a request
+     * @param requestId the ID of the request being accepted
+     * @param recipient the address that will receive the minted token
+     * @param tokenData the token data that will be used to mint the token
+     */
+    struct AcceptRequestParams {
+        uint256 requestId;
+        address recipient;
+        IERC721MintableToken.TokenMintData tokenData;
+    }
+
+    /**
+     * @notice The structure that stores information about the user tokens
+     * @param tokenContract the address of the token contract
+     * @param tokenIds the array of token IDs
+     */
+    struct UserTokens {
+        address tokenContract;
+        uint256[] tokenIds;
     }
 
     /**
@@ -114,16 +139,6 @@ interface IMarketplace {
         bytes32 r;
         bytes32 s;
         uint8 v;
-    }
-
-    /**
-     * @notice The structure that stores information about the user tokens
-     * @param tokenContract the address of the token contract
-     * @param tokenIds the array of token IDs
-     */
-    struct UserTokens {
-        address tokenContract;
-        uint256[] tokenIds;
     }
 
     /**
@@ -176,14 +191,12 @@ interface IMarketplace {
 
     /**
      * @notice This event is emitted when a token has been successfully purchased
-     * @param recipient the address of the recipient of the purchased token
      * @param mintedTokenPrice the price of the minted token
      * @param paidTokensAmount the amount of tokens paid
      * @param buyParams the buying parameters used for purchasing the token
      * @param paymentType the type of payment used for purchasing the token
      */
     event TokenSuccessfullyPurchased(
-        address indexed recipient,
         uint256 mintedTokenPrice,
         uint256 paidTokensAmount,
         BuyParams buyParams,
@@ -192,15 +205,11 @@ interface IMarketplace {
 
     /**
      * @notice This event is emitted when a token has been successfully exchanged
-     * @param recipient the address of the recipient of the purchased token
-     * @param requestId the ID of the request
-     * @param tokenData the init data for minted token
-     * @param nftRequestInfo the NFTRequestInfo struct with the NFT request info
+     * @param acceptRequestParams the AcceptRequestParams struct containing the parameters used to accept the token request
+     * @param nftRequestInfo the NFTRequestInfo struct containing the details of the NFT request
      */
     event TokenSuccessfullyExchanged(
-        address indexed recipient,
-        uint256 requestId,
-        IERC721MintableToken.TokenMintData tokenData,
+        AcceptRequestParams acceptRequestParams,
         NFTRequestInfo nftRequestInfo
     );
 
@@ -342,8 +351,13 @@ interface IMarketplace {
      *
      * @param buyParams_ the buying parameters used for purchasing the token
      * @param sig_ the signature for the purchasing
+     * @param permitSig_ the signature for the permit function
      */
-    function buyTokenWithVoucher(BuyParams memory buyParams_, SigData memory sig_) external;
+    function buyTokenWithVoucher(
+        BuyParams memory buyParams_,
+        SigData memory sig_,
+        SigData memory permitSig_
+    ) external;
 
     /**
      * @notice Function that allows users to buy an NFT token using an NFT
@@ -354,14 +368,12 @@ interface IMarketplace {
     function buyTokenWithNFT(BuyParams memory buyParams_, SigData memory sig_) external;
 
     /**
-     * @notice The function to accept an NFT request
-     * @param requestId_ the ID of the pending NFT request
-     * @param tokenData_ the data required to the new NFT token
+     * @notice Function that accepts an NFT request
+     * @param requestParams_ the AcceptRequestParams struct with the NFT request info
      * @param sig_ the signature, which is needed to confirm the request
      */
     function acceptRequest(
-        uint256 requestId_,
-        IERC721MintableToken.TokenMintData memory tokenData_,
+        AcceptRequestParams memory requestParams_,
         SigData memory sig_
     ) external;
 

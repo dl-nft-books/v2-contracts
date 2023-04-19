@@ -1,88 +1,114 @@
 const { assert } = require("chai");
-const { wei, accounts, toBN } = require("../../scripts/utils/utils");
-const { ZERO_ADDR, PRECISION, PERCENTAGE_100 } = require("../../scripts/utils/constants");
+const { accounts } = require("../../scripts/utils/utils");
+const { parseConfig } = require("../../deploy/helpers/deployHelper");
+
 const Reverter = require("../helpers/reverter");
 const truffleAssert = require("truffle-assertions");
-const { signPermit } = require("../helpers/signatures");
 
 const ContractsRegistry = artifacts.require("ContractsRegistry");
-const TokenFactory = artifacts.require("TokenFactory");
 const TokenRegistry = artifacts.require("TokenRegistry");
 const RoleManager = artifacts.require("RoleManager");
-const ERC721MintableToken = artifacts.require("ERC721MintableToken");
-const Marketplace = artifacts.require("Marketplace");
 const Voucher = artifacts.require("Voucher");
 
 describe("Voucher", () => {
   let OWNER;
   let SECOND;
-  const OWNER_PK = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-  const USER1_PK = "0e48c6349e2619d39b0f2c19b63e650718903a3146c7fb71f4c7761147b2a10b";
+  let FACTORY;
 
   let voucher;
-  let marketplace;
   let contractsRegistry;
-
-  const defaultValue = toBN(100);
-  const defaultEndTime = toBN(1000000000000);
+  let tokenRegistry;
+  let VOUCHER_TOKEN;
 
   const reverter = new Reverter();
-
-  function signPermitTest({
-    privateKey = OWNER_PK,
-    owner = OWNER,
-    spender = marketplace.address,
-    value = defaultValue.toFixed(),
-    deadline = defaultEndTime.toFixed(),
-  }) {
-    const buffer = Buffer.from(privateKey, "hex");
-
-    const domain = {
-      name: "Voucher",
-      verifyingContract: voucher.address,
-    };
-
-    const permit = {
-      owner: owner,
-      spender: spender,
-      value: value,
-      deadline: deadline,
-    };
-
-    return signPermit(domain, permit, buffer);
-  }
 
   before("setup", async () => {
     OWNER = await accounts(0);
     SECOND = await accounts(1);
+    FACTORY = await accounts(3);
+
+    const _roleManager = await RoleManager.new();
+    const _tokenRegistry = await TokenRegistry.new();
+    contractsRegistry = await ContractsRegistry.new();
+
+    await contractsRegistry.__OwnableContractsRegistry_init();
+
+    await contractsRegistry.addProxyContract(await contractsRegistry.ROLE_MANAGER_NAME(), _roleManager.address);
+    await contractsRegistry.addProxyContract(await contractsRegistry.TOKEN_REGISTRY_NAME(), _tokenRegistry.address);
+    await contractsRegistry.addContract(await contractsRegistry.TOKEN_FACTORY_NAME(), FACTORY);
+
+    const roleManager = await RoleManager.at(await contractsRegistry.getRoleManagerContract());
+    tokenRegistry = await TokenRegistry.at(await contractsRegistry.getTokenRegistryContract());
+
+    const config = parseConfig("./test/data/config.test.json");
+    await roleManager.__RoleManager_init(config.roleInitParams);
+
+    await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_REGISTRY_NAME());
 
     voucher = await Voucher.new();
     await voucher.__Voucher_init("name", "symbol");
 
-    // const _roleManager = await RoleManager.new();
-    // contractsRegistry = await ContractsRegistry.new();
-    marketplace = await Marketplace.new();
+    VOUCHER_TOKEN = await tokenRegistry.VOUCHER_TOKEN();
 
-    // await contractsRegistry.__OwnableContractsRegistry_init();
-
-    // await contractsRegistry.addProxyContract(await contractsRegistry.TOKEN_FACTORY_NAME(), _tokenFactory.address);
-    // await contractsRegistry.addProxyContract(await contractsRegistry.TOKEN_REGISTRY_NAME(), _tokenRegistry.address);
-    // await contractsRegistry.addProxyContract(await contractsRegistry.MARKETPLACE_NAME(), _marketplace.address);
-    // await contractsRegistry.addProxyContract(await contractsRegistry.ROLE_MANAGER_NAME(), _roleManager.address);
+    await tokenRegistry.addProxyPool(VOUCHER_TOKEN, voucher.address, {
+      from: FACTORY,
+    });
+    await tokenRegistry.injectDependenciesToExistingPools(VOUCHER_TOKEN, 0, 10);
 
     await reverter.snapshot();
   });
 
   afterEach(reverter.revert);
 
-  // describe("permit", () => {
-  //   it("should permit", async () => {
-  //     const sig = signPermitTest({});
+  describe("initialization", () => {
+    it("should set correct metadata", async () => {
+      assert.equal(await voucher.name(), "name");
+      assert.equal(await voucher.symbol(), "symbol");
+    });
 
-  //     console.log("voucher", voucher.address);
-  //     await voucher.permit(OWNER, marketplace.address, defaultValue.toFixed(), defaultEndTime.toFixed(), sig.v, sig.r, sig.s, { from: OWNER });
+    it("should get exception if contract already initialized", async () => {
+      await truffleAssert.reverts(
+        voucher.__Voucher_init("Test", "TST"),
+        "Initializable: contract is already initialized"
+      );
+    });
+  });
 
-  //     assert.equal(await voucher.allowance(OWNER, marketplace.address), 100);
-  //   });
-  // });
+  describe("dependency injection", () => {
+    it("should not allow random users to inject dependencies", async () => {
+      await truffleAssert.reverts(
+        voucher.setDependencies(contractsRegistry.address, "0x"),
+        "Dependant: not an injector"
+      );
+    });
+  });
+
+  describe("mint", () => {
+    it("should mint correctly", async () => {
+      await voucher.mint(SECOND, 1, { from: OWNER });
+      assert.equal(await voucher.balanceOf(SECOND), 1);
+    });
+
+    it("should revert if not role manager", async () => {
+      await truffleAssert.reverts(
+        voucher.mint(SECOND, 1, { from: SECOND }),
+        "Voucher: Caller is not an token manager."
+      );
+    });
+  });
+
+  describe("burn", () => {
+    it("should burn correctly", async () => {
+      await voucher.mint(SECOND, 1, { from: OWNER });
+      await voucher.burn(SECOND, 1, { from: OWNER });
+      assert.equal(await voucher.balanceOf(SECOND), 0);
+    });
+
+    it("should revert if not role manager", async () => {
+      await truffleAssert.reverts(
+        voucher.burn(SECOND, 1, { from: SECOND }),
+        "Voucher: Caller is not an token manager."
+      );
+    });
+  });
 });

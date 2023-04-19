@@ -10,6 +10,7 @@ const TokenFactory = artifacts.require("TokenFactory");
 const TokenRegistry = artifacts.require("TokenRegistry");
 const RoleManager = artifacts.require("RoleManager");
 const ERC721MintableToken = artifacts.require("ERC721MintableToken");
+const Voucher = artifacts.require("Voucher");
 
 TokenRegistry.numberFormat = "BigNumber";
 
@@ -51,9 +52,9 @@ describe("TokenFactory", () => {
     await contractsRegistry.injectDependencies(await contractsRegistry.TOKEN_REGISTRY_NAME());
     await contractsRegistry.injectDependencies(await contractsRegistry.ROLE_MANAGER_NAME());
 
-    const tokenName = [await tokenRegistry.TOKEN_POOL()];
+    const tokenName = [await tokenRegistry.TOKEN_CONTRACT(), await tokenRegistry.VOUCHER_TOKEN()];
 
-    const tokenAddr = [(await ERC721MintableToken.new()).address];
+    const tokenAddr = [(await ERC721MintableToken.new()).address, (await Voucher.new()).address];
 
     await tokenRegistry.setNewImplementations(tokenName, tokenAddr);
 
@@ -68,16 +69,66 @@ describe("TokenFactory", () => {
         tokenFactory.deployToken("TestToken", "TT"),
         "TokenFactory: Caller is not a marketplace"
       );
+
+      await truffleAssert.reverts(
+        tokenFactory.deployVoucher("TestVoucher", "TV", { from: NOTHING }),
+        "TokenFactory: Caller is not a marketplace"
+      );
     });
   });
 
-  describe("deployToken()", () => {
+  describe("deployToken", () => {
     it("should deploy token", async () => {
-      await tokenFactory.deployToken("TestToken", "TT", { from: MARKETPLACE });
+      const tx = await tokenFactory.deployToken("TestToken", "TT", { from: MARKETPLACE });
 
-      assert.equal((await tokenRegistry.countPools(await tokenRegistry.TOKEN_POOL())).toFixed(), "1");
+      assert.equal((await tokenRegistry.countPools(await tokenRegistry.TOKEN_CONTRACT())).toFixed(), "1");
 
-      await ERC721MintableToken.at((await tokenRegistry.listPools(await tokenRegistry.TOKEN_POOL(), 0, 1))[0]);
+      const token = await ERC721MintableToken.at(
+        (
+          await tokenRegistry.listPools(await tokenRegistry.TOKEN_CONTRACT(), 0, 1)
+        )[0]
+      );
+
+      assert.equal(tx.receipt.logs[0].event, "TokenDeployed");
+      assert.equal(tx.receipt.logs[0].args.tokenProxyAddr, token.address);
+
+      assert.equal(await token.name(), "TestToken");
+    });
+  });
+
+  describe("deployVoucher", () => {
+    it("should deploy voucher", async () => {
+      const tx = await tokenFactory.deployVoucher("TestVoucher", "TV", { from: MARKETPLACE });
+
+      assert.equal((await tokenRegistry.countPools(await tokenRegistry.VOUCHER_TOKEN())).toFixed(), "1");
+
+      const token = await ERC721MintableToken.at(
+        (
+          await tokenRegistry.listPools(await tokenRegistry.VOUCHER_TOKEN(), 0, 1)
+        )[0]
+      );
+
+      assert.equal(tx.receipt.logs[0].event, "TokenDeployed");
+      assert.equal(tx.receipt.logs[0].args.tokenProxyAddr, token.address);
+
+      assert.equal(await token.name(), "TestVoucher");
+    });
+
+    it("should deploy voucher with Token Factory manager role", async () => {
+      const tx = await tokenFactory.deployVoucher("TestVoucher", "TV", { from: OWNER });
+
+      assert.equal((await tokenRegistry.countPools(await tokenRegistry.VOUCHER_TOKEN())).toFixed(), "1");
+
+      const token = await ERC721MintableToken.at(
+        (
+          await tokenRegistry.listPools(await tokenRegistry.VOUCHER_TOKEN(), 0, 1)
+        )[0]
+      );
+
+      assert.equal(tx.receipt.logs[0].event, "TokenDeployed");
+      assert.equal(tx.receipt.logs[0].args.tokenProxyAddr, token.address);
+
+      assert.equal(await token.name(), "TestVoucher");
     });
   });
 });

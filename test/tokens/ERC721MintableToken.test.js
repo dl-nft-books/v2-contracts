@@ -4,8 +4,9 @@ const { parseConfig } = require("../../deploy/helpers/deployHelper");
 
 const Reverter = require("../helpers/reverter");
 const truffleAssert = require("truffle-assertions");
+const { ZERO_ADDR } = require("../../scripts/utils/constants");
 
-const ERC721MintableToken = artifacts.require("ERC721MintableToken");
+const ERC721MintableToken = artifacts.require("ERC721MintableTokenMock");
 const ContractsRegistry = artifacts.require("ContractsRegistry");
 const RoleManager = artifacts.require("RoleManager");
 const TokenRegistry = artifacts.require("TokenRegistry");
@@ -13,7 +14,7 @@ const Marketplace = artifacts.require("Marketplace");
 
 describe("ERC721MintableToken", () => {
   let OWNER;
-  let SECOND;
+  let USER1;
   let MARKETPLACE;
   let FACTORY;
   let NOTHING;
@@ -21,13 +22,13 @@ describe("ERC721MintableToken", () => {
   let token;
   let contractsRegistry;
   let tokenRegistry;
-  let TOKEN_POOL;
+  let TOKEN_CONTRACT;
 
   const reverter = new Reverter();
 
   before("setup", async () => {
     OWNER = await accounts(0);
-    SECOND = await accounts(1);
+    USER1 = await accounts(1);
     MARKETPLACE = await accounts(2);
     FACTORY = await accounts(3);
     NOTHING = await accounts(4);
@@ -56,12 +57,12 @@ describe("ERC721MintableToken", () => {
     token = await ERC721MintableToken.new();
     await token.__ERC721MintableToken_init("Test", "TST");
 
-    TOKEN_POOL = await tokenRegistry.TOKEN_POOL();
-    await tokenRegistry.addProxyPool(TOKEN_POOL, token.address, {
+    TOKEN_CONTRACT = await tokenRegistry.TOKEN_CONTRACT();
+    await tokenRegistry.addProxyPool(TOKEN_CONTRACT, token.address, {
       from: FACTORY,
     });
 
-    await tokenRegistry.injectDependenciesToExistingPools(0, 10);
+    await tokenRegistry.injectDependenciesToExistingPools(TOKEN_CONTRACT, 0, 10);
 
     await reverter.snapshot();
   });
@@ -90,44 +91,54 @@ describe("ERC721MintableToken", () => {
 
   describe("mint", () => {
     it("should mint correctly", async () => {
-      await token.mint(SECOND, [0, "uri"], { from: MARKETPLACE });
-      assert.equal(await token.ownerOf(0), SECOND);
+      await token.mint(USER1, [0, "uri"], { from: MARKETPLACE });
+      assert.equal(await token.ownerOf(0), USER1);
     });
 
     it("should revert if not marketplace", async () => {
-      await truffleAssert.reverts(token.mint(SECOND, [0, "uri"]), "ERC721MintableToken: Caller is not a marketplace.");
+      await truffleAssert.reverts(token.mint(USER1, [0, "uri"]), "ERC721MintableToken: Caller is not a marketplace.");
     });
 
     it("should revert if token already exists", async () => {
-      await token.mint(SECOND, [0, "uri"], { from: MARKETPLACE });
+      await token.mint(USER1, [0, "uri"], { from: MARKETPLACE });
 
       await truffleAssert.reverts(
-        token.mint(SECOND, [0, "uri"], { from: MARKETPLACE }),
+        token.mint(USER1, [0, "uri"], { from: MARKETPLACE }),
         "ERC721MintableToken: Token with such id already exists."
       );
     });
 
     it("should revert if token id is not equal to token index", async () => {
       await truffleAssert.reverts(
-        token.mint(SECOND, [1, "uri"], { from: MARKETPLACE }),
+        token.mint(USER1, [1, "uri"], { from: MARKETPLACE }),
         "ERC721MintableToken: Token id is not valid."
       );
     });
 
     it("should revert if token with such uri already exists", async () => {
-      await token.mint(SECOND, [0, "uri"], { from: MARKETPLACE });
+      await token.mint(USER1, [0, "uri"], { from: MARKETPLACE });
 
       await truffleAssert.reverts(
-        token.mint(SECOND, [1, "uri"], { from: MARKETPLACE }),
+        token.mint(USER1, [1, "uri"], { from: MARKETPLACE }),
         "ERC721MintableToken: Token with such URI already exists."
       );
     });
   });
 
+  describe("burn", () => {
+    it("should correctly burn token", async () => {
+      await token.mint(USER1, [0, "uri"], { from: MARKETPLACE });
+
+      await token.burn(0);
+
+      await truffleAssert.reverts(token.tokenURI(0), "ERC721MintableToken: URI query for nonexistent token.");
+    });
+  });
+
   describe("tokenURI", () => {
     it("should return correct tokenURI", async () => {
-      await token.mint(SECOND, [0, "uri"], { from: MARKETPLACE });
-      await token.mint(SECOND, [1, ""], { from: MARKETPLACE });
+      await token.mint(USER1, [0, "uri"], { from: MARKETPLACE });
+      await token.mint(USER1, [1, ""], { from: MARKETPLACE });
 
       const marketplace1 = await Marketplace.new();
       marketplace1.__Marketplace_init("");
@@ -136,12 +147,12 @@ describe("ERC721MintableToken", () => {
       marketplace2.__Marketplace_init("base/");
 
       await contractsRegistry.addContract(await contractsRegistry.MARKETPLACE_NAME(), marketplace1.address);
-      await tokenRegistry.injectDependenciesToExistingPools(0, 2);
+      await tokenRegistry.injectDependenciesToExistingPools(TOKEN_CONTRACT, 0, 2);
       assert.equal(await token.tokenURI(0), "uri");
       assert.equal(await token.tokenURI(1), "");
 
       await contractsRegistry.addContract(await contractsRegistry.MARKETPLACE_NAME(), marketplace2.address);
-      await tokenRegistry.injectDependenciesToExistingPools(0, 2);
+      await tokenRegistry.injectDependenciesToExistingPools(TOKEN_CONTRACT, 0, 2);
       assert.equal(await token.tokenURI(0), "base/uri");
       assert.equal(await token.tokenURI(1), "base/");
     });
@@ -149,7 +160,7 @@ describe("ERC721MintableToken", () => {
     it("should revert if token does not exist", async () => {
       const marketplace = await Marketplace.new();
       await contractsRegistry.addContract(await contractsRegistry.MARKETPLACE_NAME(), marketplace.address);
-      await tokenRegistry.injectDependenciesToExistingPools(0, 1);
+      await tokenRegistry.injectDependenciesToExistingPools(TOKEN_CONTRACT, 0, 1);
 
       await truffleAssert.reverts(token.tokenURI(0), "ERC721MintableToken: URI query for nonexistent token.");
     });
@@ -159,7 +170,7 @@ describe("ERC721MintableToken", () => {
     it("should return correct next token id", async () => {
       assert.equal(await token.nextTokenId(), 0);
 
-      await token.mint(SECOND, [0, ""], { from: MARKETPLACE });
+      await token.mint(USER1, [0, ""], { from: MARKETPLACE });
 
       assert.equal(await token.nextTokenId(), 1);
     });
@@ -168,13 +179,13 @@ describe("ERC721MintableToken", () => {
   describe("getUserTokenIDs", () => {
     it("should return correct user token IDs arr", async () => {
       await token.mint(OWNER, [0, "0"], { from: MARKETPLACE });
-      await token.mint(SECOND, [1, "1"], { from: MARKETPLACE });
+      await token.mint(USER1, [1, "1"], { from: MARKETPLACE });
       await token.mint(OWNER, [2, "2"], { from: MARKETPLACE });
 
       let tokenIDs = await token.getUserTokenIDs(OWNER);
       assert.deepEqual([tokenIDs[0].toString(), tokenIDs[1].toString()], ["0", "2"]);
 
-      tokenIDs = await token.getUserTokenIDs(SECOND);
+      tokenIDs = await token.getUserTokenIDs(USER1);
       assert.deepEqual([tokenIDs[0].toString()], ["1"]);
 
       assert.deepEqual(await token.getUserTokenIDs(NOTHING), []);

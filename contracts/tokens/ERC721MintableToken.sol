@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
@@ -39,9 +39,7 @@ contract ERC721MintableToken is
         address contractsRegistry_,
         bytes calldata
     ) external override dependant {
-        IContractsRegistry registry_ = IContractsRegistry(contractsRegistry_);
-
-        _marketplace = registry_.getMarketplaceContract();
+        _marketplace = IContractsRegistry(contractsRegistry_).getMarketplaceContract();
     }
 
     function mint(address to_, TokenMintData memory tokenData_) public onlyMarketplace {
