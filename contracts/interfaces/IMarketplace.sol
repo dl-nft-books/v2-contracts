@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
+import "./tokens/IERC721MintableToken.sol";
+
 /**
  * This is the marketplace contract that stores information about
  * the token contracts and allows users to mint tokens.
@@ -12,12 +16,28 @@ interface IMarketplace {
      * @param ERC20 the payment can be made in any ERC20 token
      * @param NFT the payment can be made using an NFT
      * @param VOUCHER the payment can be made using a voucher
+     * @param REQUEST the payment can be made using a request
      */
     enum PaymentType {
         NATIVE,
         ERC20,
         NFT,
-        VOUCHER
+        VOUCHER,
+        REQUEST
+    }
+
+    /**
+     * @notice Enum representing different NFT request statuses
+     * @param NONE the request has not been created
+     * @param PENDING the request is pending
+     * @param ACCEPTED the request has been accepted
+     * @param CANCELED the request has been canceled
+     */
+    enum NFTRequestStatus {
+        NONE,
+        PENDING,
+        ACCEPTED,
+        CANCELED
     }
 
     /**
@@ -41,57 +61,31 @@ interface IMarketplace {
     }
 
     /**
-     * @notice The structure that stores base information about the token contract
+     * @notice The structure that stores information about the NFT request
+     * @param requester the address of the offerer
      * @param tokenContract the address of the token contract
-     * @param isDisabled the flag that indicates if the token contract is disabled
-     * @param pricePerOneToken the price of one token in USD
-     * @param tokenName the name of the token
+     * @param nftContract the address of the NFT contract
+     * @param nftId the ID of the NFT
+     * @param status the status of the request
      */
-    struct BaseTokenParams {
+    struct NFTRequestInfo {
+        address requester;
         address tokenContract;
-        bool isDisabled;
-        uint256 pricePerOneToken;
-        string tokenName;
-    }
-
-    /**
-     * @notice The structure that stores detailed information about the token contract
-     * @param tokenContract the address of the token contract
-     * @param tokenParams the TokenParams struct with the token contract params
-     * @param tokenName the name of the token
-     * @param tokenSymbol the symbol of the token
-     */
-    struct DetailedTokenParams {
-        address tokenContract;
-        TokenParams tokenParams;
-        string tokenName;
-        string tokenSymbol;
+        address nftContract;
+        uint256 nftId;
+        NFTRequestStatus status;
     }
 
     /**
      * @notice Struct representing the buying parameters for purchasing an NFT
-     * @param paymentDetails the payment details for purchasing an NFT
      * @param tokenContract the contract address of the token used for payment
-     * @param futureTokenId the ID of the future token
-     * @param endTimestamp the timestamp when the purchase ends
-     * @param tokenURI the URI of the token to be purchased
+     * @param paymentDetails the payment details for purchasing an NFT
+     * @param tokenData the init data for new token
      */
     struct BuyParams {
+        address tokenContract;
         PaymentDetails paymentDetails;
-        address tokenContract;
-        uint256 futureTokenId;
-        uint256 endTimestamp;
-        string tokenURI;
-    }
-
-    /**
-     * @notice The structure that stores information about the user tokens
-     * @param tokenContract the address of the token contract
-     * @param tokenIds the array of token IDs
-     */
-    struct UserTokens {
-        address tokenContract;
-        uint256[] tokenIds;
+        IERC721MintableToken.TokenMintData tokenData;
     }
 
     /**
@@ -110,15 +104,75 @@ interface IMarketplace {
 
     /**
      * @notice Struct representing the signature for a transaction
+     * @param endSigTimestamp the signature expiration time
      * @param r the r value of the signature
      * @param s the s value of the signature
      * @param v the v value of the signature
      */
-    struct Sig {
+    struct SigData {
+        uint256 endSigTimestamp;
         bytes32 r;
         bytes32 s;
         uint8 v;
     }
+
+    /**
+     * @notice The structure that stores information about the user tokens
+     * @param tokenContract the address of the token contract
+     * @param tokenIds the array of token IDs
+     */
+    struct UserTokens {
+        address tokenContract;
+        uint256[] tokenIds;
+    }
+
+    /**
+     * @notice The structure that stores brief information about the token contract
+     * @param baseTokenData the BaseTokenData struct with the base token contract data
+     * @param pricePerOneToken the price of one token in USD
+     * @param isDisabled the flag that indicates if the token contract is disabled
+     */
+    struct BriefTokenInfo {
+        BaseTokenData baseTokenData;
+        uint256 pricePerOneToken;
+        bool isDisabled;
+    }
+
+    /**
+     * @notice The structure that stores detailed information about the token contract
+     * @param baseTokenData the BaseTokenData struct with the base token contract data
+     * @param tokenParams the TokenParams struct with the token contract params
+     */
+    struct DetailedTokenInfo {
+        BaseTokenData baseTokenData;
+        TokenParams tokenParams;
+    }
+
+    /**
+     * @notice The structure that stores base information about the token contract
+     * @param tokenContract the address of the token contract
+     * @param tokenName the name of the token
+     * @param tokenSymbol the symbol of the token
+     */
+    struct BaseTokenData {
+        address tokenContract;
+        string tokenName;
+        string tokenSymbol;
+    }
+
+    /**
+     * @notice This event is emitted during the creation of a new token
+     * @param tokenContract the address of the token contract
+     * @param tokenName the name of the collection
+     * @param tokenSymbol the symbol of the collection
+     * @param tokenParams struct with the token contract params
+     */
+    event TokenContractDeployed(
+        address indexed tokenContract,
+        string tokenName,
+        string tokenSymbol,
+        TokenParams tokenParams
+    );
 
     /**
      * @notice This event is emitted when a token has been successfully purchased
@@ -137,32 +191,47 @@ interface IMarketplace {
     );
 
     /**
-     * @notice This event is emitted during the creation of a new token
-     * @param tokenContract the address of the token contract
-     * @param tokenName the name of the collection
-     * @param tokenSymbol the symbol of the collection
-     * @param tokenParams struct with the token contract params
+     * @notice This event is emitted when a token has been successfully exchanged
+     * @param recipient the address of the recipient of the purchased token
+     * @param requestId the ID of the request
+     * @param tokenData the init data for minted token
+     * @param nftRequestInfo the NFTRequestInfo struct with the NFT request info
      */
-    event TokenContractDeployed(
-        address indexed tokenContract,
-        string tokenName,
-        string tokenSymbol,
-        TokenParams tokenParams
+    event TokenSuccessfullyExchanged(
+        address indexed recipient,
+        uint256 requestId,
+        IERC721MintableToken.TokenMintData tokenData,
+        NFTRequestInfo nftRequestInfo
     );
+
+    /**
+     * @notice This event is emitted when the user creates a new NFT request
+     * @param requestId the ID of the request
+     * @param requester the address of the user who created the request
+     * @param tokenContract the address of the desired token contract
+     * @param nftContract the address of the NFT contract
+     * @param nftId the ID of the NFT
+     */
+    event NFTRequestCreated(
+        uint256 indexed requestId,
+        address indexed requester,
+        address indexed tokenContract,
+        address nftContract,
+        uint256 nftId
+    );
+
+    /**
+     * @notice This event is emitted when the user approves the NFT request
+     * @param requestId the ID of the request
+     */
+    event NFTRequestCanceled(uint256 indexed requestId);
 
     /**
      * @notice This event is emitted when the TokenContract parameters are updated
      * @param tokenContract the address of the token contract
-     * @param tokenName the name of the collection
-     * @param tokenSymbol the symbol of the collection
      * @param tokenParams the new TokenParams struct with new parameters
      */
-    event TokenContractParamsUpdated(
-        address indexed tokenContract,
-        string tokenName,
-        string tokenSymbol,
-        TokenParams tokenParams
-    );
+    event TokenParamsUpdated(address indexed tokenContract, TokenParams tokenParams);
 
     /**
      * @notice This event is emitted when the owner of the contract withdraws the currency
@@ -171,6 +240,14 @@ interface IMarketplace {
      * @param amount the number of tokens withdrawn
      */
     event PaidTokensWithdrawn(address indexed tokenAddr, address recipient, uint256 amount);
+
+    /**
+     * @notice This event is emitted when NFT tokens are withdrawn from the marketplace contract
+     * @param nftAddr the address of the NFT contract
+     * @param recipient the address of the recipient of the withdrawn tokens
+     * @param tokenIDs the array of uint256 token IDs that were withdrawn
+     */
+    event NFTTokensWithdrawn(address indexed nftAddr, address recipient, uint256[] tokenIDs);
 
     /**
      * @notice This event is emitted when the URI of the base token contracts has been updated
@@ -195,6 +272,12 @@ interface IMarketplace {
     function unpause() external;
 
     /**
+     * @notice The function for updating the base token contracts URI string
+     * @param baseTokenContractsURI_ the new base token contracts URI string
+     */
+    function setBaseTokenContractsURI(string memory baseTokenContractsURI_) external;
+
+    /**
      * @notice The function for creating a new token contract
      * @param name_ the name of the collection
      * @param symbol_ the symbol of the collection
@@ -209,14 +292,10 @@ interface IMarketplace {
     /**
      * @notice The function for updating all TokenContract parameters
      * @param tokenContract_ the address of the token contract
-     * @param name_ the name of the collection
-     * @param symbol_ the symbol of the collection
      * @param newTokenParams_ the new TokenParams struct
      */
-    function updateAllParams(
+    function updateTokenParams(
         address tokenContract_,
-        string memory name_,
-        string memory symbol_,
         TokenParams memory newTokenParams_
     ) external;
 
@@ -235,12 +314,20 @@ interface IMarketplace {
     ) external;
 
     /**
+     * @notice This function allows withdrawal of NFT tokens to a specified recipient
+     * @param nft_ the address of the ERC721 contract, which tokens will be withdrawn from the marketplace contract
+     * @param recipient_ the address of the recipient who will receive the withdrawn NFT tokens
+     * @param tokenIds_ the array of uint256 token IDs representing the NFT tokens to be withdrawn
+     */
+    function withdrawNFTs(IERC721 nft_, address recipient_, uint256[] memory tokenIds_) external;
+
+    /**
      * @notice Function that allows users to buy a token using Ether
      * @dev Requires the caller to send Ether to the contract for the purchase
      * @param buyParams_ the buying parameters used for purchasing the token
      * @param sig_ the signature for the purchasing
      */
-    function buyTokenWithETH(BuyParams memory buyParams_, Sig memory sig_) external payable;
+    function buyTokenWithETH(BuyParams memory buyParams_, SigData memory sig_) external payable;
 
     /**
      * @notice Function that allows users to buy a token using an ERC20 token
@@ -248,7 +335,7 @@ interface IMarketplace {
      * @param buyParams_ the buying parameters used for purchasing the token
      * @param sig_ the signature for the purchasing
      */
-    function buyTokenWithERC20(BuyParams memory buyParams_, Sig memory sig_) external;
+    function buyTokenWithERC20(BuyParams memory buyParams_, SigData memory sig_) external;
 
     /**
      * @notice Function that allows users to buy a token using a voucher
@@ -256,7 +343,7 @@ interface IMarketplace {
      * @param buyParams_ the buying parameters used for purchasing the token
      * @param sig_ the signature for the purchasing
      */
-    function buyTokenWithVoucher(BuyParams memory buyParams_, Sig memory sig_) external;
+    function buyTokenWithVoucher(BuyParams memory buyParams_, SigData memory sig_) external;
 
     /**
      * @notice Function that allows users to buy an NFT token using an NFT
@@ -264,19 +351,68 @@ interface IMarketplace {
      * @param buyParams_ the buying parameters used for purchasing the token
      * @param sig_ the signature for the purchasing
      */
-    function buyTokenWithNFT(BuyParams memory buyParams_, Sig memory sig_) external;
+    function buyTokenWithNFT(BuyParams memory buyParams_, SigData memory sig_) external;
 
     /**
-     * @notice The function for updating the base token contracts URI string
-     * @param baseTokenContractsURI_ the new base token contracts URI string
+     * @notice The function to accept an NFT request
+     * @param requestId_ the ID of the pending NFT request
+     * @param tokenData_ the data required to the new NFT token
+     * @param sig_ the signature, which is needed to confirm the request
      */
-    function setBaseTokenContractsURI(string memory baseTokenContractsURI_) external;
+    function acceptRequest(
+        uint256 requestId_,
+        IERC721MintableToken.TokenMintData memory tokenData_,
+        SigData memory sig_
+    ) external;
+
+    /**
+     * @notice Function that allows users to create a new NFT request
+     * @param tokenContract_ the address of the desired token contract
+     * @param nftContract_ the address of the NFT contract
+     * @param nftId_ the ID of the NFT
+     */
+    function createNFTRequest(
+        address tokenContract_,
+        address nftContract_,
+        uint256 nftId_
+    ) external returns (uint256 requestId_);
+
+    /**
+     * @notice Function that allows users to cancel an NFT request
+     * @param requestId_ the ID of the request
+     */
+    function cancelNFTRequest(uint256 requestId_) external;
 
     /**
      * @notice The function that returns the base token contracts URI string
      * @return base token contracts URI string
      */
     function baseTokenContractsURI() external view returns (string memory);
+
+    /**
+     * @notice The function that returns the total TokenContracts count
+     * @return total TokenContracts count
+     */
+    function getTokenContractsCount() external view returns (uint256);
+
+    /**
+     * @notice The function that returns the active TokenContracts count
+     * @return active TokenContracts count
+     */
+    function getActiveTokenContractsCount() external view returns (uint256);
+
+    /**
+     * @notice The function that gets the total number of pending NFT mint requests
+     * @return The number of pending NFT mint requests
+     */
+    function getAllPendingRequestsCount() external view returns (uint256);
+
+    /**
+     * @notice The function that gets the number of pending NFT mint requests for a specific user
+     * @param userAddr_ the address of the user for whom to retrieve the number of pending requests
+     * @return The number of pending NFT mint requests for the specified user
+     */
+    function getUserPendingRequestsCount(address userAddr_) external view returns (uint256);
 
     /**
      * @notice The function to get an array of token owned by a particular user with pagination
@@ -292,16 +428,53 @@ interface IMarketplace {
     ) external view returns (UserTokens[] memory userTokens_);
 
     /**
-     * @notice The function that returns the total TokenContracts count
-     * @return total TokenContracts count
+     * @notice The function that returns the brief token info of the token contract with pagination
+     * @param offset_ the offset for pagination
+     * @param limit_ the maximum number of elements for
+     * @return tokenParams_ the array of BriefTokenInfo structs with the brief token info
      */
-    function getTokenContractsCount() external view returns (uint256);
+    function getBriefTokenInfoPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (BriefTokenInfo[] memory tokenParams_);
 
     /**
-     * @notice The function that returns the active TokenContracts count
-     * @return active TokenContracts count
+     * @notice The function that returns the detailed token info of the token contract with pagination
+     * @param offset_ the offset for pagination
+     * @param limit_ the maximum number of elements for
+     * @return tokenParams_ the array of DetailedTokenInfo structs with the detailed token info
      */
-    function getActiveTokenContractsCount() external view returns (uint256);
+    function getDetailedTokenInfoPart(
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (DetailedTokenInfo[] memory tokenParams_);
+
+    /**
+     * @notice The function to retrieve brief information about token contracts
+     * @param tokenContracts_ the array of token contracts
+     * @return baseTokenParams_ the array of BriefTokenInfo structs representing the requested information for each token contract
+     */
+    function getBriefTokenInfo(
+        address[] memory tokenContracts_
+    ) external view returns (BriefTokenInfo[] memory baseTokenParams_);
+
+    /**
+     * @notice The function to retrieve detailed information about token contracts
+     * @param tokenContracts_ the array of token contracts addresses
+     * @return detailedTokenParams_ the array of DetailedTokenInfo structs representing the requested information for each token contract
+     */
+    function getDetailedTokenInfo(
+        address[] memory tokenContracts_
+    ) external view returns (DetailedTokenInfo[] memory detailedTokenParams_);
+
+    /**
+     * @notice The function to retrieve information about multiple NFT mint requests
+     * @param requestsId_ the array of IDs representing the NFT mint requests for which to retrieve information
+     * @return nftRequestsInfo_ the array of NFTRequestInfo structs representing the requested information for each NFT mint request
+     */
+    function getNFTRequestsInfo(
+        uint256[] memory requestsId_
+    ) external view returns (NFTRequestInfo[] memory nftRequestsInfo_);
 
     /**
      * @notice The function for getting addresses of token contracts with pagination
@@ -315,42 +488,26 @@ interface IMarketplace {
     ) external view returns (address[] memory);
 
     /**
-     * @notice The function that returns the token params of the token contract
-     * @param tokenContracts_ the array of addresses of the token contracts
-     * @return the BaseTokenParams array struct with the base token params
+     * @notice The function that gets a part of all pending requests
+     * @param offset_ the offset to start getting pending requests from
+     * @param limit_ the maximum number of pending requests to return
+     * @return The array of pending request IDs
      */
-    function getBaseTokenParams(
-        address[] memory tokenContracts_
-    ) external view returns (BaseTokenParams[] memory);
-
-    /**
-     * @notice The function that returns the base token params of the token contract with pagination
-     * @param offset_ the offset for pagination
-     * @param limit_ the maximum number of elements for
-     * @return tokenParams_ the array of BaseTokenParams structs with the base token params
-     */
-    function getBaseTokenParamsPart(
+    function getPendingRequestsPart(
         uint256 offset_,
         uint256 limit_
-    ) external view returns (BaseTokenParams[] memory tokenParams_);
+    ) external view returns (uint256[] memory);
 
     /**
-     * @notice The function that returns the token params of the token contracts
-     * @param tokenContracts_ the array of addresses of the token contracts
-     * @return the DetailedTokenParams array struct with the detailed token params
+     * @notice The function that gets a part of pending requests for a user
+     * @param userAddr_ the user address to get pending requests for
+     * @param offset_ the offset to start getting pending requests from
+     * @param limit_ the maximum number of pending requests to return
+     * @return The array of pending request IDs for the given user
      */
-    function getDetailedTokenParams(
-        address[] memory tokenContracts_
-    ) external view returns (DetailedTokenParams[] memory);
-
-    /**
-     * @notice The function that returns the detailed token params of the token contract with pagination
-     * @param offset_ the offset for pagination
-     * @param limit_ the maximum number of elements for
-     * @return tokenParams_ the array of DetailedTokenParams structs with the detailed token params
-     */
-    function getDetailedTokenParamsPart(
+    function getUserPendingRequestsPart(
+        address userAddr_,
         uint256 offset_,
         uint256 limit_
-    ) external view returns (DetailedTokenParams[] memory tokenParams_);
+    ) external view returns (uint256[] memory);
 }
