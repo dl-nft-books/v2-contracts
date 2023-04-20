@@ -1,6 +1,12 @@
 # NFT Books contracts V2
 
-This repository contains the smart contracts for the NFT Books V2.
+This repository contains the smart contracts for the NFT Books V2. Contains the following contracts:
+
+* *Marketplace* allows to create and manage books as NFT.
+* *RoleManager* implement a role-based access control system. This smart contract allows for the creation and management of various roles with different access permissions.
+* *TokenFactory* allows to create new tokens and vouchers.
+* *TokenRegistry* stores information about all tokens created by the TokenFactory.
+* *ContractRegistry* stores addresses of all contracts.
 
 ## Install Dependencies
 
@@ -102,8 +108,8 @@ Next, call command `npm run deploy <network>` (**network** is the name of the ne
 
 To verify the contract you must use the command `npx hardhat --network <network> verify --constructor-args constructorArgs.js <contract-address>`. Where:
 
-- Contract address - deployed contract address
-- Network - the network to which the contract was attached
-- ConstructorArgs.js - file with constructor arguments of the deployed contract
+* Contract address - deployed contract address
+* Network - the network to which the contract was attached
+* ConstructorArgs.js - file with constructor arguments of the deployed contract
 
 Or set up **CONFIRMATIONS** and **VERIFY** fields in your **.env** file for autoverification during deployment
