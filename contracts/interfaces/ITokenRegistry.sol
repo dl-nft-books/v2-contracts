@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "./IMarketplace.sol";
+
 /**
  * This is the TokenRegistry contract, a tuned ContractsRegistry contract. Its purpose is the management of
  * TokenPools
@@ -75,4 +77,17 @@ interface ITokenRegistry {
      * @return True if the address is a voucher pool, false otherwise
      */
     function isVoucherToken(address potentialContract_) external view returns (bool);
+
+    /**
+     * @notice The function to retrieve a part of base data of the pool
+     * @param poolName_ The name of the pool
+     * @param offset_ The offset from which to start retrieving
+     * @param limit_ The limit of pools to retrieve
+     * @return The array of BaseTokenData
+     */
+    function getBaseTokenDataPart(
+        string calldata poolName_,
+        uint256 offset_,
+        uint256 limit_
+    ) external view returns (IMarketplace.BaseTokenData[] memory);
 }
