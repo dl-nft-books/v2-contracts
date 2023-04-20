@@ -75,13 +75,13 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
     }
 
     function _onlyTokenFactory() internal view {
-        require(_tokenFactory == msg.sender, "TokenRegistry: Caller is not a factory");
+        require(_tokenFactory == msg.sender, "TokenRegistry: Caller is not a factory.");
     }
 
     function _onlyTokenRegistryManager() internal view {
         require(
             _roleManager.isTokenRegistryManager(msg.sender),
-            "TokenRegistry: Caller is not a token registry manager"
+            "TokenRegistry: Caller is not a token registry manager."
         );
     }
 }

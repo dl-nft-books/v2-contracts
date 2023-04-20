@@ -54,7 +54,7 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
         bytes32[] memory rolesToRemove_
     ) external override onlyRole(ADMINISTRATOR_ROLE) {
         for (uint256 i = 0; i < rolesToRemove_.length; i++) {
-            require(isRoleExists(rolesToRemove_[i]), "RoleManager: Role does not exists");
+            require(isRoleExists(rolesToRemove_[i]), "RoleManager: Role does not exists.");
 
             delete _rolesInfo[rolesToRemove_[i]].roleName;
 
@@ -243,7 +243,7 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
 
             require(
                 bytes(currentData_.roleName).length > 0,
-                "RoleManager: Role name cannot be an empty string"
+                "RoleManager: Role name cannot be an empty string."
             );
 
             _setRoleAdmin(currentData_.role, currentData_.roleAdmin);
@@ -259,7 +259,7 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
     ) internal {
         require(
             roles_.length == accounts_.length,
-            "RoleManager: Roles and accounts arrays must be of equal length"
+            "RoleManager: Roles and accounts arrays must be of equal length."
         );
 
         for (uint256 i = 0; i < roles_.length; i++) {
@@ -284,7 +284,7 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
     function _onlyNotLastAdministrator(bytes32 role_) internal view {
         require(
             role_ != ADMINISTRATOR_ROLE || getRoleMembersCount(ADMINISTRATOR_ROLE) > 1,
-            "RoleManager: Cannot remove last administrator"
+            "RoleManager: Cannot remove last administrator."
         );
     }
 }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 /**
  * This is the TokenRegistry contract, a tuned ContractsRegistry contract. Its purpose is the management of
- * TokenPools.
+ * TokenPools
  * The owner of this contract is capable of upgrading pools' implementation via the ProxyBeacon pattern
  */
 interface ITokenRegistry {

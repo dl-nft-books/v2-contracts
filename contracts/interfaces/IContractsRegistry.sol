@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 /**
  * This is the registry contract  that stores information about
  * the other contracts. Its purpose is to keep track of the
- * contracts, provide upgradeability mechanism and dependency injection mechanism.
+ * contracts, provide upgradeability mechanism and dependency injection mechanism
  */
 interface IContractsRegistry {
     /// @notice Used in dependency injection mechanism

@@ -63,13 +63,13 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
     }
 
     function _onlyMarketplace() internal view {
-        require(_marketplace == msg.sender, "TokenFactory: Caller is not a marketplace");
+        require(_marketplace == msg.sender, "TokenFactory: Caller is not a marketplace.");
     }
 
     function _onlyEligibleAddresses() internal view {
         require(
             _marketplace == msg.sender || _roleManager.isTokenFactoryManager(msg.sender),
-            "TokenFactory: Caller is not a marketplace or token factory manager"
+            "TokenFactory: Caller is not a marketplace or token factory manager."
         );
     }
 }
