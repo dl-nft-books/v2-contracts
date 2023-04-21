@@ -7,7 +7,7 @@ import "./tokens/IERC721MintableToken.sol";
 
 /**
  * This is the marketplace contract that stores information about
- * the token contracts and allows users to mint tokens.
+ * the token contracts and allows users to mint tokens
  */
 interface IMarketplace {
     /**
@@ -49,6 +49,7 @@ interface IMarketplace {
      * @param fundsRecipient the address of the recipient of the funds
      * @param isNFTBuyable the flag that indicates if the NFT can be bought for the token price
      * @param isDisabled the flag that indicates if the token contract is disabled
+     * @param isVoucherBuyable the flag that indicates if the NFT can be bought with a voucher
      */
     struct TokenParams {
         uint256 pricePerOneToken;
@@ -397,19 +398,19 @@ interface IMarketplace {
 
     /**
      * @notice The function that returns the base token contracts URI string
-     * @return base token contracts URI string
+     * @return Base token contracts URI string
      */
     function baseTokenContractsURI() external view returns (string memory);
 
     /**
      * @notice The function that returns the total TokenContracts count
-     * @return total TokenContracts count
+     * @return Total TokenContracts count
      */
     function getTokenContractsCount() external view returns (uint256);
 
     /**
      * @notice The function that returns the active TokenContracts count
-     * @return active TokenContracts count
+     * @return Active TokenContracts count
      */
     function getActiveTokenContractsCount() external view returns (uint256);
 

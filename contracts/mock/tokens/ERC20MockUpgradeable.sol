@@ -12,7 +12,6 @@ contract ERC20MockUpgradeable is ERC20Upgradeable {
         uint8 decimalPlaces_
     ) internal initializer {
         __ERC20_init(name_, symbol_);
-        // __ERC20Permit_init(name_);
 
         _decimals = decimalPlaces_;
     }

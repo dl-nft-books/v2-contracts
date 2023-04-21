@@ -1,6 +1,12 @@
 # NFT Books contracts V2
 
-This repository contains the smart contracts for the NFT Books V2.
+This repository contains the smart contracts for the NFT Books V2. Contains the following contracts:
+
+* *Marketplace* allows to create and manage books as NFT.
+* *RoleManager* implement a role-based access control system. This smart contract allows for the creation and management of various roles with different access permissions.
+* *TokenFactory* allows to create new tokens and vouchers.
+* *TokenRegistry* stores information about all tokens created by the TokenFactory.
+* *ContractRegistry* stores addresses of all contracts.
 
 ## Install Dependencies
 
@@ -21,26 +27,78 @@ Before deploying, you need to create an **.env** file following the example of *
 Contents of **.env.example**:
 
 ```bash
-PRIVATE_KEY = "YOUR PRIVATE KEY"
-INFURA_KEY = "INFURA PROJECT ID"
-ETHERSCAN_KEY = "ETHERSCAN API KEY"
-BSCSCAN_KEY = "BSCSCAN API KEY"
-COINMARKETCAP_KEY = "COINMARKETCAP API KEY"
+# Deployer private key
+PRIVATE_KEY=YOUR PRIVATE KEY
+
+# RPC Endpoints
+INFURA_KEY=INFURA PROJECT ID
+
+# Additional keys
+ETHERSCAN_KEY=ETHERSCAN API KEY
+POLYGON_KEY=POLYGON API KEY
+
 # Available targets: 'ethers-v5', 'truffle-v5' and 'web3-v1'
 # By default 'ethers-v5'
-TYPECHAIN_TARGET = "TYPECHAIN TARGET"
-TYPECHAIN_FORCE = "FORCE FLAG"
+TYPECHAIN_TARGET=TYPECHAIN TARGET
 ```
 
-Next, you need to fill out file **deploy/data/tokenFactoryParams.json**, which is the configuration for the **TokenFactory** contract deployment
+Next, you need to fill out file **deploy/data/config.json**, which is the configuration for the **Marketplace** and **RoleManager** contracts deployment
 
-Example of **tokenFactoryParams.json**:
+Example of **config.json**:
 
 ```json
 {
-  "admins":["0x6B175474E89094C44Da98b954EedeAC495271d0F"],
-  "baseTokenContractsURI":"base_URI/",
-  "priceDecimals":"18"
+    "baseTokenContractsURI": "baseURI",
+    "roles": [
+        {
+            "roleKey": "ADMINISTRATOR_ROLE",
+            "roleAdminKey": "ADMINISTRATOR_ROLE",
+            "roleName": "Administrator",
+            "members": []
+        },
+        {
+            "roleKey": "ROLE_SUPERVISOR",
+            "roleAdminKey": "ADMINISTRATOR_ROLE",
+            "roleName": "Role Supervisor",
+            "members": []
+        },
+        {
+            "roleKey": "TOKEN_FACTORY_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Token Factory Manager",
+            "members": []
+        },
+        {
+            "roleKey": "TOKEN_REGISTRY_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Token Registry Manager",
+            "members": []
+        },
+        {
+            "roleKey": "TOKEN_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Token Manager",
+            "members": []
+        },
+        {
+            "roleKey": "WITHDRAWAL_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Withdrawal Manager",
+            "members": []
+        },
+        {
+            "roleKey": "MARKETPLACE_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Marketplace Manager",
+            "members": []
+        },
+        {
+            "roleKey": "SIGNATURE_MANAGER",
+            "roleAdminKey": "ROLE_SUPERVISOR",
+            "roleName": "Signature Manager",
+            "members": []
+        }
+    ]
 }
 ```
 
@@ -50,8 +108,8 @@ Next, call command `npm run deploy <network>` (**network** is the name of the ne
 
 To verify the contract you must use the command `npx hardhat --network <network> verify --constructor-args constructorArgs.js <contract-address>`. Where:
 
-- Contract address - deployed contract address
-- Network - the network to which the contract was attached
-- ConstructorArgs.js - file with constructor arguments of the deployed contract
+* Contract address - deployed contract address
+* Network - the network to which the contract was attached
+* ConstructorArgs.js - file with constructor arguments of the deployed contract
 
 Or set up **CONFIRMATIONS** and **VERIFY** fields in your **.env** file for autoverification during deployment

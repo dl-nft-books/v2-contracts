@@ -26,6 +26,7 @@ describe("TokenRegistry", () => {
   let token;
   let tokenRegistry;
   let contractsRegistry;
+  let voucher;
 
   const reverter = new Reverter();
 
@@ -176,5 +177,19 @@ describe("TokenRegistry", () => {
     await tokenRegistry.injectDependenciesToExistingPoolsWithData(TOKEN_CONTRACT, "0x", 0, 1);
 
     assert.equal(await pool.roleManager(), await contractsRegistry.getRoleManagerContract());
+  });
+
+  it("getBaseTokenDataPart()", async () => {
+    const voucher1 = await Voucher.new();
+    await voucher1.__Voucher_init("Voucher", "VC");
+    const token1 = await ERC721MintableToken.new();
+    await token1.__ERC721MintableToken_init("Token", "TK");
+    await tokenRegistry.addProxyPool(TOKEN_CONTRACT, token1.address, { from: FACTORY });
+    await tokenRegistry.addProxyPool(VOUCHER_TOKEN, voucher1.address, { from: FACTORY });
+
+    assert.deepEqual(await tokenRegistry.getBaseTokenDataPart(TOKEN_CONTRACT, 0, 2), [[token1.address, "Token", "TK"]]);
+    assert.deepEqual(await tokenRegistry.getBaseTokenDataPart(VOUCHER_TOKEN, 0, 2), [
+      [voucher1.address, "Voucher", "VC"],
+    ]);
   });
 });

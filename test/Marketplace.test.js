@@ -557,6 +557,25 @@ describe("Marketplace", () => {
         reason
       );
 
+      const sigETH = signBuyTest({
+        tokenContract: tokenContract.address,
+        futureTokenId: 2,
+        paymentTokenAddress: ZERO_ADDR,
+        tokenURI: defaultTokenURI + "!",
+      });
+      const expectedValueAmount = defaultPricePerOneToken.times(wei(1)).idiv(tokenPrice);
+      await truffleAssert.reverts(
+        marketplace.buyTokenWithETH(
+          [tokenContract.address, USER1, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [0, defaultTokenURI]],
+          [defaultEndTime, sigETH.r, sigETH.s, sigETH.v],
+          {
+            from: USER1,
+            value: expectedValueAmount,
+          }
+        ),
+        reason
+      );
+
       await marketplace.unpause();
 
       await marketplace.buyTokenWithERC20(
@@ -578,13 +597,30 @@ describe("Marketplace", () => {
         { from: USER1 }
       );
 
+      await marketplace.buyTokenWithETH(
+        [tokenContract.address, USER1, [ZERO_ADDR, tokenPrice, defaultDiscountValue, 0], [2, defaultTokenURI + "!"]],
+        [defaultEndTime, sigETH.r, sigETH.s, sigETH.v],
+        {
+          from: USER1,
+          value: expectedValueAmount,
+        }
+      );
+
       const token = await ERC721MintableToken.at(tokenContract.address);
 
       assert.equal(await token.tokenURI(0), defaultBaseURI + defaultTokenURI);
       assert.equal(await token.tokenURI(1), defaultBaseURI + newTokenURI);
+      assert.equal(await token.tokenURI(2), defaultBaseURI + defaultTokenURI + "!");
 
       assert.equal(await token.ownerOf(0), USER1);
       assert.equal(await token.ownerOf(1), USER1);
+      assert.equal(await token.ownerOf(2), USER1);
+    });
+
+    it("should pause and unpause token buying", async () => {
+      const reason = "Pausable: paused";
+
+      await marketplace.pause();
     });
 
     it("should get exception if non admin try to call this function", async () => {
@@ -885,6 +921,12 @@ describe("Marketplace", () => {
         }),
         [tokenId]
       );
+    });
+
+    it("should get exception if no a withdrawal manager calls this function", async () => {
+      const reason = "Marketplace: Caller is not a withdrawal manager.";
+
+      await truffleAssert.reverts(marketplace.withdrawNFTs(nft.address, OWNER, [tokenId], { from: NOTHING }), reason);
     });
   });
 
@@ -1348,6 +1390,43 @@ describe("Marketplace", () => {
         reason
       );
     });
+
+    it("should get exception if contract is paused", async () => {
+      await marketplace.pause();
+
+      const reason = "Pausable: paused";
+
+      const sig = signBuyTest({
+        tokenContract: tokenContract.address,
+        paymentTokenAddress: voucherContract.address,
+        paymentTokenPrice: "0",
+      });
+
+      const permitSig = signPermitTest({ verifyingContract: voucherContract.address });
+
+      await truffleAssert.reverts(
+        marketplace.buyTokenWithVoucher(
+          [tokenContract.address, USER1, [voucherContract.address, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
+          [defaultEndTime, sig.r, sig.s, sig.v],
+          [defaultEndTime, permitSig.r, permitSig.s, permitSig.v],
+          {
+            from: USER1,
+          }
+        ),
+        reason
+      );
+
+      await marketplace.unpause();
+
+      await marketplace.buyTokenWithVoucher(
+        [tokenContract.address, USER1, [voucherContract.address, 0, defaultDiscountValue, 0], [0, defaultTokenURI]],
+        [defaultEndTime, sig.r, sig.s, sig.v],
+        [defaultEndTime, permitSig.r, permitSig.s, permitSig.v],
+        {
+          from: USER1,
+        }
+      );
+    });
   });
 
   describe("buyTokenWithNFT", () => {
@@ -1613,6 +1692,21 @@ describe("Marketplace", () => {
         marketplace.createNFTRequest(tokenContract.address, nft.address, tokenId),
         "Marketplace: Sender is not the owner."
       );
+    });
+
+    it("should revert if marketplace is paused", async () => {
+      const reason = "Pausable: paused";
+
+      await marketplace.pause();
+
+      await truffleAssert.reverts(
+        marketplace.createNFTRequest(tokenContract.address, nft.address, tokenId, { from: USER1 }),
+        reason
+      );
+
+      await marketplace.unpause();
+
+      await marketplace.createNFTRequest(tokenContract.address, nft.address, tokenId, { from: USER1 });
     });
   });
 
@@ -1889,8 +1983,26 @@ describe("Marketplace", () => {
         "Marketplace: This token cannot be purchased with NFT."
       );
     });
-  });
 
+    it("should revert if marketplace is paused", async () => {
+      await marketplace.pause();
+
+      const sig = signBuyWithRequestTest({ tokenRecipient: USER2 });
+
+      await truffleAssert.reverts(
+        marketplace.acceptRequest([requestId, USER2, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
+          from: USER1,
+        }),
+        "Pausable: paused"
+      );
+
+      await marketplace.unpause();
+
+      await marketplace.acceptRequest([requestId, USER2, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
+        from: USER1,
+      });
+    });
+  });
   describe("getTokenContractsPart", () => {
     it("should return correct token contracts arr", async () => {
       const addressesArr = [];

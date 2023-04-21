@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /**
- * This is the RoleManager contract, that is responsible for managing the roles of the system.
+ * This is the RoleManager contract, that is responsible for managing the roles of the system
  */
 interface IRoleManager {
     /**
@@ -91,56 +91,56 @@ interface IRoleManager {
     /**
      * @notice The function to check if an account has rights of an Administrator
      * @param admin_ the account to check
-     * @return true if the account has rights of an Administrator, false otherwise
+     * @return True if the account has rights of an Administrator, false otherwise
      */
     function isAdmin(address admin_) external view returns (bool);
 
     /**
      * @notice The function to check if an account has rights of a TokenFactoryManager
      * @param manager_ the account to check
-     * @return true if the account has rights of a TokenFactoryManager, false otherwise
+     * @return True if the account has rights of a TokenFactoryManager, false otherwise
      */
     function isTokenFactoryManager(address manager_) external view returns (bool);
 
     /**
      * @notice The function to check if an account has rights of a TokenRegistryManager
      * @param manager_ the account to check
-     * @return true if the account has rights of a TokenRegistryManager, false otherwise
+     * @return True if the account has rights of a TokenRegistryManager, false otherwise
      */
     function isTokenRegistryManager(address manager_) external view returns (bool);
 
     /**
      * @notice The function to check if an account has rights of a TokenManager
      * @param manager_ the account to check
-     * @return true if the account has rights of a TokenManager, false otherwise
+     * @return True if the account has rights of a TokenManager, false otherwise
      */
     function isTokenManager(address manager_) external view returns (bool);
 
     /**
      * @notice The function to check if an account has rights of a RoleSupervisor
      * @param supervisor_ the account to check
-     * @return true if the account has rights of a RoleSupervisor, false otherwise
+     * @return True if the account has rights of a RoleSupervisor, false otherwise
      */
     function isRoleSupervisor(address supervisor_) external view returns (bool);
 
     /**
      * @notice The function to check if an account has rights of a WithdrawalManager
      * @param manager_ the account to check
-     * @return true if the account has rights of a WithdrawalManager, false otherwise
+     * @return True if the account has rights of a WithdrawalManager, false otherwise
      */
     function isWithdrawalManager(address manager_) external view returns (bool);
 
     /**
      * @notice The function to check if an account has rights of a MarketplaceManager
      * @param manager_ the account to check
-     * @return true if the account has rights of a MarketplaceManager, false otherwise
+     * @return True if the account has rights of a MarketplaceManager, false otherwise
      */
     function isMarketplaceManager(address manager_) external view returns (bool);
 
     /**
      * @notice The function to check if an account has rights of a SignatureManager
      * @param manager_ the account to check
-     * @return true if the account has rights of a SignatureManager, false otherwise
+     * @return True if the account has rights of a SignatureManager, false otherwise
      */
     function isSignatureManager(address manager_) external view returns (bool);
 

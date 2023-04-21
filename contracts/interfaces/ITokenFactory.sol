@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 /**
- * This is the TokenFactory contract, that is responsible for deploying new tokens.
+ * This is the TokenFactory contract, that is responsible for deploying new tokens
  */
 interface ITokenFactory {
     /**

@@ -201,7 +201,7 @@ contract Marketplace is
 
         require(
             buyParams_.paymentDetails.paymentTokenAddress == address(0),
-            "Marketplace: Invalid payment token address"
+            "Marketplace: Invalid payment token address."
         );
 
         TokenParams storage _currentTokenParams = _tokenParams[buyParams_.tokenContract];
@@ -271,12 +271,12 @@ contract Marketplace is
 
         require(
             _currentTokenParams.isVoucherBuyable,
-            "Marketplace: Unable to buy token with voucher"
+            "Marketplace: Unable to buy token with voucher."
         );
         require(
             buyParams_.paymentDetails.paymentTokenAddress ==
                 _currentTokenParams.voucherTokenContract,
-            "Marketplace: Invalid payment token address"
+            "Marketplace: Invalid payment token address."
         );
 
         IERC20Permit(_currentTokenParams.voucherTokenContract).permit(

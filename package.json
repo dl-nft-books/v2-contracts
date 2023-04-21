@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "author": "Distributed Lab",
-  "description": "",
+  "description": "Smart contracts of NFT Books V2",
   "scripts": {
     "install": "npx husky install",
     "compile": "npx hardhat compile --force",

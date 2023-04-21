@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.18;
 
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
 import "@dlsl/dev-modules/contracts-registry/pools/AbstractPoolContractsRegistry.sol";
 
 import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/ITokenRegistry.sol";
+import "./interfaces/IMarketplace.sol";
 import "./interfaces/IRoleManager.sol";
 
 contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
@@ -74,14 +77,32 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
         return _pools[VOUCHER_TOKEN].contains(potentialContract_);
     }
 
+    function getBaseTokenDataPart(
+        string calldata poolName_,
+        uint256 offset_,
+        uint256 limit_
+    ) external view override returns (IMarketplace.BaseTokenData[] memory baseTokensData_) {
+        address[] memory _contractsPart = listPools(poolName_, offset_, limit_);
+
+        baseTokensData_ = new IMarketplace.BaseTokenData[](_contractsPart.length);
+        for (uint256 i = 0; i < _contractsPart.length; i++) {
+            IERC20Metadata contract_ = IERC20Metadata(_contractsPart[i]);
+            baseTokensData_[i] = IMarketplace.BaseTokenData(
+                _contractsPart[i],
+                contract_.name(),
+                contract_.symbol()
+            );
+        }
+    }
+
     function _onlyTokenFactory() internal view {
-        require(_tokenFactory == msg.sender, "TokenRegistry: Caller is not a factory");
+        require(_tokenFactory == msg.sender, "TokenRegistry: Caller is not a factory.");
     }
 
     function _onlyTokenRegistryManager() internal view {
         require(
             _roleManager.isTokenRegistryManager(msg.sender),
-            "TokenRegistry: Caller is not a token registry manager"
+            "TokenRegistry: Caller is not a token registry manager."
         );
     }
 }
