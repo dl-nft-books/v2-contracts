@@ -189,6 +189,12 @@ describe("RoleManager", () => {
 
       await truffleAssert.reverts(roleManager.removeRoles([role], { from: USER2 }), reason);
     });
+
+    it("should get exception if try to remove administrator role", async () => {
+      const reason = "RoleManager: Cannot remove administrator role.";
+
+      await truffleAssert.reverts(roleManager.removeRoles([ADMINISTRATOR_ROLE]), reason);
+    });
   });
 
   describe("grantRolesBatch", () => {

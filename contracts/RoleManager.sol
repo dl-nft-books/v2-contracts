@@ -54,6 +54,11 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
         bytes32[] memory rolesToRemove_
     ) external override onlyRole(ADMINISTRATOR_ROLE) {
         for (uint256 i = 0; i < rolesToRemove_.length; i++) {
+            require(
+                rolesToRemove_[i] != ADMINISTRATOR_ROLE,
+                "RoleManager: Cannot remove administrator role."
+            );
+
             require(isRoleExists(rolesToRemove_[i]), "RoleManager: Role does not exists.");
 
             delete _rolesInfo[rolesToRemove_[i]].roleName;
