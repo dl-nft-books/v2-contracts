@@ -118,7 +118,7 @@ describe("Marketplace", () => {
   function signBuyWithRequestTest({
     privateKey = OWNER_PK,
     tokenRecipient = USER1,
-    requestId = 0,
+    requestId = 1,
     futureTokenId = 0,
     endTimestamp = defaultEndTime.toFixed(),
     tokenURI = defaultTokenURI,
@@ -943,7 +943,7 @@ describe("Marketplace", () => {
 
       await marketplace.createNFTRequest(tokenContract.address, nft.address, tokenId, { from: USER1 });
       const sig = signBuyWithRequestTest({});
-      await marketplace.acceptRequest([0, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
+      await marketplace.acceptRequest([1, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
         from: USER1,
       });
 
@@ -1637,6 +1637,7 @@ describe("Marketplace", () => {
   describe("createNFTRequest", () => {
     const tokenId = 13;
     let tokenContract;
+    let requestId;
 
     beforeEach("setup", async () => {
       await nft.mint(USER1, tokenId);
@@ -1654,6 +1655,7 @@ describe("Marketplace", () => {
       ]);
 
       tokenContract = await ERC721MintableToken.at((await marketplace.getTokenContractsPart(0, 10))[0]);
+      requestId = await marketplace.nextRequestId();
     });
 
     it("should create NFT request", async () => {
@@ -1663,7 +1665,7 @@ describe("Marketplace", () => {
 
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[0].event, "NFTRequestCreated");
-      assert.equal(tx.logs[0].args.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.requestId.toString(), requestId.toString());
       assert.equal(tx.logs[0].args.requester, USER1);
       assert.equal(tx.logs[0].args.tokenContract, tokenContract.address);
       assert.equal(tx.logs[0].args.nftContract, nft.address);
@@ -1770,7 +1772,7 @@ describe("Marketplace", () => {
 
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[0].event, "NFTRequestCanceled");
-      assert.equal(tx.logs[0].args.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.requestId.toString(), requestId.toString());
     });
 
     it("should revert if sender is not requester", async () => {
@@ -1835,7 +1837,7 @@ describe("Marketplace", () => {
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[0].event, "TokenSuccessfullyExchanged");
       assert.equal(tx.logs[0].args.acceptRequestParams.recipient, USER2);
-      assert.equal(tx.logs[0].args.acceptRequestParams.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.acceptRequestParams.requestId.toString(), requestId.toString());
 
       assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenId.toString(), 0);
       assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenURI, defaultTokenURI);
@@ -1876,7 +1878,7 @@ describe("Marketplace", () => {
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[0].event, "TokenSuccessfullyExchanged");
       assert.equal(tx.logs[0].args.acceptRequestParams.recipient, USER1);
-      assert.equal(tx.logs[0].args.acceptRequestParams.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.acceptRequestParams.requestId.toString(), requestId.toString());
 
       assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenId.toString(), 0);
       assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenURI, defaultTokenURI);
@@ -1916,7 +1918,7 @@ describe("Marketplace", () => {
       assert.equal(tx.logs.length, 1);
       assert.equal(tx.logs[0].event, "TokenSuccessfullyExchanged");
       assert.equal(tx.logs[0].args.acceptRequestParams.recipient, USER1);
-      assert.equal(tx.logs[0].args.acceptRequestParams.requestId.toString(), "0");
+      assert.equal(tx.logs[0].args.acceptRequestParams.requestId.toString(), requestId.toString());
 
       assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenId.toString(), 0);
       assert.equal(tx.logs[0].args.acceptRequestParams.tokenData.tokenURI, defaultTokenURI);
@@ -2260,7 +2262,7 @@ describe("Marketplace", () => {
 
         await marketplace.createNFTRequest(tokenContract.address, nft.address, i, { from: USER1 });
 
-        expectedRequestIDs.push(i);
+        expectedRequestIDs.push(i + 1);
       }
 
       assert.equal((await marketplace.getAllPendingRequestsCount()).toFixed(), 5);
@@ -2284,9 +2286,9 @@ describe("Marketplace", () => {
         expectedRequestIDs.slice(3)
       );
 
-      const sig = signBuyWithRequestTest({ requestId: 4 });
+      const sig = signBuyWithRequestTest({ requestId: 5 });
 
-      await marketplace.acceptRequest([4, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
+      await marketplace.acceptRequest([5, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
         from: USER1,
       });
 
@@ -2333,8 +2335,8 @@ describe("Marketplace", () => {
         await marketplace.createNFTRequest(tokenContract.address, nft.address, i, { from: USER1 });
         await marketplace.createNFTRequest(tokenContract.address, nft.address, i + 10, { from: OWNER });
 
-        expectedUSER1RequestIDs.push(i * 2);
-        expectedOWNERRequestIDs.push(i * 2 + 1);
+        expectedUSER1RequestIDs.push(i * 2 + 1);
+        expectedOWNERRequestIDs.push(i * 2 + 2);
       }
 
       assert.equal((await marketplace.getUserPendingRequestsCount(USER1)).toFixed(), 5);
@@ -2368,7 +2370,7 @@ describe("Marketplace", () => {
 
       const sig = signBuyWithRequestTest({});
 
-      await marketplace.acceptRequest([0, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
+      await marketplace.acceptRequest([1, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
         from: USER1,
       });
 
@@ -2411,7 +2413,7 @@ describe("Marketplace", () => {
     });
 
     it("should return correct pending request ids", async () => {
-      const result = (await marketplace.getNFTRequestsInfo([0]))[0];
+      const result = (await marketplace.getNFTRequestsInfo([1]))[0];
 
       assert.equal(result.requester, USER1);
       assert.equal(result.tokenContract, tokenContract.address);

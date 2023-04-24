@@ -57,6 +57,7 @@ contract Marketplace is
     mapping(address => TokenParams) internal _tokenParams;
     mapping(address => EnumerableSet.UintSet) internal _userPendingRequests;
     mapping(uint256 => NFTRequestInfo) internal _nftRequests;
+    mapping(address => mapping(uint256 => uint256)) internal _nftRequestsByNFTId;
 
     modifier onlyMarketplaceManager() {
         _onlyMarketplaceManager();
@@ -74,6 +75,7 @@ contract Marketplace is
         __EIP712_init("Marketplace", "1");
 
         baseTokenContractsURI = baseTokenContractsURI_;
+        nextRequestId = 1;
     }
 
     function setDependencies(
@@ -188,25 +190,15 @@ contract Marketplace is
     ) external override onlyWithdrawalManager {
         address nftAddress_ = address(nft_);
 
-        uint256[] memory allPendingRequests_ = _allPendingRequests.values();
-        for (uint256 i = 0; i < allPendingRequests_.length; i++) {
-            NFTRequestInfo storage _currentRequest = _nftRequests[allPendingRequests_[i]];
-
-            if (_currentRequest.nftContract == nftAddress_) {
-                for (uint256 j = 0; j < tokenIds_.length; j++) {
-                    require(
-                        _currentRequest.nftId != tokenIds_[j],
-                        "Marketplace: Can not withdraw NFT while it is in pending request."
-                    );
-                }
-            }
-        }
-
         for (uint256 i = 0; i < tokenIds_.length; i++) {
+            require(
+                _nftRequestsByNFTId[nftAddress_][tokenIds_[i]] == 0,
+                "Marketplace: Can not withdraw NFT while it is in pending request."
+            );
             _tranferNFT(nft_, address(this), recipient_, tokenIds_[i]);
         }
 
-        emit NFTTokensWithdrawn(nftAddress_, recipient_, tokenIds_);
+        emit NFTTokensWithdrawn(address(nft_), recipient_, tokenIds_);
     }
 
     function buyTokenWithETH(
@@ -404,6 +396,8 @@ contract Marketplace is
             NFTRequestStatus.PENDING
         );
 
+        _nftRequestsByNFTId[nftContract_][nftId_] = requestId_;
+
         emit NFTRequestCreated(requestId_, msg.sender, tokenContract_, nftContract_, nftId_);
     }
 
@@ -600,6 +594,7 @@ contract Marketplace is
 
         _allPendingRequests.remove(requestId_);
         _userPendingRequests[msg.sender].remove(requestId_);
+        delete _nftRequestsByNFTId[_nftRequest.nftContract][_nftRequest.nftId];
     }
 
     function _beforeBuyTokenCheck(
