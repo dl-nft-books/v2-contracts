@@ -186,11 +186,27 @@ contract Marketplace is
         address recipient_,
         uint256[] memory tokenIds_
     ) external override onlyWithdrawalManager {
+        address nftAddress_ = address(nft_);
+
+        uint256[] memory allPendingRequests_ = _allPendingRequests.values();
+        for (uint256 i = 0; i < allPendingRequests_.length; i++) {
+            NFTRequestInfo storage _currentRequest = _nftRequests[allPendingRequests_[i]];
+
+            if (_currentRequest.nftContract == nftAddress_) {
+                for (uint256 j = 0; j < tokenIds_.length; j++) {
+                    require(
+                        _currentRequest.nftId != tokenIds_[j],
+                        "Marketplace: Can not withdraw NFT while it is in pending request."
+                    );
+                }
+            }
+        }
+
         for (uint256 i = 0; i < tokenIds_.length; i++) {
             _tranferNFT(nft_, address(this), recipient_, tokenIds_[i]);
         }
 
-        emit NFTTokensWithdrawn(address(nft_), recipient_, tokenIds_);
+        emit NFTTokensWithdrawn(nftAddress_, recipient_, tokenIds_);
     }
 
     function buyTokenWithETH(

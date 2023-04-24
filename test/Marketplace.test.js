@@ -53,6 +53,7 @@ describe("Marketplace", () => {
   let tokenRegistry;
   let paymentToken;
   let nft;
+  let nft2;
 
   let defaultVoucherContract;
   let defaultEndTime;
@@ -207,6 +208,7 @@ describe("Marketplace", () => {
     paymentToken = await deployERC20("TestERC20", "TERC20", [OWNER, USER1]);
 
     nft = await ERC721Mock.new("Test NFT", "TNFT");
+    nft2 = await ERC721Mock.new("Test NFT2", "TNFT2");
 
     defaultVoucherContract = await deployERC20("Test Voucher Token", "TVT", [OWNER, USER1]);
 
@@ -863,6 +865,7 @@ describe("Marketplace", () => {
 
   describe("withdrawNFTs", () => {
     const tokenId = 13;
+    const tokenId2 = 14;
     const nftFloorPrice = wei(90, priceDecimals);
 
     let tokenContract;
@@ -870,6 +873,12 @@ describe("Marketplace", () => {
     beforeEach("setup", async () => {
       await nft.mint(USER1, tokenId);
       await nft.approve(marketplace.address, tokenId, { from: USER1 });
+
+      await nft.mint(USER1, tokenId2);
+      await nft.approve(marketplace.address, tokenId2, { from: USER1 });
+
+      await nft2.mint(USER1, tokenId);
+      await nft2.approve(marketplace.address, tokenId, { from: USER1 });
 
       await marketplace.addToken("Test", "TST", [
         defaultPricePerOneToken,
@@ -927,6 +936,23 @@ describe("Marketplace", () => {
       const reason = "Marketplace: Caller is not a withdrawal manager.";
 
       await truffleAssert.reverts(marketplace.withdrawNFTs(nft.address, OWNER, [tokenId], { from: NOTHING }), reason);
+    });
+
+    it("should get exception if desired nft is belong to pending request", async () => {
+      const reason = "Marketplace: Can not withdraw NFT while it is in pending request.";
+
+      await marketplace.createNFTRequest(tokenContract.address, nft.address, tokenId, { from: USER1 });
+      const sig = signBuyWithRequestTest({});
+      await marketplace.acceptRequest([0, USER1, [0, defaultTokenURI]], [defaultEndTime, sig.r, sig.s, sig.v], {
+        from: USER1,
+      });
+
+      await marketplace.createNFTRequest(tokenContract.address, nft.address, tokenId2, { from: USER1 });
+      await marketplace.createNFTRequest(tokenContract.address, nft2.address, tokenId, { from: USER1 });
+
+      await truffleAssert.reverts(marketplace.withdrawNFTs(nft.address, OWNER, [tokenId, tokenId2]), reason);
+
+      await marketplace.withdrawNFTs(nft.address, OWNER, [tokenId]);
     });
   });
 
