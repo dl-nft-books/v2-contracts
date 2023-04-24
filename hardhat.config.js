@@ -42,6 +42,11 @@ module.exports = {
       gasMultiplier: 1.2,
       gas: 5000000,
     },
+    sepolia: {
+      url: `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`,
+      accounts: privateKey(),
+      gasMultiplier: 1.2,
+    },
     mumbai: {
       url: "https://rpc-mumbai.maticvigil.com/",
       accounts: privateKey(),
@@ -82,6 +87,7 @@ module.exports = {
     apiKey: {
       mainnet: `${process.env.ETHERSCAN_KEY}`,
       goerli: `${process.env.ETHERSCAN_KEY}`,
+      sepolia: `${process.env.ETHERSCAN_KEY}`,
       polygon: `${process.env.POLYGON_KEY}`,
       polygonMumbai: `${process.env.POLYGON_KEY}`,
       qtestnet: "abc",
