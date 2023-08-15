@@ -64,10 +64,6 @@ describe("ContractsRegistry", () => {
 
       await contractsRegistry.addProxyContract(await contractsRegistry.MARKETPLACE_NAME(), _Marketplace.address);
 
-      await contractsRegistry.removeContract(await contractsRegistry.MARKETPLACE_NAME());
-
-      await contractsRegistry.justAddProxyContract(await contractsRegistry.MARKETPLACE_NAME(), _Marketplace.address);
-
       assert.isTrue(await contractsRegistry.hasContract(await contractsRegistry.MARKETPLACE_NAME()));
 
       await contractsRegistry.removeContract(await contractsRegistry.MARKETPLACE_NAME());

@@ -25,7 +25,7 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         _;
     }
 
-    function setDependencies(address contractsRegistry_, bytes calldata data_) public override {
+    function setDependencies(address contractsRegistry_, bytes memory data_) public override {
         super.setDependencies(contractsRegistry_, data_);
 
         IContractsRegistry registry = IContractsRegistry(contractsRegistry_);

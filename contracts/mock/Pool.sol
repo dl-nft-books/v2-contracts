@@ -8,10 +8,7 @@ import "../interfaces/IContractsRegistry.sol";
 contract Pool is AbstractDependant {
     address public roleManager;
 
-    function setDependencies(
-        address contractsRegistry_,
-        bytes calldata
-    ) external override dependant {
+    function setDependencies(address contractsRegistry_, bytes memory) public override dependant {
         roleManager = IContractsRegistry(contractsRegistry_).getRoleManagerContract();
     }
 }

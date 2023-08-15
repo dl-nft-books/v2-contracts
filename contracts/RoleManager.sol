@@ -41,7 +41,7 @@ contract RoleManager is IRoleManager, AccessControlUpgradeable, AbstractDependan
 
     function setDependencies(
         address contractsRegistry_,
-        bytes calldata data_
+        bytes memory data_
     ) public override dependant {}
 
     function updateRolesParams(

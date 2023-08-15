@@ -24,10 +24,7 @@ contract Voucher is IVoucher, ERC20PermitUpgradeable, AbstractDependant {
         __ERC20Permit_init("Voucher");
     }
 
-    function setDependencies(
-        address contractsRegistry_,
-        bytes calldata
-    ) external override dependant {
+    function setDependencies(address contractsRegistry_, bytes memory) public override dependant {
         IContractsRegistry registry_ = IContractsRegistry(contractsRegistry_);
 
         _roleManager = IRoleManager(registry_.getRoleManagerContract());

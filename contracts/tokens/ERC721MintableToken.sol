@@ -35,10 +35,7 @@ contract ERC721MintableToken is
         __ERC721_init(name_, symbol_);
     }
 
-    function setDependencies(
-        address contractsRegistry_,
-        bytes calldata
-    ) external override dependant {
+    function setDependencies(address contractsRegistry_, bytes memory) public override dependant {
         _marketplace = IContractsRegistry(contractsRegistry_).getMarketplaceContract();
     }
 

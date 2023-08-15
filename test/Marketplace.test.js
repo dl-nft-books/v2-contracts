@@ -263,19 +263,19 @@ describe("Marketplace", () => {
         isVoucherBuyable,
       ]);
 
-      assert.equal(tx.logs[0].event, "TokenContractDeployed");
-      assert.equal(tx.logs[0].args.tokenName, name);
-      assert.equal(tx.logs[0].args.tokenSymbol, symbol);
-      assert.equal(tx.logs[0].args.tokenParams.pricePerOneToken, pricePerOneToken);
-      assert.equal(tx.logs[0].args.tokenParams.minNFTFloorPrice, minNFTFloorPrice);
-      assert.equal(tx.logs[0].args.tokenParams.voucherTokensAmount, voucherTokensAmount);
-      assert.equal(tx.logs[0].args.tokenParams.isNFTBuyable, isNFTBuyable);
-      assert.equal(tx.logs[0].args.tokenParams.voucherTokenContract, voucherTokenContract);
-      assert.equal(tx.logs[0].args.tokenParams.fundsRecipient, fundsRecipient);
-      assert.equal(tx.logs[0].args.tokenParams.isDisabled, isDisabled);
-      assert.equal(tx.logs[0].args.tokenParams.isVoucherBuyable, isVoucherBuyable);
+      assert.equal(tx.logs[1].event, "TokenContractDeployed");
+      assert.equal(tx.logs[1].args.tokenName, name);
+      assert.equal(tx.logs[1].args.tokenSymbol, symbol);
+      assert.equal(tx.logs[1].args.tokenParams.pricePerOneToken, pricePerOneToken);
+      assert.equal(tx.logs[1].args.tokenParams.minNFTFloorPrice, minNFTFloorPrice);
+      assert.equal(tx.logs[1].args.tokenParams.voucherTokensAmount, voucherTokensAmount);
+      assert.equal(tx.logs[1].args.tokenParams.isNFTBuyable, isNFTBuyable);
+      assert.equal(tx.logs[1].args.tokenParams.voucherTokenContract, voucherTokenContract);
+      assert.equal(tx.logs[1].args.tokenParams.fundsRecipient, fundsRecipient);
+      assert.equal(tx.logs[1].args.tokenParams.isDisabled, isDisabled);
+      assert.equal(tx.logs[1].args.tokenParams.isVoucherBuyable, isVoucherBuyable);
 
-      const token = await ERC721MintableToken.at(tx.logs[0].args.tokenContract);
+      const token = await ERC721MintableToken.at(tx.logs[1].args.tokenContract);
       assert.equal(await token.name(), name);
       assert.equal(await token.symbol(), symbol);
     });
@@ -2047,7 +2047,7 @@ describe("Marketplace", () => {
           false,
         ]);
 
-        addressesArr.push(tx.receipt.logs[0].args.tokenContract);
+        addressesArr.push(tx.receipt.logs[1].args.tokenContract);
       }
 
       assert.equal((await marketplace.getTokenContractsCount()).toString(), 5);
@@ -2075,7 +2075,7 @@ describe("Marketplace", () => {
         ];
 
         const tx = await marketplace.addToken("Test" + i, "TST" + i, tokenParam);
-        baseTokenParams.push([[tx.receipt.logs[0].args.tokenContract, "Test" + i, "TST" + i], i.toString(), false]);
+        baseTokenParams.push([[tx.receipt.logs[1].args.tokenContract, "Test" + i, "TST" + i], i.toString(), false]);
       }
 
       assert.equal((await marketplace.getTokenContractsCount()).toString(), 5);
@@ -2103,7 +2103,7 @@ describe("Marketplace", () => {
         ]);
 
         detailedTokenInfo.push([
-          [tx.receipt.logs[0].args.tokenContract, "Test" + i, "TST" + i],
+          [tx.receipt.logs[1].args.tokenContract, "Test" + i, "TST" + i],
           [
             i.toString(),
             defaultMinNFTFloorPrice.toString(),
@@ -2142,7 +2142,7 @@ describe("Marketplace", () => {
         assert.equal((await marketplace.getTokenContractsCount()).toString(), i + 1);
         assert.equal((await marketplace.getActiveTokenContractsCount()).toString(), 1);
 
-        await marketplace.updateTokenParams(tx.receipt.logs[0].args.tokenContract, [
+        await marketplace.updateTokenParams(tx.receipt.logs[1].args.tokenContract, [
           defaultPricePerOneToken,
           defaultMinNFTFloorPrice,
           defaultVoucherTokensAmount,
