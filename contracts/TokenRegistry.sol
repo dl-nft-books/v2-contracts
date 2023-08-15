@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import "@dlsl/dev-modules/contracts-registry/pools/AbstractPoolContractsRegistry.sol";
+import "@solarity/solidity-lib/contracts-registry/pools/AbstractPoolContractsRegistry.sol";
 
 import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/ITokenRegistry.sol";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.18;
 
-import "@dlsl/dev-modules/contracts-registry/presets/OwnableContractsRegistry.sol";
+import "@solarity/solidity-lib/contracts-registry/presets/OwnableContractsRegistry.sol";
 
 import "./interfaces/IContractsRegistry.sol";
 

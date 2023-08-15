@@ -4,8 +4,8 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import "@dlsl/dev-modules/contracts-registry/AbstractDependant.sol";
-import "@dlsl/dev-modules/libs/arrays/Paginator.sol";
+import "@solarity/solidity-lib/contracts-registry/AbstractDependant.sol";
+import "@solarity/solidity-lib/libs/arrays/Paginator.sol";
 
 import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/IRoleManager.sol";
