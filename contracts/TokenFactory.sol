@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.18;
 
-import "@dlsl/dev-modules/contracts-registry/pools/pool-factory/AbstractPoolFactory.sol";
+import "@solarity/solidity-lib/contracts-registry/pools/pool-factory/AbstractPoolFactory.sol";
 
 import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/ITokenRegistry.sol";
@@ -25,7 +25,7 @@ contract TokenFactory is ITokenFactory, AbstractPoolFactory {
         _;
     }
 
-    function setDependencies(address contractsRegistry_, bytes calldata data_) public override {
+    function setDependencies(address contractsRegistry_, bytes memory data_) public override {
         super.setDependencies(contractsRegistry_, data_);
 
         IContractsRegistry registry = IContractsRegistry(contractsRegistry_);

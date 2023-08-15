@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import "@dlsl/dev-modules/contracts-registry/pools/AbstractPoolContractsRegistry.sol";
+import "@solarity/solidity-lib/contracts-registry/pools/AbstractPoolContractsRegistry.sol";
 
 import "./interfaces/IContractsRegistry.sol";
 import "./interfaces/ITokenRegistry.sol";
@@ -29,7 +29,7 @@ contract TokenRegistry is ITokenRegistry, AbstractPoolContractsRegistry {
         _;
     }
 
-    function setDependencies(address contractsRegistry_, bytes calldata data_) public override {
+    function setDependencies(address contractsRegistry_, bytes memory data_) public override {
         super.setDependencies(contractsRegistry_, data_);
 
         IContractsRegistry registry_ = IContractsRegistry(contractsRegistry_);
